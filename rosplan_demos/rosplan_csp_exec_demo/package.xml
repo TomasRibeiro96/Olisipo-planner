@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<package>
+ <name>rosplan_csp_exec_demo</name>
+ <version>1.0.0</version>
+ <description>
+    Finds out many different alternatives for a esterel plan to be executed
+    by relaxing the constraints imposed by the execution graph and
+    by checking for online preconditions that are met.
+ </description>
+
+ <license>GPLv3</license>
+
+ <author email="oscar.lima@dfki.de">Oscar Lima</author>
+ <maintainer email="oscar.lima@dfki.de">Oscar Lima</maintainer>
+
+ <buildtool_depend>catkin</buildtool_depend>
+
+</package>

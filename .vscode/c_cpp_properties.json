@@ -1,0 +1,50 @@
+{
+    "configurations": [
+        {
+            "browse": {
+                "databaseFilename": "",
+                "limitSymbolsToIncludedHeaders": true
+            },
+            "includePath": [
+                "/home/tomas/ros_ws/devel/include/**",
+                "/opt/ros/kinetic/include/**",
+                "/home/tomas/ros_ws/src/isr_monarch_robot/mbot_perception/ar_track_alvar/ar_track_alvar/include/**",
+                "/home/tomas/ros_ws/src/bayes_people_tracker/include/**",
+                "/home/tomas/ros_ws/src/bayestracking/include/**",
+                "/home/tomas/ros_ws/src/cob_driver/cob_scan_unifier/include/**",
+                "/home/tomas/ros_ws/src/realsense/ddynamic_reconfigure/include/**",
+                "/home/tomas/ros_ws/src/wg_people/face_detector/include/**",
+                "/home/tomas/ros_ws/src/mbot_drivers/idmind_drivers/idmind_arms/include/**",
+                "/home/tomas/ros_ws/src/mbot_drivers/idmind_drivers/idmind_imu/include/**",
+                "/home/tomas/ros_ws/src/mbot_drivers/idmind_drivers/idmind_interaction/include/**",
+                "/home/tomas/ros_ws/src/mbot_drivers/idmind_drivers/idmind_motors/include/**",
+                "/home/tomas/ros_ws/src/mbot_drivers/idmind_drivers/idmind_odometry/include/**",
+                "/home/tomas/ros_ws/src/mbot_drivers/idmind_drivers/idmind_sensors/include/**",
+                "/home/tomas/ros_ws/src/mbot_drivers/idmind_drivers/idmind_serial/include/**",
+                "/home/tomas/ros_ws/src/wg_people/leg_detector/include/**",
+                "/home/tomas/ros_ws/src/HumanAwareness/light_scan_sim/include/**",
+                "/home/tomas/ros_ws/src/HumanAwareness/mbot_scan_map/include/**",
+                "/home/tomas/ros_ws/src/HumanAwareness/mbot_scan_unifier/include/**",
+                "/home/tomas/ros_ws/src/occupancy_grid_utils/include/**",
+                "/home/tomas/ros_ws/src/isr_monarch_robot/mbot_perception/pcl_filters/include/**",
+                "/home/tomas/ros_ws/src/HumanAwareness/people_follower/include/**",
+                "/home/tomas/ros_ws/src/wg_people/people_tracking_filter/include/**",
+                "/home/tomas/ros_ws/src/picotts/include/**",
+                "/home/tomas/ros_ws/src/realsense/realsense2_camera/include/**",
+                "/home/tomas/ros_ws/src/ROSPlan/src/rosplan/rosplan_demos/rosplan_demos_interfaces/rosplan_interface_mapping/include/**",
+                "/home/tomas/ros_ws/src/ROSPlan/src/rosplan/rosplan_demos/rosplan_demos_interfaces/rosplan_interface_movebase/include/**",
+                "/home/tomas/ros_ws/src/ROSPlan/src/rosplan/rosplan_knowledge_base/include/**",
+                "/home/tomas/ros_ws/src/ROSPlan/src/rosplan/rosplan_planning_system/include/**",
+                "/home/tomas/ros_ws/src/visp_ros/include/**",
+                "/home/tomas/ros_ws/src/isr_monarch_robot/mbot_speech_recognition/vocon_speech_recognizer/include/**",
+                "/usr/include/**"
+            ],
+            "name": "ROS",
+            "intelliSenseMode": "gcc-x64",
+            "compilerPath": "/usr/bin/gcc",
+            "cStandard": "c11",
+            "cppStandard": "c++17"
+        }
+    ],
+    "version": 4
+}
