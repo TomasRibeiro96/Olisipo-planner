@@ -551,11 +551,17 @@ bool CSPExecGenerator::orderNodes(std::vector<int> open_list)
 
         rosplan_dispatch_msgs::CalculateProbability srv;
         srv.request.nodes = ordered_nodes_;
-        calculate_prob_client.call(srv);
-        double plan_success_probability = srv.response.plan_success_probability;
+        double plan_success_probability;
+        if(calculate_prob_client.call(srv)){
+            plan_success_probability = srv.response.plan_success_probability;
+            ROS_INFO("||| Received response: %f |||", plan_success_probability);
+        }
+        else{
+            ROS_INFO("||| DID NOT RECEIVE RESPONSE |||");
+            plan_success_probability = computePlanProbability(ordered_nodes_, action_prob_map_);
+        }
         // TODO: Save length of plan and save the shortest one with the highest success probability
         //// If success probability is the same, save it if the number of actions is lower
-        plan_success_probability = computePlanProbability(ordered_nodes_, action_prob_map_);
         int size = exec_aternatives_msg_.plan_success_prob.size();
         double best_prob_yet = 0;
         if(size != 0){
@@ -589,7 +595,12 @@ void CSPExecGenerator::printNodesWithNames(std::vector<int> &nodes)
         int action_id;
         getAction(*nit, action_name, params, original_plan_, action_start, action_id);
         ss << action_name;
-        ss << ",";
+        int size = params.size();
+        for(int i=0; i<size; i++){
+            ss << "%";
+            ss << params[i];
+        }
+        ss << " | ";
     }
     ROS_INFO("@@@ Nodes with names : {%s}", ss.str().c_str());
 }

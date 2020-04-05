@@ -6,6 +6,7 @@ from rosplan_knowledge_msgs.srv import *
 from rosplan_knowledge_msgs.msg import *
 from rosplan_dispatch_msgs.msg import EsterelPlanArray
 from rosplan_dispatch_msgs.msg import EsterelPlan
+from rosplan_dispatch_msgs.srv import CalculateProbability, CalculateProbabilityResponse
 import matplotlib
 import matplotlib.pyplot as plt
 from numpy import *
@@ -932,12 +933,17 @@ class Graph(object): ## CLASS TO GENERATE The Dynamic bayes network and to find 
         # rospy.spin()
 
 
+def handle_request(req):
+    rospy.loginfo('** Received request **')
+    return CalculateProbabilityResponse(1.0)
+
+def calculate_plan_probability_server():
+    rospy.init_node('bayesian_network_calculator')
+    # TODO: Considerar mudar nome da classe e pensar se faz sentido ser uma classe
+    s = rospy.Service('calculate_plan_probability', CalculateProbability, handle_request)
+    rospy.loginfo('** Bayesian network ready to receive plan **')
+    rospy.spin()
+
 
 if __name__ == "__main__":
-
-    rospy.init_node('query_client_node', anonymous=True)
-    # TODO: Considerar mudar nome da classe e pensar se faz sentido ser uma classe
-    s = rospy.Service('calculate_plan_probability', CalculateProbability, Graph().call_service())
-    print('* Ready to receive plan *')
-    rospy.spin()
-    # sys.exit(1)
+    calculate_plan_probability_server()
