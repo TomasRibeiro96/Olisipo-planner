@@ -14,6 +14,9 @@ from pomegranate import *
 import collections
 
 
+plan = list()
+receivedPlan = False
+
 
 class Action:
 
@@ -371,6 +374,14 @@ class GroundedAction:
         return None
 
 
+    @classmethod
+    def printGroundedActions(cls):
+        list_actions = list()
+        for grounded_action in GroundedAction.actionsList:
+            list_actions.append(grounded_action.name)
+        print(str(list_actions))
+
+
 
 class ActionStart:
 
@@ -559,6 +570,22 @@ class ActionEnd:
         return ActionStart.getActionStart(name)
 
 
+''' Removes time from action name, works with or without parameters in name '''
+def remove_start_end_from_action_name(name):
+    name1 = name.split('#')
+    name2 = name1[0].split('_')
+    del name2[-1]
+    name3 = '_'.join(name2)
+    params = '#'.join(name1[1:])
+    if params:
+        return name3+'#'+params
+    return name3
+
+
+def remove_start_end_params_from_action_name(name):
+    name1 = remove_start_end_from_action_name(name)
+    return name1.split('#')[0]
+
 
 ''' Creates action instances for all actions in domain file '''
 def create_actions(operators):
@@ -567,95 +594,82 @@ def create_actions(operators):
         Action(action_name)
 
 
-def write_predicates_to_file(plans_info):
+def create_grounded_actions(plan):
+    for action_name in plan:
+        name = remove_start_end_params_from_action_name(action_name)
+        if not Action.getAction(name):
+            action = Action(name)
+        else:
+            action = Action.getAction(name)
+        GroundedAction(action, action_name.split('#')[1:])
+
+
+def write_predicates_to_file(all_predicates, plan_length):
     file = open('predicate_layers.txt', 'w')
     file.write('PREDICATE LAYERS:\n')
     i = 0
-    for plan_info in plans_info:
-        file.write('\n>>>>>>>>>> PLAN ' + str(i) + ' <<<<<<<<<<\n')
-        for layer_num in range(len(plan_info['plan'])):
-            file.write('>> Layer: ' + str(layer_num) + '\n')
-            for predicate in plan_info['all_predicates']:
-                file.write(predicate + '%' + str(layer_num) + '\n')
-            file.write('----------------------------\n')
-        file.write('\n/////////////////////////////////\n')
-        i = i + 1
+    for layer_num in range(plan_length+1):
+        file.write('>> Layer: ' + str(layer_num) + '\n')
+        for predicate in all_predicates:
+            file.write(predicate + '%' + str(layer_num) + '\n')
+        file.write('----------------------------\n')
     file.close()
 
 
-def write_parents_to_file(plans_info):
+def write_parents_to_file(parents):
     file = open('nodes_parents.txt', 'w')
     file.write('NODES AND PARENTS:\n')
-    plan_num = 0
-    for plan_info in plans_info:
-        file.write('\n>>>>>>>>>> PLAN ' + str(plan_num) + ' <<<<<<<<<<\n')
-        for node in plan_info['parents'].keys():
-            file.write('>>> Node: ' + node.name + '\n')
-            for par in plan_info['parents'][node]:
-                file.write(par.name + '\n')
-            file.write('----------------------------\n')
-        file.write('\n/////////////////////////////////\n')
-        plan_num = plan_num + 1
+    for node in parents.keys():
+        file.write('>>> Node: ' + node.name + '\n')
+        for par in parents[node]:
+            file.write(par.name + '\n')
+        file.write('----------------------------\n')
     file.close()
 
 
-def write_actions_to_file(plans_info):
+def write_actions_to_file(actions):
     file = open('actions_par_child.txt', 'w')
     file.write('ACTIONS WITH CHILDREN AND PARENTS:\n')
-    i = 0
-    for plan_info in plans_info:
-        file.write('\n>>>>>>>>>> PLAN ' + str(i) + ' <<<<<<<<<<\n')
-        for action in plan_info['actions'].keys():
-            file.write('>>> ACTION: ' + action.name + '\n')
-            file.write('> Parents:\n')
-            for par in plan_info['actions'][action]['parents']:
-                file.write(par.name + '\n')
-            file.write('> Children:\n')
-            for child in plan_info['actions'][action]['children']:
-                file.write(child.name + '\n')
-            file.write('----------------------------\n')
-        file.write('\n/////////////////////////////////\n')
-        i = i + 1
+    for action in actions.keys():
+        file.write('>>> ACTION: ' + action.name + '\n')
+        file.write('> Parents:\n')
+        for par in actions[action]['parents']:
+            file.write(par.name + '\n')
+        file.write('> Children:\n')
+        for child in actions[action]['children']:
+            file.write(child.name + '\n')
     file.close()
 
 
-def check_nodes_without_parents(plans_info):
-    plan_num = 0
+def check_nodes_without_parents(parents):
     without_parents = False
-    for plan_info in plans_info:
-        for node in plan_info['parents'].keys():
-            first_layer = False
-            if len(node.name.split('%')) > 1:
-                if node.name.split('%')[1] == '0':
-                    first_layer = True
-            if not first_layer and len(plan_info['parents'][node]) == 0:
-                without_parents = True
-                print('!!!! Node without parents !!!!')
-                print('>> Plan: ' + str(plan_num))
-                print('>> Node without parents: ' + node.name)
-        plan_num = plan_num + 1
-    
+    for node in parents.keys():
+        first_layer = False
+        if len(node.name.split('%')) > 1:
+            if node.name.split('%')[1] == '0':
+                first_layer = True
+        if not first_layer and len(parents[node]) == 0:
+            without_parents = True
+            print('!!!! Node without parents !!!!')
+            print('>> Plan: ' + str(plan_num))
+            print('>> Node without parents: ' + node.name)
     if not without_parents:
         print('  No nodes without parents')
 
 
-def check_nodes_without_children(plans_info):
-    plan_num = 0
+def check_nodes_without_children(children, plan):
     without_children = False
-    for plan_info in plans_info:
-        for node in plan_info['children'].keys():
-            last_layer = False
-            if len(node.name.split('%')) > 1:
-                size = len(plan_info['plan'])
-                if node.name.split('%')[1] == str(size):
-                    last_layer = True
-            if not last_layer and len(plan_info['children'][node]) == 0:
-                without_children = True
-                print('!!!! Node without children !!!!')
-                print('>> Plan: ' + str(plan_num))
-                print('>> Node without children: ' + node.name)
-        plan_num = plan_num + 1
-
+    for node in children.keys():
+        last_layer = False
+        if len(node.name.split('%')) > 1:
+            size = len(plan)
+            if node.name.split('%')[1] == str(size):
+                last_layer = True
+        if not last_layer and len(children[node]) == 0:
+            without_children = True
+            print('!!!! Node without children !!!!')
+            print('>> Plan: ' + str(plan_num))
+            print('>> Node without children: ' + node.name)
     if not without_children:
         print('  No nodes without children')
 
@@ -667,39 +681,34 @@ def print_nodes_list(nodes_list):
     print(names_list)
 
 
-def cycles_recurse(plans_info, plan_num, nodes_list, node):
-    plan_info = plans_info[plan_num]
-    if len(plan_info['children'][node]) == 0:
+def cycles_recurse(children, nodes_list, node):
+    if len(children[node]) == 0:
         del nodes_list[-1]
         return True
-    for child in plan_info['children'][node]:
+    for child in children[node]:
         if child in nodes_list:
             print_nodes_list(nodes_list)
             print('>> Repeated node: ' + child.name)
-            print('>> Plan number: ' + str(plan_num))
             return False
         nodes_list.append(child)
-        if not cycles_recurse(plans_info, plan_num, nodes_list, child):
+        if not cycles_recurse(children, nodes_list, child):
             return False
     del nodes_list[-1]
     return True
 
 
-def check_cycles(plans_info):
-    plan_num = 0
-    for plan_info in plans_info:
-        for node in plan_info['all_predicates']:
-            # children receives nodes and not strings, got to get node with this string as name
-            node = get_node(plan_info['all_nodes'], node+'%0')
-            nodes_list = list()
-            nodes_list.append(node)
-            for child in plan_info['children'][node]:
-                if child in nodes_list:
-                    return False
-                nodes_list.append(child)
-                if not cycles_recurse(plans_info, plan_num, nodes_list, child):
-                    return False
-        plan_num = plan_num + 1
+def check_cycles(all_predicates, all_nodes, children):
+    for node in all_predicates:
+        # children receives nodes and not strings, got to get node with this string as name
+        node = get_node(all_nodes, node+'%0')
+        nodes_list = list()
+        nodes_list.append(node)
+        for child in children[node]:
+            if child in nodes_list:
+                return False
+            nodes_list.append(child)
+            if not cycles_recurse(children, nodes_list, child):
+                return False
     return True
 
 
@@ -723,10 +732,89 @@ def get_node(all_nodes, name):
         for node in all_nodes:
             if node.name == name:
                 return node
-        # for node in self.all_nodes:
-        #     print('*** ' + node.name)
-        # print('>>> ' + name)
         return None
+
+
+def add_predicate_to_model(node, model, parents, children, all_nodes, predicate, layer_number):
+    all_nodes.add(node)
+    model.add_node(node)
+    parents[node] = set()
+    children[node] = set()
+    parents[node].add(get_node(all_nodes, predicate + '%' + str(layer_number-1)))
+    children[get_node(all_nodes, predicate + '%' + str(layer_number-1))].add(node)
+    model.add_edge(get_node(all_nodes, predicate + '%' + str(layer_number-1)), node)
+
+
+def add_predicate_layer(predicates_set, layer_number, cpd, model, parents, children, all_nodes):
+    print('\n >>> Predicates: ' + str(predicates_set))
+    for predicate in predicates_set:
+        node = Node(cpd, name = predicate + '%' + str(layer_number))
+        add_predicate_to_model(node, model, parents, children, all_nodes, predicate, layer_number)
+
+
+def add_action_to_model(action_node, model, all_nodes):
+    model.add_node(action_node)
+    all_nodes.add(action_node)
+
+
+def connect_action_to_condition_predicates(action, action_node, all_nodes, model, parents, children, actions, layer_number):
+    for predicate in action.getConditionPredicates():
+        node_predicate = get_node(all_nodes, predicate + '%' + str(layer_number-1))
+        model.add_edge(node_predicate, action_node)
+        parents[action_node].add(node_predicate)
+        children[node_predicate].add(action_node)
+        actions[action_node]['parents'].add(node_predicate)
+
+
+def connect_action_to_effects_predicates(action, action_node, all_nodes, model, parents, children, actions, layer_number):
+    for predicate in action.getEffectsPredicates():
+        node_predicate = get_node(all_nodes, predicate + '%' + str(layer_number))
+        model.add_edge(action_node, node_predicate)
+        parents[node_predicate].add(action_node)
+        children[action_node].add(node_predicate)
+        actions[action_node]['children'].add(node_predicate)
+
+
+def connect_actionEnd_to_actionStart(action, end_index, all_nodes, model, parents, children, actions, action_node):
+    action_start = action.getActionStart()
+    # Search for the layer where actionStart is
+    for j in range(1, end_index+1):
+        if get_node(all_nodes, action_start.name + '$' + str(j)):
+            action_start_node = get_node(all_nodes, action_start.name + '$' + str(j))
+            # Connecting ActionEnd to ActionStart
+            model.add_edge(action_start_node, action_node)
+            parents[action_node].add(action_start_node)
+            children[action_start_node].add(action_node)
+            actions[action_node]['parents'].add(action_start_node)
+            actions[action_start_node]['children'].add(action_node)
+            return j
+
+
+def connect_action_to_over_all_predicates(action, start_index, end_index, all_nodes, model, parents, children, actions, action_node):
+    for predicate in action.getOverAllPredicates():
+        for j in range(start_index, end_index):
+            node = get_node(all_nodes, predicate + '%' + str(j))
+            model.add_edge(node, action_node)
+            parents[action_node].add(node)
+            children[node].add(action_node)
+            actions[action_node]['parents'].add(node)
+
+
+def add_action_edges(action, action_node, parents, children, actions, layer_number, all_nodes, model):
+    # Initialise stuff so I can save a node's parents and an action's parents and children
+    parents[action_node] = set()
+    children[action_node] = set()
+    actions[action_node] = dict()
+    actions[action_node]['parents'] = set()
+    actions[action_node]['children'] = set()
+
+    connect_action_to_condition_predicates(action, action_node, all_nodes, model, parents, children, actions, layer_number)
+    connect_action_to_effects_predicates(action, action_node, all_nodes, model, parents, children, actions, layer_number)
+
+    if isinstance(action, ActionEnd):
+        start_index = connect_actionEnd_to_actionStart(action, layer_number, all_nodes, model, parents, children, actions, action_node)
+        connect_action_to_over_all_predicates(action, start_index, layer_number, all_nodes, model, parents, children, actions, action_node)
+
 
 
 class Graph(object): ## CLASS TO GENERATE The Dynamic bayes network and to find the probability of success of an plan.
@@ -811,8 +899,6 @@ class Graph(object): ## CLASS TO GENERATE The Dynamic bayes network and to find 
         operators = domain_operators().operators
         create_actions(operators)
 
-        #### Subscribing to the node to get the total order plans ######################
-        rospy.Subscriber("/csp_exec_generator/valid_plans", EsterelPlanArray, self.total_plan)
 
         print('Parsing plan')
         while self.received is False:
@@ -933,17 +1019,123 @@ class Graph(object): ## CLASS TO GENERATE The Dynamic bayes network and to find 
         # rospy.spin()
 
 
-def handle_request(req):
+
+def handle_request(original_plan):
     rospy.loginfo('** Received request **')
-    return CalculateProbabilityResponse(1.0)
+    create_grounded_actions(original_plan)
+    cpd = DiscreteDistribution({'T': 1, 'F': 0})
+    model = BayesianNetwork()
+
+    # Get plan as a list of ActionStart and ActionEnd's instances
+    plan = list()
+    print('\n >>> Grounded actions <<<')
+    GroundedAction.printGroundedActions()
+    for action_name in original_plan:
+        name = remove_start_end_from_action_name(action_name)
+        grounded_action = GroundedAction.getGroundedAction(name)
+        if action_name.split('#')[0][-5:] == 'start':
+            action_start = ActionStart(grounded_action)
+            plan.append(action_start)
+        elif action_name.split('#')[0][-3:] == 'end':
+            action_end = ActionEnd(grounded_action)
+            plan.append(action_end)
+
+    predicates_set = set()
+    all_nodes = set()
+    children = dict()
+    parents = dict()
+    actions = dict()
+
+    for grounded_action in GroundedAction.actionsList:
+        # Adds the predicates in the set grounded_action.getPredicates() to predicates_set
+        predicates_set |= grounded_action.getPredicates()
+    
+    # Add first layer of predicates
+    for predicate in predicates_set:
+        node = Node(cpd, name=predicate + '%0')
+        all_nodes.add(node)
+        children[node] = set()
+        parents[node] = set()
+        model.add_node(node)
+
+    layer_number = 1
+    # Cycle which creates the entire Bayes Network until the end
+    for action in plan:
+        add_predicate_layer(predicates_set, layer_number, cpd, model, parents, children, all_nodes)
+        action_node = Node(cpd, name = action.name + '$' + str(layer_number))
+        add_action_to_model(action_node, model, predicates_set)
+        add_action_edges(action, action_node, parents, children, actions, layer_number, all_nodes, model)
+        layer_number = layer_number + 1
+
+    # model.bake()
+    # model.plot()
+    # plt.show()
+
+    print('Writing predicates to file')
+    write_predicates_to_file(predicates_set, len(plan))
+    print('Writing parents to file')
+    write_parents_to_file(parents)
+    print('Writing actions to file')
+    write_actions_to_file(actions)
+    print('Checking nodes without parents')
+    check_nodes_without_parents(parents)
+    print('Checking nodes without children')
+    check_nodes_without_children(children, plan)
+    print('Checking for cycles')
+    if check_cycles(predicates_set, all_nodes, children):
+        print('  Network has no cycles')
+    else:
+        print('!!! Network has cycles !!! ')
+    
+    return 1.0
+
+
+### Just for testing ###
+def get_one_plan(data):
+    global receivedPlan
+    if receivedPlan is False:
+        ordered_plan = data.esterel_plans[0].nodes
+
+        for item in ordered_plan:
+            name = str(item.name)  
+            # adds the action parameters to the name
+            for param in item.action.parameters:
+                name = name + '#' + str(param.value)
+            plan.append(name)
+        
+        receivedPlan = True
+
 
 def calculate_plan_probability_server():
+    global receivedPlan
     rospy.init_node('bayesian_network_calculator')
     # TODO: Considerar mudar nome da classe e pensar se faz sentido ser uma classe
     s = rospy.Service('calculate_plan_probability', CalculateProbability, handle_request)
     rospy.loginfo('** Bayesian network ready to receive plan **')
+    #########################################
+    print ("Waiting for service")
+    rospy.wait_for_service('/rosplan_knowledge_base/domain/operators')
+    rospy.wait_for_service('/rosplan_knowledge_base/domain/operator_details')
+
+    print ("Parsing plan")
+    domain_operators = rospy.ServiceProxy('/rosplan_knowledge_base/domain/operators', GetDomainOperatorService)
+
+    print('Creating actions')
+    operators = domain_operators().operators
+    create_actions(operators)
+
+    # Gets a totally-ordered plan from service
+    print('Obtaining plan')
+    rospy.Subscriber("/csp_exec_generator/valid_plans", EsterelPlanArray, get_one_plan)
+    while receivedPlan is False:
+        continue
+    print('>>> Plan: ' + str(plan))
+
+    return handle_request(plan)
+    #########################################
     rospy.spin()
 
 
 if __name__ == "__main__":
-    calculate_plan_probability_server()
+    # calculate_plan_probability_server()
+    print(calculate_plan_probability_server())

@@ -10,16 +10,15 @@
     <arg name="problem" default="problem_blocksworld" />
     <arg name="category" default="iros_problems_free" /> 
     -->
-    
-    <arg name="domain" default="domain_robot_delivery.pddl" />
-    <arg name="problem" default="problem_w5_m5_g3" />
-    <arg name="category" default="iros_problems_free" />
-    
     <!--
     <arg name="domain" default="domain_robot_delivery.pddl" />
     <arg name="problem" default="problem_w4_m3_g2" />
     <arg name="category" default="iros_problems_free" />
     -->
+
+    <arg name="category" default="skip_door" />
+    <arg name="domain" default="domain_skip_door" />
+    <arg name="problem" default="problem_01" />
 
     <!-- select between normal or smart plan dispatcher -->
     <arg name="adaptable_plan_dispatcher_required" default="true" />
