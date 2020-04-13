@@ -7,6 +7,7 @@ from rosplan_knowledge_msgs.msg import *
 from rosplan_dispatch_msgs.msg import EsterelPlanArray
 from rosplan_dispatch_msgs.msg import EsterelPlan
 from rosplan_dispatch_msgs.srv import CalculateProbability, CalculateProbabilityResponse
+from std_msgs.msg import String
 import matplotlib
 import matplotlib.pyplot as plt
 from numpy import *
@@ -15,7 +16,9 @@ import collections
 
 
 plan = list()
+goal = list()
 receivedPlan = False
+receivedGoal = False
 
 
 class Action:
@@ -605,15 +608,17 @@ def create_grounded_actions(plan):
         GroundedAction(action, action_name.split('#')[1:])
 
 
-def write_predicates_to_file(all_predicates, plan_length):
+def write_predicates_to_file(all_nodes):
     file = open('predicate_layers.txt', 'w')
     file.write('PREDICATE LAYERS:\n')
-    i = 0
-    for layer_num in range(plan_length+1):
-        file.write('>> Layer: ' + str(layer_num) + '\n')
-        for predicate in all_predicates:
-            file.write(predicate + '%' + str(layer_num) + '\n')
-        file.write('----------------------------\n')
+    for node in all_nodes:
+        if len(node.name.split('%')) > 1:
+            file.write(node.name+'\n')
+    # for layer_num in range(plan_length+1):
+    #     file.write('>> Layer: ' + str(layer_num) + '\n')
+    #     for predicate in all_predicates:
+    #         file.write(predicate + '%' + str(layer_num) + '\n')
+    #     file.write('----------------------------\n')
     file.close()
 
 
@@ -685,11 +690,11 @@ def check_nodes_without_children(children, plan):
         print('  No nodes without children')
 
 
-def print_nodes_list(nodes_list):
+def print_nodes_list(nodes_list, msg):
     names_list = list()
     for node in nodes_list:
         names_list.append(node.name)
-    print(names_list)
+    print(msg + str(names_list))
 
 
 def cycles_recurse(children, nodes_list, node):
@@ -708,10 +713,9 @@ def cycles_recurse(children, nodes_list, node):
     return True
 
 
-def check_cycles(all_predicates, all_nodes, children):
-    for node in all_predicates:
+def check_cycles(all_nodes, children):
+    for node in all_nodes:
         # children receives nodes and not strings, got to get node with this string as name
-        node = get_node(all_nodes, node+'%0')
         nodes_list = list()
         nodes_list.append(node)
         for child in children[node]:
@@ -747,7 +751,7 @@ def get_node(all_nodes, name):
 
 
 def add_predicate_to_model(node, model, parents, children, all_nodes, predicate, layer_number):
-    all_nodes.add(node)
+    all_nodes.append(node)
     model.add_node(node)
     parents[node] = set()
     children[node] = set()
@@ -764,7 +768,7 @@ def add_predicate_layer(predicates_set, layer_number, cpd, model, parents, child
 
 def add_action_to_model(action_node, model, all_nodes):
     model.add_node(action_node)
-    all_nodes.add(action_node)
+    all_nodes.append(action_node)
 
 
 def connect_action_to_condition_predicates(action, action_node, all_nodes, model, parents, children, actions, layer_number):
@@ -826,6 +830,65 @@ def add_action_edges(action, action_node, parents, children, actions, layer_numb
         connect_action_to_over_all_predicates(action, start_index, layer_number, all_nodes, model, parents, children, actions, action_node)
 
 
+def get_list_children_names(children, node):
+    children_list = list()
+    for child in children[node]:
+        children_list.append(child.name)
+    return children_list
+
+
+def get_list_parents_names(parents, node):
+    parents_list = list()
+    for parent in parents[node]:
+        parents_list.append(parent.name)
+    return parents_list
+
+
+def prune_network(all_nodes, children, parents, actions, model):
+    for node in reversed(all_nodes):
+        print('> Node: ' + node.name)
+        print('> Children: ' + str(get_list_children_names(children, node)))
+        # print('> Parents: ' + str(get_list_parents_names(parents, node)))
+        if not children[node]:
+            print('+++ Inside')
+            # If node is in last layer and is part of goal, then ignore
+            split_name = node.name.split('%')
+            node_name = split_name[0]
+            index = int(split_name[1])
+            previous_node = get_node(all_nodes, name+str(index-1))
+            if int(index) == len(plan):
+                if node_name in goal:
+                    continue
+            for parent in parents[node]:
+                children[parent].remove(node)
+            del parents[node]
+            del children[node]
+            all_nodes.remove(node)
+            if node in actions.keys():
+                del actions[node]
+            else:
+                for action in actions.keys():
+                    actions[action]['parents'].discard(node)
+                    actions[action]['children'].discard(node)
+                # for action in actions.keys():
+                #     for parent in actions[action]['parents']:
+                #         if parent.name == node.name:
+                #             actions[action]['parents'].remove(parent)
+                #     for child in actions[action]['children']:
+                #         if child.name == node.name:
+                #             actions[action]['children'].remove(child)
+        else:
+            print('--- Outside')
+
+
+def check_for_repeated_nodes(all_nodes):
+    copy_set = set(all_nodes)
+    if len(all_nodes) == len(copy_set):
+        print('  No repeated nodes')
+    else:
+        print('!!! REPEATED NODES !!!')
+
+
 def handle_request(original_plan):
     rospy.loginfo('** Received request **')
     create_grounded_actions(original_plan)
@@ -845,7 +908,7 @@ def handle_request(original_plan):
             plan.append(action_end)
 
     predicates_set = set()
-    all_nodes = set()
+    all_nodes = list()
     children = dict()
     parents = dict()
     actions = dict()
@@ -857,7 +920,7 @@ def handle_request(original_plan):
     # Add first layer of predicates
     for predicate in predicates_set:
         node = Node(cpd, name=predicate + '%0')
-        all_nodes.add(node)
+        all_nodes.append(node)
         children[node] = set()
         parents[node] = set()
         model.add_node(node)
@@ -871,25 +934,31 @@ def handle_request(original_plan):
         add_action_edges(action, action_node, parents, children, actions, layer_number, all_nodes, model)
         layer_number = layer_number + 1
 
+    print_nodes_list(all_nodes, '>>> All nodes: ')
+    prune_network(all_nodes, children, parents, actions, model)
+
     # model.bake()
     # model.plot()
     # plt.show()
 
+    # print('Checking for repeated nodes')
+    # check_for_repeated_nodes(all_nodes)
+    # print('Checking nodes without parents')
+    # check_nodes_without_parents(parents)
+    # print('Checking nodes without children')
+    # check_nodes_without_children(children, plan)
+    # print('Checking for cycles')
+    # if check_cycles(all_nodes, children):
+    #     print('  Network has no cycles')
+    # else:
+    #     print('!!! Network has cycles !!! ')
     print('Writing predicates to file')
-    write_predicates_to_file(predicates_set, len(plan))
+    write_predicates_to_file(all_nodes)
     print('Writing parents to file')
     write_parents_to_file(parents)
     print('Writing actions to file')
     write_actions_to_file(actions)
-    print('Checking nodes without parents')
-    check_nodes_without_parents(parents)
-    print('Checking nodes without children')
-    check_nodes_without_children(children, plan)
-    print('Checking for cycles')
-    if check_cycles(predicates_set, all_nodes, children):
-        print('  Network has no cycles')
-    else:
-        print('!!! Network has cycles !!! ')
+    
     
     return 1.0
 
@@ -897,6 +966,7 @@ def handle_request(original_plan):
 ### Just for testing ###
 def get_one_plan(data):
     global receivedPlan
+    global plan
     if receivedPlan is False:
         ordered_plan = data.esterel_plans[0].nodes
 
@@ -909,6 +979,14 @@ def get_one_plan(data):
         
         receivedPlan = True
 
+
+def goal_method(data):
+    global receivedGoal
+    global goal
+    for goal_condition in str(data).split(':goal')[1].split('(')[2:]:
+        condition_name = goal_condition.split(')')[0]
+        goal.append(condition_name.replace(' ', '#'))
+    receivedGoal = True
 
 def calculate_plan_probability_server():
     global receivedPlan
@@ -923,6 +1001,13 @@ def calculate_plan_probability_server():
 
     print ("Parsing plan")
     domain_operators = rospy.ServiceProxy('/rosplan_knowledge_base/domain/operators', GetDomainOperatorService)
+
+    print('Obtaining goals')
+    rospy.Subscriber("/rosplan_problem_interface/problem_instance", String, goal_method)
+    while receivedGoal is False:
+        continue
+
+    print('\n>>> Goal:\n' + str(goal) + '\n')
 
     print('Creating actions')
     operators = domain_operators().operators
