@@ -848,14 +848,29 @@ def prune_network(all_nodes, children, parents, actions, model):
     for node in reversed(all_nodes):
         print('> Node: ' + node.name)
         print('> Children: ' + str(get_list_children_names(children, node)))
-        # print('> Parents: ' + str(get_list_parents_names(parents, node)))
+        print('> Parent: ' + str(get_list_parents_names(parents, node)))
+
+        # If node is a predicate and one of the parents is an action,
+        ## then remove the other parents
+        has_action_parent = False
+        if len(node.name.split('%')) > 1:
+            for parent in parents[node]:
+                if len(parent.name.split('$')) > 1:
+                    action_parent = parent
+                    has_action_parent = True
+                    break
+        if has_action_parent:
+            for parent in parents[node]:
+                if len(parent.name.split('%')) > 1:
+                    children[parent].remove(node)
+            parents[node] = {action_parent}
+
         if not children[node]:
             print('+++ Inside')
             # If node is in last layer and is part of goal, then ignore
             split_name = node.name.split('%')
             node_name = split_name[0]
             index = int(split_name[1])
-            previous_node = get_node(all_nodes, name+str(index-1))
             if int(index) == len(plan):
                 if node_name in goal:
                     continue
