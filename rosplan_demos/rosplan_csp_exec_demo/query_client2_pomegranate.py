@@ -17,8 +17,10 @@ import collections
 
 plan = list()
 goal = list()
+initial_state = list()
 receivedPlan = False
 receivedGoal = False
+receivedInitialState = False
 
 
 class Action:
@@ -907,6 +909,8 @@ def check_for_repeated_nodes(all_nodes):
 def handle_request(original_plan):
     rospy.loginfo('** Received request **')
     create_grounded_actions(original_plan)
+    cpd_initial_true = DiscreteDistribution({'T': 1, 'F': 0})
+    cpd_initial_false = DiscreteDistribution({'T': 0, 'F': 1})
     cpd = DiscreteDistribution({'T': 1, 'F': 0})
     model = BayesianNetwork()
 
@@ -934,6 +938,10 @@ def handle_request(original_plan):
     
     # Add first layer of predicates
     for predicate in predicates_set:
+        if predicate in initial_state:
+            cpd = cpd_initial_true
+        else:
+            cpd = cpd_initial_false
         node = Node(cpd, name=predicate + '%0')
         all_nodes.append(node)
         children[node] = set()
@@ -978,7 +986,7 @@ def handle_request(original_plan):
     return 1.0
 
 
-### Just for testing ###
+''' Just for testing '''
 def get_one_plan(data):
     global receivedPlan
     global plan
@@ -995,13 +1003,30 @@ def get_one_plan(data):
         receivedPlan = True
 
 
-def goal_method(data):
+def get_goal(data):
     global receivedGoal
     global goal
     for goal_condition in str(data).split(':goal')[1].split('(')[2:]:
         condition_name = goal_condition.split(')')[0]
         goal.append(condition_name.replace(' ', '#'))
     receivedGoal = True
+
+
+def get_initial_state(data):
+    global receivedInitialState
+    global initial_state
+    init_list = str(data).split(':init')[1].split('(')[1:]
+    index = init_list.index(':goal ')
+    init_list = init_list[:index]
+    for item in init_list:
+        name = item.split(')')[0].replace('\n','').replace('\\','')
+        list_name = name.split(' ')
+        number = list_name.count('')
+        for i in range(number):
+            list_name.remove('')
+        initial_state.append('#'.join(list_name))
+    receivedInitialState = True
+
 
 def calculate_plan_probability_server():
     global receivedPlan
@@ -1017,23 +1042,28 @@ def calculate_plan_probability_server():
     print ("Parsing plan")
     domain_operators = rospy.ServiceProxy('/rosplan_knowledge_base/domain/operators', GetDomainOperatorService)
 
-    print('Obtaining goals')
-    rospy.Subscriber("/rosplan_problem_interface/problem_instance", String, goal_method)
+    print('Obtaining initial state')
+    rospy.Subscriber("/rosplan_problem_interface/problem_instance", String, get_initial_state)
+    while receivedInitialState is False:
+        continue
+    print(initial_state)
+
+    print('Obtaining goal')
+    rospy.Subscriber("/rosplan_problem_interface/problem_instance", String, get_goal)
     while receivedGoal is False:
         continue
-
-    print('\n>>> Goal:\n' + str(goal) + '\n')
-
-    print('Creating actions')
-    operators = domain_operators().operators
-    create_actions(operators)
+    print(goal)
 
     # Gets a totally-ordered plan from service
     print('Obtaining plan')
     rospy.Subscriber("/csp_exec_generator/valid_plans", EsterelPlanArray, get_one_plan)
     while receivedPlan is False:
         continue
-    print('\n>>> Plan:\n' + str(plan) + '\n')
+    print(plan)
+
+    print('Creating actions')
+    operators = domain_operators().operators
+    create_actions(operators)
 
     return handle_request(plan)
     #########################################

@@ -1,17 +1,17 @@
 ACTIONS WITH CHILDREN AND PARENTS:
 >>> ACTION: navigate_start#mbot#wp1#wp2#door1#door2$1
 > Parents:
-connected#wp1#wp2%0
 robot_at#mbot#wp1%0
+connected#wp1#wp2%0
 > Children:
 navigate_end#mbot#wp1#wp2#door1#door2$2
 ----------------------------
 >>> ACTION: navigate_end#mbot#wp1#wp2#door1#door2$2
 > Parents:
-navigate_start#mbot#wp1#wp2#door1#door2$1
 door_at#door1#wp1%1
 door_is_open#door1%1
 door_at#door2#wp2%1
+navigate_start#mbot#wp1#wp2#door1#door2$1
 > Children:
 robot_at#mbot#wp2%2
 ----------------------------
@@ -38,9 +38,9 @@ navigate_end#mbot#wp2#wp3#door2#door3$6
 >>> ACTION: navigate_end#mbot#wp2#wp3#door2#door3$6
 > Parents:
 door_at#door3#wp3%5
-door_is_open#door2%5
 door_at#door2#wp2%5
 navigate_start#mbot#wp2#wp3#door2#door3$5
+door_is_open#door2%5
 > Children:
 robot_at#mbot#wp3%6
 ----------------------------
