@@ -651,6 +651,15 @@ def write_actions_to_file(actions_par_child):
     file.close()
 
 
+def write_nodes_and_cpds_to_file(all_nodes, cpds_map):
+    file = open('nodes_cpds.txt', 'w')
+    file.write('NODES AND CPDs:\n')
+    for node in all_nodes:
+        file.write('>>> Node: ' + node + '\n')
+        file.write(str(cpds_map[node]) + '\n')
+    file.close()
+
+
 def check_nodes_without_parents(parents):
     without_parents = False
     for node in parents.keys():
@@ -845,63 +854,82 @@ def add_action_edges(action, action_name, predicates_par_child, actions_par_chil
         connect_action_to_over_all_predicates(action, action_name, start_index, end_index, actions_par_child, predicates_par_child)
 
 
-def get_list_children_names(children, node):
-    children_list = list()
-    for child in children[node]:
-        children_list.append(child.name)
-    return children_list
+def remove_node(node, all_nodes, actions_par_child, predicates_par_child, isPredicate):    
+    if isPredicate:
+        predicates_par_child.pop(node)
+    else:
+        actions_par_child.pop(node)
+
+    all_nodes.remove(node)
+    cpds_map.pop(node)
+
+    for pred in predicates_par_child.keys():
+        if node in predicates_par_child[pred]['parents']:
+            predicates_par_child[pred]['parents'].remove(node)
+        if node in predicates_par_child[pred]['children']:
+            predicates_par_child[pred]['children'].remove(node)
+
+    for action in actions_par_child.keys():
+            if node in actions_par_child[action]['parents']:
+                actions_par_child[action]['parents'].remove(node)
+            if node in actions_par_child[action]['children']:
+                actions_par_child[action]['children'].remove(node)
 
 
-def get_list_parents_names(parents, node):
-    parents_list = list()
-    for parent in parents[node]:
-        parents_list.append(parent.name)
-    return parents_list
-
-
-def prune_network(all_nodes, children, parents, actions_par_child, model, plan_size):
+def prune_network(all_nodes, actions_par_child, predicates_par_child):
     for node in reversed(all_nodes):
-        # print('> Node: ' + node.name)
-        # print('> Children: ' + str(get_list_children_names(children, node)))
-        # print('> Parent: ' + str(get_list_parents_names(parents, node)))
+        isPredicate = False
+        if len(node.split('%')) > 1:
+            isPredicate = True
 
-        # If node is a predicate and one of the parents is an action,
-        ## then remove the other parents
-        has_action_parent = False
-        if len(node.name.split('%')) > 1:
-            for parent in parents[node]:
-                if len(parent.name.split('$')) > 1:
-                    action_parent = parent
-                    has_action_parent = True
-                    break
-        if has_action_parent:
-            for parent in parents[node]:
-                if len(parent.name.split('%')) > 1:
-                    children[parent].remove(node)
-            parents[node] = {action_parent}
-
-        if not children[node]:
-            # print('+++ Inside')
-            # If node is in last layer and is part of goal, then ignore
-            split_name = node.name.split('%')
-            node_name = split_name[0]
-            index = int(split_name[1])
-            if int(index) == plan_size:
-                if node_name in goal:
-                    continue
-            for parent in parents[node]:
-                children[parent].remove(node)
-            del parents[node]
-            del children[node]
-            all_nodes.remove(node)
-            if node in actions_par_child.keys():
-                del actions_par_child[node]
-            else:
-                for action in actions_par_child.keys():
-                    actions_par_child[action]['parents'].discard(node)
-                    actions_par_child[action]['children'].discard(node)
+        # print('>>> Node: ' + node)
+        # if isPredicate:
+        #     print('> Children: ' + str(predicates_par_child[node]['children']))
+        #     print('> Parents: ' + str(predicates_par_child[node]['parents']))
         # else:
-        #     print('--- Outside')
+        #     print('> Children: ' + str(actions_par_child[node]['children']))
+        #     print('> Parents: ' + str(actions_par_child[node]['parents']))
+
+        if isPredicate:
+            ##### Rule 1 #####
+            # If predicate does not have children and is not the goal, then remove it
+            if not node.split('%')[0] in goal:
+                if not predicates_par_child[node]['children']:
+                    remove_node(node, all_nodes, actions_par_child, predicates_par_child, isPredicate)
+                    continue
+            
+
+            for action_name in actions_par_child.keys():
+
+                ##### Rule 2 #####
+                # If predicate is precondition of action_name then change its CPD to true
+                if node in actions_par_child[action_name]['parents']:
+                    cpds_map[node] = DiscreteDistribution({'T': 1, 'F': 0})
+                
+                ##### Rule 3 #####
+                # If predicate is children of action_name, then remove edges from other parents
+                ## Replace CPD
+                if node in actions_par_child[action_name]['children']:
+                    removed_parents = set()
+                    for par in predicates_par_child[node]['parents']:
+                        # if parent is predicate, then remove edges
+                        if len(par.split('%')) > 1:
+                            removed_parents.add(par)
+                    # Had to remove it here and not inside the previous cycle because
+                    ## I can't change the size of a list while iterating over it
+                    for par in removed_parents:
+                        predicates_par_child[par]['children'].remove(node)
+                        predicates_par_child[node]['parents'].remove(par)
+                    
+                    action_name_no_time = remove_start_end_from_name(action_name).split('$')[0]
+                    effects_success = action_probabilities_map[action_name_no_time][1]
+                    action_cpd = cpds_map[action_name]
+                    # TODO: Check this table
+                    cpds_map[node] = ConditionalProbabilityTable(
+                                        [['T', 'T', effects_success],
+                                         ['T', 'F', 1-effects_success],
+                                         ['F', 'T', 0],
+                                         ['F', 'F', 0]], [action_cpd])
 
 
 def check_for_repeated_nodes(all_nodes):
@@ -950,7 +978,7 @@ def handle_request(original_plan):
         if predicate in initial_state:
             cpd = DiscreteDistribution({'T': 1, 'F': 0})
         else:
-            cpd = DiscreteDistribution({'T': 0, 'F': 0})
+            cpd = DiscreteDistribution({'T': 0, 'F': 1})
         all_nodes.append(pred_name)
         cpds_map[pred_name] = cpd
         predicates_par_child[pred_name] = dict()
@@ -975,8 +1003,8 @@ def handle_request(original_plan):
         
         layer_number = layer_number + 1
 
-    # print_nodes_list(all_nodes, '>>> All nodes: ')
-    # prune_network(all_nodes, children, parents, actions_par_child, model, len(plan))
+    print('>>> All nodes: \n' + str(all_nodes))
+    prune_network(all_nodes, actions_par_child, predicates_par_child)
 
     # model.bake()
     # model.plot()
@@ -999,6 +1027,8 @@ def handle_request(original_plan):
     write_parents_to_file(predicates_par_child)
     print('Writing actions_par_child to file')
     write_actions_to_file(actions_par_child)
+    print('Writing nodes and CPDs to file')
+    write_nodes_and_cpds_to_file(all_nodes, cpds_map)
     
     return 1.0
 
