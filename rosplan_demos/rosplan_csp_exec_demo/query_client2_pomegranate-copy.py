@@ -904,7 +904,7 @@ class Graph(object): ## CLASS TO GENERATE The Dynamic bayes network and to find 
                 layer_number = layer_number + 1
 
                 ## Commented this line so the code runs faster
-                # plan_info['model'].bake()
+                plan_info['model'].bake()
 
         print('Writing predicates to file')
         write_predicates_to_file(self.plans_info)
