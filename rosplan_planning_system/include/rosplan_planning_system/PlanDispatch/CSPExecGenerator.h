@@ -141,7 +141,7 @@ class CSPExecGenerator
          * the ordered list (which is used also as stack for the DFS search with backtrack)
          * @return true if at least one valid execution was found, false otherwise
          */
-        bool orderNodes(std::vector<int> open_list);
+        bool orderNodes(std::vector<int> open_list, int &number_expanded_nodes);
 
         /**
          * @brief generate plan alternatives based on search
