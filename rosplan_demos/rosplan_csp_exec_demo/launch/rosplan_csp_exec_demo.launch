@@ -5,15 +5,15 @@
 
     <!-- set pddl domain, problem and category -->
     <!-- iros_problems_free, iros_problems_deadlines, skip_door -->
-    <!--
+    
     <arg name="category" default="skip_door" />
     <arg name="domain" default="domain_skip_door" />
     <arg name="problem" default="problem_01" />
-    -->
+    <!--
     <arg name="domain" default="domain_robot_delivery" />
     <arg name="problem" default="problem_w4_m3_g2" />
     <arg name="category" default="iros_problems_free" />
-    
+    -->
     <!-- select between normal or smart plan dispatcher -->
     <arg name="adaptable_plan_dispatcher_required" default="true" />
 

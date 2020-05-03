@@ -956,6 +956,7 @@ def handle_request(original_plan):
     rospy.loginfo('** Received request **')
     create_grounded_actions()
 
+    model = BayesianNetwork()
     plan = list()
     # Get plan as a list of ActionStart and ActionEnd's instances
     convert_plan_to_actionStart_End(plan)
@@ -1006,7 +1007,7 @@ def handle_request(original_plan):
     print('>>> All nodes: \n' + str(all_nodes))
     prune_network(all_nodes, actions_par_child, predicates_par_child)
 
-    # model.bake()
+    model.bake()
     # model.plot()
     # plt.show()
 
@@ -1055,7 +1056,18 @@ def get_goal(data):
     global goal
     for goal_condition in str(data).split(':goal')[1].split('(')[2:]:
         condition_name = goal_condition.split(')')[0]
-        goal.append(condition_name.replace(' ', '#'))
+        condition_name = condition_name.replace('\n', '')
+        condition_name = condition_name.replace('\\','')
+        condition_name = condition_name.split(' ')
+        number_spaces = 0
+        for item in condition_name:
+            if item == '':
+                number_spaces = number_spaces + 1
+        for i in range(number_spaces):
+            condition_name.remove('')
+        condition_name = '#'.join(condition_name)
+        condition_name = condition_name.replace(' ', '#')
+        goal.append(condition_name)
     receivedGoal = True
 
 
@@ -1072,6 +1084,12 @@ def get_initial_state(data):
         for i in range(number):
             list_name.remove('')
         initial_state.append('#'.join(list_name))
+    try:
+        index_equal = initial_state.index('=')
+        initial_state = initial_state[:index_equal]
+    except:
+        print('  No \'=\' in initial state')
+
     receivedInitialState = True
 
 
