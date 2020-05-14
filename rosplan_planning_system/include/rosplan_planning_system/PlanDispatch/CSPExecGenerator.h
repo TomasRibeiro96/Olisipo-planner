@@ -144,6 +144,21 @@ class CSPExecGenerator
         bool orderNodes(std::vector<int> open_list, int &number_expanded_nodes, double plan_prob);
 
         /**
+         * @brief backtrack: popf, remove last element from f, store in variable and revert that action
+         * @param reason_for_reverse used for log information and feedback to user
+         */
+        void reverseLastAction(std::string reason_for_reverse);
+
+        /**
+         * @brief shift nodes from open list (O) to ordered plans (R) offering different execution alternatives
+         * @param open_list the list of nodes which have not yet being ordered, at startup is composed of all nodes
+         * in the partially ordered plan, later the game is take from it the applicable nodes and pass them to
+         * the ordered list (which is used also as stack for the B&B backtracking search)
+         * @return true if at least one valid execution was found, false otherwise
+         */
+        bool backtrackOrderNodes(std::vector<int> open_list, int &number_expanded_nodes, double plan_prob);
+
+        /**
          * @brief generate plan alternatives based on search
          * @return true if succeeded
          */
@@ -197,7 +212,7 @@ class CSPExecGenerator
         ros::Publisher pub_valid_plans_, pub_esterel_plan_;
         ros::Subscriber sub_esterel_plan_;
         ros::ServiceServer srv_gen_alternatives_;
-        ros::ServiceClient calculate_prob_client;
+        ros::ServiceClient calculate_prob_client_;
 
         /// flag used to know when we have received a callback
         bool is_esterel_plan_received_;
