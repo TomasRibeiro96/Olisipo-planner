@@ -13,7 +13,6 @@ door_at#door2#wp2%1
 navigate_start#mbot#wp1#wp2#door1#door2$1
 door_at#door1#wp1%1
 > Children:
-robot_at#mbot#wp2%2
 ----------------------------
 >>> ACTION: open_door_start#mbot#wp2#door2$3
 > Parents:
@@ -26,7 +25,6 @@ open_door_end#mbot#wp2#door2$4
 door_at#door2#wp2%3
 open_door_start#mbot#wp2#door2$3
 > Children:
-door_is_open#door2%4
 ----------------------------
 >>> ACTION: navigate_start#mbot#wp2#wp3#door2#door3$5
 > Parents:

@@ -14,18 +14,14 @@ from numpy import *
 from pomegranate import *
 import collections
 
-
-goal = list()
 original_plan = list()
-initial_state = list()
 pred_probabilities_map = dict()
 action_probabilities_map = dict()
 cpds_map = dict()
 receivedPlan = False
-receivedGoal = False
-receivedInitialState = False
-only_one_plan = False
+only_one_plan = True
 returned_times = 1
+
 
 
 class Action:
@@ -571,8 +567,9 @@ class ActionEnd:
 
 
 
-''' Removes time from action name, works with or without parameters in name '''
+######### SIMPLIFY NAMES #########
 def remove_start_end_from_name(name):
+    ''' Removes time from action name, works with or without parameters in name '''
     name1 = name.split('#')
     name2 = name1[0].split('_')
     del name2[-1]
@@ -588,23 +585,26 @@ def remove_start_end_params_from_name(name):
     return name1.split('#')[0]
 
 
-''' Creates action instances for all actions in domain file '''
-def create_actions(operators):
-    for i in range(len(operators)):
-        action_name = operators[i].name
-        Action(action_name)
+#########    PRINTS     #########
+def print_nodes_list(nodes_list, msg):
+    names_list = list()
+    for node in nodes_list:
+        names_list.append(node.name)
+    print(msg + str(names_list))
 
 
-def create_grounded_actions():
-    for action_name in original_plan:
-        name = remove_start_end_params_from_name(action_name)
-        if not Action.getAction(name):
-            action = Action(name)
-        else:
-            action = Action.getAction(name)
-        GroundedAction(action, action_name.split('#')[1:])
+def print_plan(plan, action_times):
+    print('>>> PRINTING PLAN')
+    for i in action_times:
+        print('> Time: ' + str(i))
+        for action in ActionStart.getActionsWithTime(i):
+            print(action.name)
+        for action in ActionEnd.getActionsWithTime(i):
+            print(action.name)
+    print('---------------------------------')
 
 
+######### WRITE TO FILE #########
 def write_predicates_to_file(all_nodes):
     file = open('predicate_layers.txt', 'w')
     file.write('PREDICATE LAYERS:\n')
@@ -662,6 +662,7 @@ def write_nodes_and_cpds_to_file(all_nodes, cpds_map):
     file.close()
 
 
+######### NODE CHECKING #########
 def check_nodes_without_parents(parents):
     without_parents = False
     for node in parents.keys():
@@ -693,11 +694,30 @@ def check_nodes_without_children(children, plan):
         print('  No nodes without children')
 
 
-def print_nodes_list(nodes_list, msg):
-    names_list = list()
-    for node in nodes_list:
-        names_list.append(node.name)
-    print(msg + str(names_list))
+def check_for_repeated_nodes(all_nodes):
+    copy_set = set(all_nodes)
+    if len(all_nodes) == len(copy_set):
+        print('  No repeated nodes')
+    else:
+        print('!!! REPEATED NODES !!!')
+
+
+######### CREATE ACTIONS #########
+def create_actions(operators):
+    ''' Creates action instances for all actions in domain file '''
+    for i in range(len(operators)):
+        action_name = operators[i].name
+        Action(action_name)
+
+
+def create_grounded_actions():
+    for action_name in original_plan:
+        name = remove_start_end_params_from_name(action_name)
+        if not Action.getAction(name):
+            action = Action(name)
+        else:
+            action = Action.getAction(name)
+        GroundedAction(action, action_name.split('#')[1:])
 
 
 def cycles_recurse(children, nodes_list, node):
@@ -730,22 +750,7 @@ def check_cycles(all_nodes, children):
     return True
 
 
-def waiting_for_services(operator_service, operator_details_service):
-    rospy.wait_for_service(operator_service)
-    rospy.wait_for_service(operator_details_service)
-
-
-def print_plan(plan, action_times):
-    print('>>> PRINTING PLAN')
-    for i in action_times:
-        print('> Time: ' + str(i))
-        for action in ActionStart.getActionsWithTime(i):
-            print(action.name)
-        for action in ActionEnd.getActionsWithTime(i):
-            print(action.name)
-    print('---------------------------------')
-
-
+######### ADD PREDICATES #########
 def add_predicate(predicate, predicates_par_child, all_nodes, layer_number):
     prev_pred_name = predicate + '%' + str(layer_number-1)
     parent_cpd = cpds_map[prev_pred_name]
@@ -774,11 +779,21 @@ def add_predicate_layer(predicates_set, layer_number, predicates_par_child, all_
             add_predicate(predicate, predicates_par_child, all_nodes, layer_number)
 
 
-def add_action_to_model(action_node, model, all_nodes):
-    model.add_node(action_node)
-    all_nodes.append(action_node)
+def add_first_layer_predicates(predicates_set, all_nodes, predicates_par_child, initial_state):
+    for predicate in predicates_set:
+        pred_name = predicate + '%0'
+        if predicate in initial_state:
+            cpd = DiscreteDistribution({'T': 1, 'F': 0})
+        else:
+            cpd = DiscreteDistribution({'T': 0, 'F': 1})
+        all_nodes.append(pred_name)
+        cpds_map[pred_name] = cpd
+        predicates_par_child[pred_name] = dict()
+        predicates_par_child[pred_name]['parents'] = set()
+        predicates_par_child[pred_name]['children'] = set()
 
 
+######### CONNECT PREDICATES #########
 def connect_action_to_condition_predicates(action, action_name, predicates_par_child, actions_par_child, layer_number):
     for predicate in action.getConditionPredicates():
         pred_name = predicate + '%' + str(layer_number-1)
@@ -858,6 +873,7 @@ def add_action_edges(action, action_name, predicates_par_child, actions_par_chil
         connect_action_to_over_all_predicates(action, action_name, start_index, end_index, actions_par_child, predicates_par_child)
 
 
+######### REMOVE NODES #########
 def remove_node(node, all_nodes, actions_par_child, predicates_par_child, isPredicate):    
     if isPredicate:
         predicates_par_child.pop(node)
@@ -880,7 +896,8 @@ def remove_node(node, all_nodes, actions_par_child, predicates_par_child, isPred
                 actions_par_child[action]['children'].remove(node)
 
 
-def prune_network(all_nodes, actions_par_child, predicates_par_child):
+######### PRUNE NETWORK #########
+def prune_network(all_nodes, actions_par_child, predicates_par_child, goal):
     for node in reversed(all_nodes):
         isPredicate = False
         if len(node.split('%')) > 1:
@@ -908,6 +925,13 @@ def prune_network(all_nodes, actions_par_child, predicates_par_child):
                 # If predicate is precondition of action_name then change its CPD to true
                 if node in actions_par_child[action_name]['parents']:
                     cpds_map[node] = DiscreteDistribution({'T': 1, 'F': 0})
+                    # remove edges to parents
+                    for parent in predicates_par_child[node]['parents']:
+                        if len(parent.split('%')) > 1:
+                            predicates_par_child[parent]['children'].remove(node)
+                        else:
+                            actions_par_child[parent]['children'].remove(node)
+                    predicates_par_child[node]['parents'] = set()
                 
                 ##### Rule 3 #####
                 # If predicate is children of action_name, then remove edges from other parents
@@ -936,26 +960,7 @@ def prune_network(all_nodes, actions_par_child, predicates_par_child):
                                          ['F', 'F', 0]], [action_cpd])
 
 
-def check_for_repeated_nodes(all_nodes):
-    copy_set = set(all_nodes)
-    if len(all_nodes) == len(copy_set):
-        print('  No repeated nodes')
-    else:
-        print('!!! REPEATED NODES !!!')
-
-
-def convert_plan_to_actionStart_End(plan):
-    for action_name in original_plan:
-        name = remove_start_end_from_name(action_name)
-        grounded_action = GroundedAction.getGroundedAction(name)
-        if action_name.split('#')[0][-5:] == 'start':
-            action_start = ActionStart(grounded_action)
-            plan.append(action_start)
-        elif action_name.split('#')[0][-3:] == 'end':
-            action_end = ActionEnd(grounded_action)
-            plan.append(action_end)
-
-
+######### BUILD NETWORK IN MODEL #########
 def build_network(model, all_nodes, actions_par_child, predicates_par_child):
     nodes_dict = dict()
     for node_name in all_nodes:        
@@ -974,15 +979,30 @@ def build_network(model, all_nodes, actions_par_child, predicates_par_child):
             model.add_edge(parent_node, node)
 
 
-def handle_request(original_plan):
+######### PARSE PLAN #########
+def convert_plan_to_actionStart_End():
+    plan = list()
+    for action_name in original_plan:
+        name = remove_start_end_from_name(action_name)
+        grounded_action = GroundedAction.getGroundedAction(name)
+        if action_name.split('#')[0][-5:] == 'start':
+            action_start = ActionStart(grounded_action)
+            plan.append(action_start)
+        elif action_name.split('#')[0][-3:] == 'end':
+            action_end = ActionEnd(grounded_action)
+            plan.append(action_end)
+    return plan
+
+
+######### MAIN FUNCTION #########
+## Builds, prunes and writes network to file
+def handle_request(original_plan, initial_state, goal):
     global returned_times
     if only_one_plan:
-        rospy.loginfo('** Received request **')
         create_grounded_actions()
 
-        plan = list()
         # Get plan as a list of ActionStart and ActionEnd's instances
-        convert_plan_to_actionStart_End(plan)
+        plan = convert_plan_to_actionStart_End()
 
         predicates_set = set()
         all_nodes = list()
@@ -996,18 +1016,7 @@ def handle_request(original_plan):
             # Adds the predicates in the set grounded_action.getPredicates() to predicates_set
             predicates_set |= grounded_action.getPredicates()
 
-        # Add first layer of predicates
-        for predicate in predicates_set:
-            pred_name = predicate + '%0'
-            if predicate in initial_state:
-                cpd = DiscreteDistribution({'T': 1, 'F': 0})
-            else:
-                cpd = DiscreteDistribution({'T': 0, 'F': 1})
-            all_nodes.append(pred_name)
-            cpds_map[pred_name] = cpd
-            predicates_par_child[pred_name] = dict()
-            predicates_par_child[pred_name]['parents'] = set()
-            predicates_par_child[pred_name]['children'] = set()
+        add_first_layer_predicates(predicates_set, all_nodes, predicates_par_child, initial_state)
 
         layer_number = 1
         # Cycle which creates the entire Bayes Network until the end
@@ -1028,11 +1037,11 @@ def handle_request(original_plan):
             layer_number = layer_number + 1
 
         # print('>>> All nodes: \n' + str(all_nodes))
-        prune_network(all_nodes, actions_par_child, predicates_par_child)
+        prune_network(all_nodes, actions_par_child, predicates_par_child, goal)
 
         model = BayesianNetwork()
         build_network(model, all_nodes, actions_par_child, predicates_par_child)
-        # model.bake()
+        model.bake()
         # model.plot()
         # plt.show()
 
@@ -1067,6 +1076,7 @@ def handle_request(original_plan):
     return 1.0
 
 
+######### GET STUFF #########
 def get_one_plan(data):
     global receivedPlan
     global original_plan
@@ -1081,48 +1091,6 @@ def get_one_plan(data):
             original_plan.append(name)
         
         receivedPlan = True
-
-
-def get_goal(data):
-    global receivedGoal
-    global goal
-    for goal_condition in str(data).split(':goal')[1].split('(')[2:]:
-        condition_name = goal_condition.split(')')[0]
-        condition_name = condition_name.replace('\n', '')
-        condition_name = condition_name.replace('\\','')
-        condition_name = condition_name.split(' ')
-        number_spaces = 0
-        for item in condition_name:
-            if item == '':
-                number_spaces = number_spaces + 1
-        for i in range(number_spaces):
-            condition_name.remove('')
-        condition_name = '#'.join(condition_name)
-        condition_name = condition_name.replace(' ', '#')
-        goal.append(condition_name)
-    receivedGoal = True
-
-
-def get_initial_state(data):
-    global receivedInitialState
-    global initial_state
-    init_list = str(data).split(':init')[1].split('(')[1:]
-    index = init_list.index(':goal ')
-    init_list = init_list[:index]
-    for item in init_list:
-        name = item.split(')')[0].replace('\n','').replace('\\','')
-        list_name = name.split(' ')
-        number = list_name.count('')
-        for i in range(number):
-            list_name.remove('')
-        initial_state.append('#'.join(list_name))
-    try:
-        index_equal = initial_state.index('=')
-        initial_state = initial_state[:index_equal]
-    except:
-        print('  No \'=\' in initial state')
-
-    receivedInitialState = True
 
 
 def get_probabilities():
@@ -1154,6 +1122,17 @@ def get_probabilities():
     file.close()
 
 
+def get_elements_from_state_list(elements_list):
+    elements_set = set()
+    for element in elements_list:
+        element_name = element.attribute_name
+        for value in element.values:
+            element_name = element_name + '#' + value.value
+        elements_set.add(element_name)
+    return elements_set
+
+
+######### SERVER INITIALISATION #########
 def calculate_plan_probability_server():
     rospy.init_node('bayesian_network_calculator')
     s = rospy.Service('calculate_plan_probability', CalculateProbability, handle_request)
@@ -1166,25 +1145,15 @@ def calculate_plan_probability_server():
         print ("Obtaining operators")
         domain_operators = rospy.ServiceProxy('/rosplan_knowledge_base/domain/operators', GetDomainOperatorService)
 
-        print('Obtaining initial state')
-        rospy.Subscriber('/rosplan_problem_interface/problem_instance', String, get_initial_state)
-        while receivedInitialState is False:
-            continue
-        print(initial_state)
-
         print('Obtaining goal')
-        rospy.Subscriber('/rosplan_problem_interface/problem_instance', String, get_goal)
-        while receivedGoal is False:
-            continue
+        goals_list = rospy.ServiceProxy("/rosplan_knowledge_base/state/goals", GetAttributeService)().attributes
+        goal = get_elements_from_state_list(goals_list)
         print(goal)
 
-        # TODO: Replace obtaining goal and initial state by this
-        # print('---------- Test ---------------')
-        # goal2 = rospy.ServiceProxy("/rosplan_knowledge_base/state/goals", GetAttributeService)
-        # print(goal2())
-        # init2 = rospy.ServiceProxy('/rosplan_knowledge_base/state/propositions', GetAttributeService)
-        # print(init2())
-        # print('---------- End ----------------')
+        print('Obtaining initial state')
+        initial_state_list = rospy.ServiceProxy('/rosplan_knowledge_base/state/propositions', GetAttributeService)().attributes
+        initial_state = get_elements_from_state_list(initial_state_list)
+        print(initial_state)
 
         # Gets a totally-ordered plan from service
         print('Obtaining plan')
@@ -1195,21 +1164,18 @@ def calculate_plan_probability_server():
 
         print('Obtaining probabilities')
         get_probabilities()
-        print('> Predicates: ' + str(pred_probabilities_map))
-        print('> Actions: ' + str(action_probabilities_map))
+        print('   Predicates: ' + str(pred_probabilities_map))
+        print('   Actions: ' + str(action_probabilities_map))
 
         print('Creating actions')
         operators = domain_operators().operators
         create_actions(operators)
 
         print('Handling request')
-        return handle_request(original_plan)
+        return handle_request(original_plan, initial_state, goal)
 
     rospy.spin()
 
 
 if __name__ == "__main__":
-    if only_one_plan:
-        print(calculate_plan_probability_server())
-    else:
-        calculate_plan_probability_server()
+    calculate_plan_probability_server()

@@ -1,43 +1,4 @@
 NODES AND CPDs:
->>> Node: door_is_open#door1%0
-{
-    "frozen" :false,
-    "dtype" :"str",
-    "class" :"Distribution",
-    "parameters" :[
-        {
-            "T" :1,
-            "F" :0
-        }
-    ],
-    "name" :"DiscreteDistribution"
-}
->>> Node: door_at#door3#wp3%0
-{
-    "frozen" :false,
-    "dtype" :"str",
-    "class" :"Distribution",
-    "parameters" :[
-        {
-            "T" :1,
-            "F" :0
-        }
-    ],
-    "name" :"DiscreteDistribution"
-}
->>> Node: door_at#door1#wp1%0
-{
-    "frozen" :false,
-    "dtype" :"str",
-    "class" :"Distribution",
-    "parameters" :[
-        {
-            "T" :1,
-            "F" :0
-        }
-    ],
-    "name" :"DiscreteDistribution"
-}
 >>> Node: connected#wp1#wp2%0
 {
     "frozen" :false,
@@ -77,32 +38,6 @@ NODES AND CPDs:
     ],
     "name" :"DiscreteDistribution"
 }
->>> Node: connected#wp2#wp3%0
-{
-    "frozen" :false,
-    "dtype" :"str",
-    "class" :"Distribution",
-    "parameters" :[
-        {
-            "T" :1,
-            "F" :0
-        }
-    ],
-    "name" :"DiscreteDistribution"
-}
->>> Node: door_at#door2#wp2%0
-{
-    "frozen" :false,
-    "dtype" :"str",
-    "class" :"Distribution",
-    "parameters" :[
-        {
-            "T" :1,
-            "F" :0
-        }
-    ],
-    "name" :"DiscreteDistribution"
-}
 >>> Node: navigate_start#mbot#wp1#wp2#door1#door2$1
 {
     "frozen" :false,
@@ -129,11 +64,6 @@ NODES AND CPDs:
     ],
     "name" :"DiscreteDistribution"
 }
->>> Node: door_at#door3#wp3%1
-T	T	0.93
-T	F	0.07
-F	T	0.05
-F	F	0.95
 >>> Node: door_at#door1#wp1%1
 {
     "frozen" :false,
@@ -148,11 +78,6 @@ F	F	0.95
     "name" :"DiscreteDistribution"
 }
 >>> Node: robot_at#mbot#wp3%1
-T	T	0.93
-T	F	0.07
-F	T	0.05
-F	F	0.95
->>> Node: connected#wp2#wp3%1
 T	T	0.93
 T	F	0.07
 F	T	0.05
@@ -196,22 +121,7 @@ F	F	0.95
     ],
     "name" :"DiscreteDistribution"
 }
->>> Node: door_at#door3#wp3%2
-T	T	0.93
-T	F	0.07
-F	T	0.05
-F	F	0.95
 >>> Node: robot_at#mbot#wp3%2
-T	T	0.93
-T	F	0.07
-F	T	0.05
-F	F	0.95
->>> Node: connected#wp2#wp3%2
-T	T	0.93
-T	F	0.07
-F	T	0.05
-F	F	0.95
->>> Node: door_at#door2#wp2%2
 T	T	0.93
 T	F	0.07
 F	T	0.05
@@ -229,22 +139,7 @@ F	F	0.95
     ],
     "name" :"DiscreteDistribution"
 }
->>> Node: door_at#door3#wp3%3
-T	T	0.93
-T	F	0.07
-F	T	0.05
-F	F	0.95
->>> Node: robot_at#mbot#wp2%3
-T	T	0.93
-T	F	0.07
-F	T	0.05
-F	F	0.95
 >>> Node: robot_at#mbot#wp3%3
-T	T	0.93
-T	F	0.07
-F	T	0.05
-F	F	0.95
->>> Node: connected#wp2#wp3%3
 T	T	0.93
 T	F	0.07
 F	T	0.05
@@ -275,16 +170,6 @@ F	F	0.95
     ],
     "name" :"DiscreteDistribution"
 }
->>> Node: door_is_open#door2%4
-T	T	0.9
-T	F	0.1
-F	T	0.0
-F	F	0.0
->>> Node: door_at#door3#wp3%4
-T	T	0.93
-T	F	0.07
-F	T	0.05
-F	F	0.95
 >>> Node: robot_at#mbot#wp2%4
 {
     "frozen" :false,
@@ -316,11 +201,6 @@ F	F	0.95
     ],
     "name" :"DiscreteDistribution"
 }
->>> Node: door_at#door2#wp2%4
-T	T	0.93
-T	F	0.07
-F	T	0.05
-F	F	0.95
 >>> Node: navigate_start#mbot#wp2#wp3#door2#door3$5
 {
     "frozen" :false,
