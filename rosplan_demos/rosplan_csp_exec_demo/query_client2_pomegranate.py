@@ -1070,11 +1070,27 @@ def handle_request(original_plan, initial_state, goal):
         print('Writing nodes and CPDs to file')
         write_nodes_and_cpds_to_file(all_nodes, cpds_map)
 
-        print('\n>>>>>>> PREDICT PROBABILITY ALL: <<<<<<<')
-        print(model.predict_proba({}))
         print('\n\n>>>>>>> PREDICT PROBABILITY GOAL: <<<<<<<')
         size = len(plan)
-        print(model.predict_proba([{'robot_at#mbot#wp3%'+str(size):'T'}]))
+        distr_dict = dict()
+        for item in all_nodes:
+            # If item is part of initial state then set it to true, else false
+            if len(item.split('%')) > 1:
+                if item.split('%')[1] == '0':
+                    if item.split('%')[0] in initial_state:
+                        distr_dict[item] = 'T'
+                    else:
+                        distr_dict[item] = 'F'
+        prob_distr = model.predict_proba([distr_dict])[0]
+        print(prob_distr)
+
+        goal_distr = dict()
+        for item in goal:
+            index = all_nodes.index(item + '%' + str(size))
+            goal_distr[all_nodes[index]] = prob_distr[index]
+        
+        print('\n\n>>> Goal distribution: ')
+        print(goal_distr)
 
     rospy.loginfo('Returned ' + str(returned_times))
     returned_times = returned_times + 1
