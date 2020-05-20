@@ -898,6 +898,11 @@ def remove_node(node, all_nodes, actions_par_child, predicates_par_child, isPred
 
 ######### PRUNE NETWORK #########
 def prune_network(all_nodes, actions_par_child, predicates_par_child, goal):
+    size = len(actions_par_child)
+    goal_with_time = set()
+    for item in goal:
+        goal_with_time.add(item + '%' + str(size))
+
     for node in reversed(all_nodes):
         isPredicate = False
         if len(node.split('%')) > 1:
@@ -914,7 +919,7 @@ def prune_network(all_nodes, actions_par_child, predicates_par_child, goal):
         if isPredicate:
             ##### Rule 1 #####
             # If predicate does not have children and is not the goal, then remove it
-            if not node.split('%')[0] in goal:
+            if not node in goal_with_time:
                 if not predicates_par_child[node]['children']:
                     remove_node(node, all_nodes, actions_par_child, predicates_par_child, isPredicate)
                     continue
@@ -1065,11 +1070,11 @@ def handle_request(original_plan, initial_state, goal):
         print('Writing nodes and CPDs to file')
         write_nodes_and_cpds_to_file(all_nodes, cpds_map)
 
-        # print('>>> Predict prob 1:')
-        # print(model.predict_proba({}))
-        # print('>>> Predict prob 1:')
-        # size = len(plan)
-        # print(model.predict_proba(['robot_at#mbot#wp3%'+str(size-1)]))
+        print('\n>>>>>>> PREDICT PROBABILITY ALL: <<<<<<<')
+        print(model.predict_proba({}))
+        print('\n\n>>>>>>> PREDICT PROBABILITY GOAL: <<<<<<<')
+        size = len(plan)
+        print(model.predict_proba([{'robot_at#mbot#wp3%'+str(size):'T'}]))
 
     rospy.loginfo('Returned ' + str(returned_times))
     returned_times = returned_times + 1

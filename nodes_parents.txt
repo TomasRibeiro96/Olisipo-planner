@@ -1,8 +1,6 @@
 NODES AND PARENTS:
 >>> Node: connected#wp1#wp2%0
 ----------------------------
->>> Node: robot_at#mbot#wp3%0
-----------------------------
 >>> Node: robot_at#mbot#wp1%0
 ----------------------------
 >>> Node: door_at#door1#wp1%1
@@ -11,23 +9,11 @@ NODES AND PARENTS:
 ----------------------------
 >>> Node: door_at#door2#wp2%1
 ----------------------------
->>> Node: robot_at#mbot#wp3%1
-robot_at#mbot#wp3%0
-----------------------------
 >>> Node: robot_at#mbot#wp2%2
-----------------------------
->>> Node: robot_at#mbot#wp3%2
-robot_at#mbot#wp3%1
 ----------------------------
 >>> Node: door_at#door2#wp2%3
 ----------------------------
->>> Node: robot_at#mbot#wp3%3
-robot_at#mbot#wp3%2
-----------------------------
 >>> Node: robot_at#mbot#wp2%4
-----------------------------
->>> Node: robot_at#mbot#wp3%4
-robot_at#mbot#wp3%3
 ----------------------------
 >>> Node: connected#wp2#wp3%4
 ----------------------------
@@ -36,9 +22,6 @@ robot_at#mbot#wp3%3
 >>> Node: door_is_open#door2%5
 ----------------------------
 >>> Node: door_at#door2#wp2%5
-----------------------------
->>> Node: robot_at#mbot#wp3%5
-robot_at#mbot#wp3%4
 ----------------------------
 >>> Node: robot_at#mbot#wp3%6
 navigate_end#mbot#wp2#wp3#door2#door3$6
