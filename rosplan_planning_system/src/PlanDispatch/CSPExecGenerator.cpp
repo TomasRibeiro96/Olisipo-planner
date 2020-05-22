@@ -494,7 +494,7 @@ bool CSPExecGenerator::orderNodes(std::vector<int> open_list, int &number_expand
         // action_simulator_.printInternalKBFacts();
 
         std::vector<int> open_list_copy = open_list;
-        branch_and_bound = false;
+        branch_and_bound = true;
 
         // remove a (action) and s (skipped nodes) from open list (O)
         open_list_copy.erase(std::remove(open_list_copy.begin(), open_list_copy.end(), *a), open_list_copy.end());

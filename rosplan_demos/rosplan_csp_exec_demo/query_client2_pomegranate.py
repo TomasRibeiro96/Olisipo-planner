@@ -1002,6 +1002,7 @@ def convert_plan_to_actionStart_End():
 ######### MAIN FUNCTION #########
 ## Builds, prunes and writes network to file
 def handle_request(list_actions):
+# def handle_request(original_plan, initial_state, goal):
     global returned_times
     if only_one_plan:
         create_grounded_actions()
