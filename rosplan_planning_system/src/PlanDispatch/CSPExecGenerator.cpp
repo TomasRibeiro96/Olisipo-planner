@@ -494,7 +494,7 @@ bool CSPExecGenerator::orderNodes(std::vector<int> open_list, int &number_expand
         // action_simulator_.printInternalKBFacts();
 
         std::vector<int> open_list_copy = open_list;
-        branch_and_bound = true;
+        branch_and_bound = false;
 
         // remove a (action) and s (skipped nodes) from open list (O)
         open_list_copy.erase(std::remove(open_list_copy.begin(), open_list_copy.end(), *a), open_list_copy.end());
@@ -863,6 +863,7 @@ bool CSPExecGenerator::generatePlans()
 
     // if true, it means at least one valid execution alternative was found
     int number_expanded_nodes = 0;
+    printNodesWithNames(open_list);
     orderNodes(open_list, number_expanded_nodes, 1.0);
     // ROS_INFO("#### Number of nodes expanded: %d ####", number_expanded_nodes);
     total_number_nodes_expanded += number_expanded_nodes;

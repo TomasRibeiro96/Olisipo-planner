@@ -19,7 +19,7 @@ pred_probabilities_map = dict()
 action_probabilities_map = dict()
 cpds_map = dict()
 receivedPlan = False
-only_one_plan = True
+only_one_plan = False
 returned_times = 1
 
 
@@ -1001,7 +1001,7 @@ def convert_plan_to_actionStart_End():
 
 ######### MAIN FUNCTION #########
 ## Builds, prunes and writes network to file
-def handle_request(original_plan, initial_state, goal):
+def handle_request(list_actions):
     global returned_times
     if only_one_plan:
         create_grounded_actions()
@@ -1070,7 +1070,6 @@ def handle_request(original_plan, initial_state, goal):
         print('Writing nodes and CPDs to file')
         write_nodes_and_cpds_to_file(all_nodes, cpds_map)
 
-        print('\n\n>>>>>>> PREDICT PROBABILITY GOAL: <<<<<<<')
         size = len(plan)
         distr_dict = dict()
         for item in all_nodes:
@@ -1082,7 +1081,6 @@ def handle_request(original_plan, initial_state, goal):
                     else:
                         distr_dict[item] = 'F'
         prob_distr = model.predict_proba([distr_dict])[0]
-        print(prob_distr)
 
         goal_distr = dict()
         for item in goal:
