@@ -19,7 +19,7 @@ pred_probabilities_map = dict()
 action_probabilities_map = dict()
 cpds_map = dict()
 receivedPlan = False
-only_one_plan = False
+testing = False
 returned_times = 1
 
 
@@ -1004,7 +1004,7 @@ def convert_plan_to_actionStart_End():
 def handle_request(list_actions):
 # def handle_request(original_plan, initial_state, goal):
     global returned_times
-    if only_one_plan:
+    if testing:
         create_grounded_actions()
 
         # Get plan as a list of ActionStart and ActionEnd's instances
@@ -1157,7 +1157,7 @@ def calculate_plan_probability_server():
     rospy.init_node('bayesian_network_calculator')
     s = rospy.Service('calculate_plan_probability', CalculateProbability, handle_request)
     rospy.loginfo('** Bayesian network ready to receive plan **')
-    if only_one_plan:
+    if testing:
         print ("Waiting for service")
         rospy.wait_for_service('/rosplan_knowledge_base/domain/operators')
         rospy.wait_for_service('/rosplan_knowledge_base/domain/operator_details')

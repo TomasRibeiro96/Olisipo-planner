@@ -31,7 +31,8 @@ CSPExecGenerator::CSPExecGenerator() : nh_("~"), is_esterel_plan_received_(false
     // with no conditional edges, but only interference edges)
     srv_gen_alternatives_ = nh_.advertiseService("gen_exec_alternatives", &CSPExecGenerator::srvCB, this);
 
-    calculate_prob_client_ = nh_.serviceClient<rosplan_dispatch_msgs::CalculateProbability>("calculate_plan_probability");
+    ros::NodeHandle nh;
+    calculate_prob_client_ = nh.serviceClient<rosplan_dispatch_msgs::CalculateProbability>("calculate_plan_probability");
     
     // mirror KB (query real KB and get its data) but without facts and goals
     action_simulator_.init();
@@ -518,10 +519,10 @@ bool CSPExecGenerator::orderNodes(std::vector<int> open_list, int &number_expand
             double plan_success_probability;
             if(calculate_prob_client_.call(srv)){
                 plan_success_probability = srv.response.plan_success_probability;
-                ROS_INFO("||| Received response: %f |||", plan_success_probability);
+                // ROS_INFO("||| Received response: %f |||", plan_success_probability);
             }
             else{
-                ROS_INFO("||| DID NOT RECEIVE RESPONSE |||");
+                // ROS_INFO("||| DID NOT RECEIVE RESPONSE |||");
                 std::map<int, double>::const_iterator prob_it = action_prob_map_.find(*a);
                 double action_prob = prob_it->second;
                 plan_success_probability = plan_prob*action_prob;
