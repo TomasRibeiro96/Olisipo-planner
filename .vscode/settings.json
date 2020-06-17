@@ -59,7 +59,8 @@
         "regex": "cpp",
         "utility": "cpp",
         "typeindex": "cpp",
-        "typeinfo": "cpp"
+        "typeinfo": "cpp",
+        "string": "cpp"
     },
     "cmake.configureOnOpen": false,
     "python.pythonPath": "/usr/bin/python2.7"

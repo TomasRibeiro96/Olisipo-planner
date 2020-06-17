@@ -11,10 +11,13 @@
  */
 
 #include <rosplan_planning_system/PlanDispatch/CSPExecGenerator.h>
+#include <chrono>
+#include <algorithm>
 
 int total_number_nodes_expanded = 1;
 bool branch_and_bound;
-
+int number_service_calls = 0;
+double service_time_sum = 0;
 
 CSPExecGenerator::CSPExecGenerator() : nh_("~"), is_esterel_plan_received_(false), max_search_depth_(0)
 {
@@ -419,12 +422,46 @@ double CSPExecGenerator::computePlanProbability(std::vector<int> &ordered_nodes,
     return combined_probability;
 }
 
-bool CSPExecGenerator::orderNodes(std::vector<int> open_list, int &number_expanded_nodes, double plan_prob)
+bool CSPExecGenerator::statesAreEqual(std::vector<rosplan_knowledge_msgs::KnowledgeItem> state1, std::vector<rosplan_knowledge_msgs::KnowledgeItem> state2){
+    
+    // If states have a different number of facts then they are different
+    if(state1.size() != state2.size())
+        return false;
+    
+    for(auto&& fact1: state1){
+        bool fact_found = false;
+        for(auto&& fact2: state2){
+            // If fact1 is found in state2, then we can stop searching state2
+            // and start searching for the next fact1 in state2
+            if(fact1.attribute_name == fact2.attribute_name
+            && fact1.function_value == fact2.function_value
+            && fact1.instance_name == fact2.instance_name
+            && fact1.instance_type == fact2.instance_type
+            && fact1.is_negative == fact2.is_negative
+            && fact1.knowledge_type == fact2.knowledge_type)
+            {
+                fact_found = true;
+                break;
+            }
+        // If fact1 was not found in state2 then state1 and state2 are different
+        if(!fact_found)
+            return false;
+        }
+    }
+    return true;
+
+}
+
+bool CSPExecGenerator::orderNodes(std::vector<int> open_list, int &number_expanded_nodes, double plan_prob, std::vector<std::vector<rosplan_knowledge_msgs::KnowledgeItem>> explored_states)
 {
     // shift nodes from open list (O) to ordered plans (R)
     // offering all possible different execution alternatives via DFS (Depth first search)
 
     ROS_DEBUG("order nodes (recurse)");
+
+    std::vector<rosplan_knowledge_msgs::KnowledgeItem> current_state;
+    action_simulator_.getAllGroundedFacts(current_state);
+    explored_states.push_back(current_state);
 
     if(!checkTemporalConstraints(ordered_nodes_, set_of_constraints_)) {
         // ROS_INFO("$$$ Temporal constraints not satisfied $$$$");
@@ -463,7 +500,7 @@ bool CSPExecGenerator::orderNodes(std::vector<int> open_list, int &number_expand
     // cap the maximum amount of plans to generate
     if(exec_aternatives_msg_.esterel_plans.size() > max_search_depth_) {
         ROS_DEBUG("returning early : max amount of plans reached (%ld)", exec_aternatives_msg_.esterel_plans.size());
-        ROS_INFO("$$$ Maximum plan size reached $$$");
+        // ROS_INFO("$$$ Maximum plan size reached $$$");
         backtrack("We do not want to search deeper");
         return true;
     }
@@ -517,7 +554,15 @@ bool CSPExecGenerator::orderNodes(std::vector<int> open_list, int &number_expand
             rosplan_dispatch_msgs::CalculateProbability srv;
             srv.request.nodes = ordered_nodes_;
             double plan_success_probability;
+            std::chrono::steady_clock::time_point call_time = std::chrono::steady_clock::now();
+
             if(calculate_prob_client_.call(srv)){
+                std::chrono::steady_clock::time_point response_time = std::chrono::steady_clock::now();
+                double full_service_time = std::chrono::duration_cast<std::chrono::nanoseconds> (response_time - call_time).count() * (double)pow(10,-9);
+                double computing_service_time = srv.response.computing_time;
+                service_time_sum += full_service_time - computing_service_time;
+                number_service_calls++;
+                // ROS_INFO("|||| Service time: %f s|||", service_time_s);
                 plan_success_probability = srv.response.plan_success_probability;
                 // ROS_INFO("||| Received response: %f |||", plan_success_probability);
             }
@@ -528,6 +573,7 @@ bool CSPExecGenerator::orderNodes(std::vector<int> open_list, int &number_expand
                 plan_success_probability = plan_prob*action_prob;
                 // plan_success_probability = computePlanProbability(ordered_nodes_, action_prob_map_);
             }
+
             // TODO: Save length of plan and save the shortest one with the highest success probability
             //// If success probability is the same, save it if the number of actions is lower
             int size = exec_aternatives_msg_.plan_success_prob.size();
@@ -543,7 +589,7 @@ bool CSPExecGenerator::orderNodes(std::vector<int> open_list, int &number_expand
             if(plan_success_probability > best_prob_yet){
                 number_expanded_nodes++;
 
-                // ROS_INFO(">>>>> Apply action : (%d)", *a);
+                ROS_INFO(">>>>> Apply action : (%d)", *a);
                 // Add action to queue
                 ordered_nodes_.push_back(*a);
 
@@ -564,12 +610,35 @@ bool CSPExecGenerator::orderNodes(std::vector<int> open_list, int &number_expand
                     }
                 }
 
+                //////////////////////////////////////////////////////////////////////////////////////
+                std::vector<rosplan_knowledge_msgs::KnowledgeItem> new_state;
+                action_simulator_.getAllGroundedFacts(new_state);
+
+                bool repeated_state = false;
+
+                for(auto&& state: explored_states){
+                    if(statesAreEqual(state, new_state)){
+                        repeated_state = true;
+                        break;
+                    }
+                }
+
+                if(repeated_state){
+                    ROS_INFO("------- REPEATED STATE -------");
+                    backtrack("State already explored");
+                }
+                else{
+                    ROS_INFO("+++ NEW STATE +++");
+                    // recurse
+                    orderNodes(open_list_copy, number_expanded_nodes, plan_success_probability, explored_states);
+                }
+
+                //////////////////////////////////////////////////////////////////////////////////////
+
                 // printNodes("stack after adding", ordered_nodes_);
 
                 // ROS_INFO("++++ Performed action");
                 // printNodes("stack after adding", ordered_nodes_);
-                // recurse
-                orderNodes(open_list_copy, number_expanded_nodes, plan_success_probability);
             }
             else{
                 // ROS_INFO("---- Skipped action");
@@ -605,7 +674,7 @@ bool CSPExecGenerator::orderNodes(std::vector<int> open_list, int &number_expand
             // printNodes("stack after adding", ordered_nodes_);
 
             // recurse
-            orderNodes(open_list_copy, number_expanded_nodes, 1);
+            orderNodes(open_list_copy, number_expanded_nodes, 1, explored_states);
         }
     }
 
@@ -642,172 +711,6 @@ void CSPExecGenerator::reverseLastAction(std::string reason_for_reverse)
     }
 }
 
-bool CSPExecGenerator::backtrackOrderNodes(std::vector<int> open_list, int &number_expanded_nodes, double plan_prob)
-{
-    // shift nodes from open list (O) to ordered plans (R)
-    // offering all possible different execution alternatives via DFS (Depth first search)
-
-    ROS_DEBUG("order nodes (recurse)");
-
-    if(!checkTemporalConstraints(ordered_nodes_, set_of_constraints_)) {
-        // ROS_INFO("$$$ Temporal constraints not satisfied $$$$");
-        reverseLastAction("temporal constraints not satisfied");
-        return false;
-    }
-
-    // check if goals are achieved
-    ROS_DEBUG("checking if goals are achieved...");
-    // TODO: Change to isInitialStateAchieved
-    if(action_simulator_.areGoalsAchieved()) {
-        // we print all plans at the end, so only we print here in debug mode
-        //ROS_INFO("found valid ordering:");
-        // printNodes("plan", ordered_nodes_);
-
-        // convert list of orderes nodes into esterel plan (reuses the originally received esterel plan)
-        rosplan_dispatch_msgs::EsterelPlan esterel_plan_msg = convertListToEsterel(ordered_nodes_);
-
-        // add new valid ordering to ordered plans (R)
-        exec_aternatives_msg_.esterel_plans.push_back(esterel_plan_msg);
-
-        // compute plan probability
-        double plan_success_probability = computePlanProbability(ordered_nodes_, action_prob_map_);
-
-        exec_aternatives_msg_.plan_success_prob.push_back(plan_success_probability);
-
-        // ROS_INFO(">>> Goal achieved with probability %f <<<\n", plan_success_probability);
-
-        // backtrack: popf, remove last element from f, store in variable and revert that action
-        reverseLastAction("goal was achieved");
-
-        return true;
-    }
-    else
-        ROS_DEBUG("goals not achieved yet");
-
-    // cap the maximum amount of plans to generate
-    if(exec_aternatives_msg_.esterel_plans.size() > max_search_depth_) {
-        ROS_DEBUG("returning early : max amount of plans reached (%ld)", exec_aternatives_msg_.esterel_plans.size());
-        ROS_INFO("$$$ Maximum plan size reached $$$");
-        reverseLastAction("We do not want to search deeper");
-        return true;
-    }
-
-    ROS_DEBUG("finding valid nodes from open list now");
-    std::vector<int> valid_nodes;
-    // TODO: Change validNodes for backtracking
-    validNodes(open_list, valid_nodes);
-    if(valid_nodes.size() == 0) {
-        ROS_DEBUG("valid nodes are empty");
-        // ROS_INFO("$$$ No valid nodes $$$");
-        // backtrack: popf, remove last element from f, store in variable and revert that action
-        reverseLastAction("nodes are empty");
-        return false;
-    }
-    else
-        ROS_DEBUG("valid nodes search has finished: found valid nodes");
-
-    // iterate over actions in valid nodes (V)
-    for(auto a=valid_nodes.begin(); a!=valid_nodes.end(); a++) {
-
-        // printNodes("stack before adding", ordered_nodes_);
-
-        // ROS_DEBUG("KB before applying action %d", *a);
-        // action_simulator_.printInternalKBFacts();
-
-        // ROS_INFO("$$ Number of expanded nodes so far: %d", number_expanded_nodes);
-
-        // ROS_DEBUG("KB after applying action %d", *a);
-        // action_simulator_.printInternalKBFacts();
-
-        std::vector<int> open_list_copy = open_list;
-
-        // remove a (action) and s (skipped nodes) from open list (O)
-        open_list_copy.erase(std::remove(open_list_copy.begin(), open_list_copy.end(), *a), open_list_copy.end());
-
-        // printNodes("Open list", open_list);
-        // printNodes("Valid nodes", valid_nodes);
-
-        // get action properties (name, params, type) from node id
-        std::string action_name;
-        std::vector<std::string> params;
-        bool action_start;
-        int action_id;
-        if(!getAction(*a, action_name, params, original_plan_, action_start, action_id)) {
-            ROS_ERROR("failed to get action properties (while applying action)");
-            return false;
-        }
-
-        rosplan_dispatch_msgs::CalculateProbability srv;
-        srv.request.nodes = ordered_nodes_;
-        double plan_success_probability;
-        if(calculate_prob_client_.call(srv)){
-            plan_success_probability = srv.response.plan_success_probability;
-            // ROS_INFO("||| Received response: %f |||", plan_success_probability);
-        }
-        else{
-            // ROS_INFO("||| DID NOT RECEIVE RESPONSE |||");
-            std::map<int, double>::const_iterator prob_it = action_prob_map_.find(*a);
-            double action_prob = prob_it->second;
-            plan_success_probability = plan_prob*action_prob;
-            // plan_success_probability = computePlanProbability(ordered_nodes_, action_prob_map_);
-        }
-        // TODO: Save length of plan and save the shortest one with the highest success probability
-        //// If success probability is the same, save it if the number of actions is lower
-        int size = exec_aternatives_msg_.plan_success_prob.size();
-        double best_prob_yet = 0;
-        if(size != 0)
-            best_prob_yet = exec_aternatives_msg_.plan_success_prob[size-1];
-        
-        // ROS_INFO(">>> Current probability: %f", plan_success_probability);
-        // ROS_INFO(">>> Best probability yet: %f", best_prob_yet);
-
-        // ROS_INFO(">>>>> Apply action : (%d)", *a);
-
-        if(plan_success_probability > best_prob_yet){
-            number_expanded_nodes++;
-
-            // ROS_INFO(">>>>> Apply action : (%d)", *a);
-            // Add action to queue
-            ordered_nodes_.push_back(*a);
-
-            // TODO: Change to revert action
-            // Simulate action
-            if(action_start) {
-                // action start
-                ROS_DEBUG("apply action a : (%s)", action_simulator_.convertPredToString(action_name, params).c_str());
-                if(!action_simulator_.simulateActionStart(action_name, params)) {
-                    ROS_ERROR("could not simulate action start");
-                    return false;
-                }
-            }
-            else {
-                // action end
-                if(!action_simulator_.simulateActionEnd(action_name, params)) {
-                    ROS_ERROR("could not simulate action end");
-                    return false;
-                }
-            }
-
-            // printNodes("stack after adding", ordered_nodes_);
-
-            // ROS_INFO("++++ Performed action");
-            // printNodes("stack after adding", ordered_nodes_);
-            // recurse
-            orderNodes(open_list_copy, number_expanded_nodes, plan_success_probability);
-        }
-        else{
-            // ROS_INFO("---- Skipped action");
-            // printNodes("stack after adding", ordered_nodes_);
-            // backtrack("success probability lower than best one so far");
-        }
-    }
-
-    // pop last element from stack (ordered_nodes_) revert action
-    reverseLastAction("for loop ended (valid nodes exhausted)");
-    return true;
-}
-
-
 void CSPExecGenerator::printNodesWithNames(std::vector<int> &nodes)
 {
     std::stringstream ss;
@@ -818,6 +721,10 @@ void CSPExecGenerator::printNodesWithNames(std::vector<int> &nodes)
         int action_id;
         getAction(*nit, action_name, params, original_plan_, action_start, action_id);
         ss << action_name;
+        if(action_start)
+            ss << "_start";
+        else
+            ss << "_end";
         int size = params.size();
         for(int i=0; i<size; i++){
             ss << "%";
@@ -825,7 +732,10 @@ void CSPExecGenerator::printNodesWithNames(std::vector<int> &nodes)
         }
         ss << " | ";
     }
+    ROS_INFO("-------------------------------------------------------------------------");
     ROS_INFO("@@@ Nodes with names : {%s}", ss.str().c_str());
+    ROS_INFO("@@@ Total number of actions: %d @@@", (int)nodes.size());
+    ROS_INFO("-------------------------------------------------------------------------");
 }
 
 bool CSPExecGenerator::generatePlans()
@@ -862,13 +772,17 @@ bool CSPExecGenerator::generatePlans()
 
     // NOTE: init set of totally ordered plans (R) is stored in exec_aternatives_msg_.esterel_plans
 
-    // if true, it means at least one valid execution alternative was found
+    std::vector<std::vector<rosplan_knowledge_msgs::KnowledgeItem>> explored_states;
     int number_expanded_nodes = 0;
     printNodesWithNames(open_list);
-    orderNodes(open_list, number_expanded_nodes, 1.0);
+    // find plan
+    // if true, it means at least one valid execution alternative was found
+    orderNodes(open_list, number_expanded_nodes, 1.0, explored_states);
     // ROS_INFO("#### Number of nodes expanded: %d ####", number_expanded_nodes);
     total_number_nodes_expanded += number_expanded_nodes;
     ROS_INFO("//// Total number of nodes expanded: %d ////", total_number_nodes_expanded);
+    double average_service_time = service_time_sum/(double)number_service_calls;
+    ROS_INFO("|||| Average service call time: %f", average_service_time);
     return (exec_aternatives_msg_.esterel_plans.size()>0);
 }
 

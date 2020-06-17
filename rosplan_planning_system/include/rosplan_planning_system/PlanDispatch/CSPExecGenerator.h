@@ -135,28 +135,27 @@ class CSPExecGenerator
         double computePlanProbability(std::vector<int> &ordered_nodes, std::map<int, double> &action_prob_map);
 
         /**
+         * @brief checks if two states are the same
+         * @param state1
+         * @param state2
+         * @return true if states are equal, false otherwise
+         */
+        bool statesAreEqual(std::vector<rosplan_knowledge_msgs::KnowledgeItem> state1, std::vector<rosplan_knowledge_msgs::KnowledgeItem> state2);
+        
+        /**
          * @brief shift nodes from open list (O) to ordered plans (R) offering different execution alternatives
          * @param open_list the list of nodes which have not yet being ordered, at startup is composed of all nodes
          * in the partially ordered plan, later the game is take from it the applicable nodes and pass them to
          * the ordered list (which is used also as stack for the DFS search with backtrack)
          * @return true if at least one valid execution was found, false otherwise
          */
-        bool orderNodes(std::vector<int> open_list, int &number_expanded_nodes, double plan_prob);
+        bool orderNodes(std::vector<int> open_list, int &number_expanded_nodes, double plan_prob, std::vector<std::vector<rosplan_knowledge_msgs::KnowledgeItem>> states);
 
         /**
          * @brief backtrack: popf, remove last element from f, store in variable and revert that action
          * @param reason_for_reverse used for log information and feedback to user
          */
         void reverseLastAction(std::string reason_for_reverse);
-
-        /**
-         * @brief shift nodes from open list (O) to ordered plans (R) offering different execution alternatives
-         * @param open_list the list of nodes which have not yet being ordered, at startup is composed of all nodes
-         * in the partially ordered plan, later the game is take from it the applicable nodes and pass them to
-         * the ordered list (which is used also as stack for the B&B backtracking search)
-         * @return true if at least one valid execution was found, false otherwise
-         */
-        bool backtrackOrderNodes(std::vector<int> open_list, int &number_expanded_nodes, double plan_prob);
 
         /**
          * @brief generate plan alternatives based on search

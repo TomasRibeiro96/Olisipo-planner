@@ -13,6 +13,7 @@ import matplotlib.pyplot as plt
 from numpy import *
 from pomegranate import *
 import collections
+import time
 
 original_plan = list()
 pred_probabilities_map = dict()
@@ -1002,6 +1003,7 @@ def convert_plan_to_actionStart_End():
 ######### MAIN FUNCTION #########
 ## Builds, prunes and writes network to file
 def handle_request(list_actions):
+    start_time = time.time()
 # def handle_request(original_plan, initial_state, goal):
     global returned_times
     if testing:
@@ -1093,7 +1095,10 @@ def handle_request(list_actions):
 
     rospy.loginfo('Returned ' + str(returned_times))
     returned_times = returned_times + 1
-    return 1.0
+    elapsed_time = time.time() - start_time
+    # rospy.loginfo('>> Elapsed time: ' + str(elapsed_time))
+    return CalculateProbabilityResponse(1.0, elapsed_time)
+    # return 1.0
 
 
 ######### GET STUFF #########
