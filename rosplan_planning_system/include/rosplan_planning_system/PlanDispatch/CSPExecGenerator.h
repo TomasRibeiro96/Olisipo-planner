@@ -50,7 +50,7 @@ class CSPExecGenerator
          * @brief easy print vector nodes' names
          * @param nodes the node list
          */
-        void printNodesWithNames(std::vector<int> &nodes);
+        std::stringstream getNodesWithNames(std::vector<int> &nodes);
 
         /**
          * @brief callback to receive the fully ordered esterel plan
@@ -142,6 +142,15 @@ class CSPExecGenerator
          */
         bool statesAreEqual(std::vector<rosplan_knowledge_msgs::KnowledgeItem> state1, std::vector<rosplan_knowledge_msgs::KnowledgeItem> state2);
         
+        /**
+         * @brief returns an action's name with parameters
+         * @param action_name
+         * @param params
+         * @param action_start true if it's action start and false otherwise
+         * @return action_name%param1%param2...
+         */
+        std::stringstream getFullActionName(std::string action_name, std::vector<std::string> params, bool action_start);
+
         /**
          * @brief shift nodes from open list (O) to ordered plans (R) offering different execution alternatives
          * @param open_list the list of nodes which have not yet being ordered, at startup is composed of all nodes

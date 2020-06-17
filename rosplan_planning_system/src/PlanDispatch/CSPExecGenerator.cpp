@@ -452,6 +452,23 @@ bool CSPExecGenerator::statesAreEqual(std::vector<rosplan_knowledge_msgs::Knowle
 
 }
 
+std::stringstream CSPExecGenerator::getFullActionName(std::string action_name, std::vector<std::string> params, bool action_start){
+    std::stringstream ss;
+    ss << action_name;
+    if(action_start){
+        ss << "_start";
+    }
+    else{
+        ss << "_end";
+    }
+    for(auto&& parameter: params) {
+        ss << "%";
+        ss << parameter;
+    }
+
+    return ss;
+}
+
 bool CSPExecGenerator::orderNodes(std::vector<int> open_list, int &number_expanded_nodes, double plan_prob, std::vector<std::vector<rosplan_knowledge_msgs::KnowledgeItem>> explored_states)
 {
     // shift nodes from open list (O) to ordered plans (R)
@@ -521,6 +538,10 @@ bool CSPExecGenerator::orderNodes(std::vector<int> open_list, int &number_expand
     // iterate over actions in valid nodes (V)
     for(auto a=valid_nodes.begin(); a!=valid_nodes.end(); a++) {
 
+        // Print valid nodes
+        std::stringstream ss = getNodesWithNames(valid_nodes);
+        ROS_INFO("&&&& Valid Nodes: %s", ss.str().c_str());
+
         // printNodes("stack before adding", ordered_nodes_);
 
         // ROS_DEBUG("KB before applying action %d", *a);
@@ -549,6 +570,8 @@ bool CSPExecGenerator::orderNodes(std::vector<int> open_list, int &number_expand
             ROS_ERROR("failed to get action properties (while applying action)");
             return false;
         }
+
+        std::stringstream full_action_name = getFullActionName(action_name, params, action_start);
 
         if(branch_and_bound){
             rosplan_dispatch_msgs::CalculateProbability srv;
@@ -589,7 +612,7 @@ bool CSPExecGenerator::orderNodes(std::vector<int> open_list, int &number_expand
             if(plan_success_probability > best_prob_yet){
                 number_expanded_nodes++;
 
-                ROS_INFO(">>>>> Apply action : (%d)", *a);
+                ROS_INFO(">>>>> Apply action : %s", full_action_name.str().c_str());
                 // Add action to queue
                 ordered_nodes_.push_back(*a);
 
@@ -711,10 +734,13 @@ void CSPExecGenerator::reverseLastAction(std::string reason_for_reverse)
     }
 }
 
-void CSPExecGenerator::printNodesWithNames(std::vector<int> &nodes)
+std::stringstream CSPExecGenerator::getNodesWithNames(std::vector<int> &nodes)
 {
     std::stringstream ss;
     for(auto nit=nodes.begin(); nit!=nodes.end(); nit++) {
+        if(nit != nodes.begin()){
+            ss << " | ";
+        }
         std::string action_name;
         std::vector<std::string> params;
         bool action_start;
@@ -730,12 +756,9 @@ void CSPExecGenerator::printNodesWithNames(std::vector<int> &nodes)
             ss << "%";
             ss << params[i];
         }
-        ss << " | ";
     }
-    ROS_INFO("-------------------------------------------------------------------------");
-    ROS_INFO("@@@ Nodes with names : {%s}", ss.str().c_str());
-    ROS_INFO("@@@ Total number of actions: %d @@@", (int)nodes.size());
-    ROS_INFO("-------------------------------------------------------------------------");
+
+    return ss;
 }
 
 bool CSPExecGenerator::generatePlans()
@@ -774,7 +797,14 @@ bool CSPExecGenerator::generatePlans()
 
     std::vector<std::vector<rosplan_knowledge_msgs::KnowledgeItem>> explored_states;
     int number_expanded_nodes = 0;
-    printNodesWithNames(open_list);
+
+    std::stringstream ss;
+    ss = getNodesWithNames(open_list);
+    ROS_INFO("-------------------------------------------------------------------------");
+    ROS_INFO("@@@ Nodes with names : {%s}", ss.str().c_str());
+    ROS_INFO("@@@ Total number of actions: %d @@@", (int)open_list.size());
+    ROS_INFO("-------------------------------------------------------------------------");
+
     // find plan
     // if true, it means at least one valid execution alternative was found
     orderNodes(open_list, number_expanded_nodes, 1.0, explored_states);
