@@ -536,6 +536,13 @@ class ActionSimulator
          */
         bool mirrorKB(bool mirror_facts_and_goals);
 
+        /**
+         * @brief get current state stored in knowledge base
+         * @param mirror_facts_and_goals if true, facts and goals are fetched from KB and stored
+         * @return true if communication with real KB was successful, false otherwise
+         */
+        std::vector<rosplan_knowledge_msgs::KnowledgeItem> getCurrentState();
+
     private:
 
          /**

@@ -60,7 +60,8 @@
         "utility": "cpp",
         "typeindex": "cpp",
         "typeinfo": "cpp",
-        "string": "cpp"
+        "string": "cpp",
+        "random": "cpp"
     },
     "cmake.configureOnOpen": false,
     "python.pythonPath": "/usr/bin/python2.7"

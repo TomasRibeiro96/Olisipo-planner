@@ -152,13 +152,34 @@ class CSPExecGenerator
         std::stringstream getFullActionName(std::string action_name, std::vector<std::string> params, bool action_start);
 
         /**
+         * @brief simulates action
+         * @param action_start true if it is action start, false otherwise
+         * @param action_name
+         * @param params
+         * @return true if action was successfully simulated, false otherwise
+         */
+        bool simulateAction(bool action_start, std::string action_name, std::vector<std::string> params);
+
+        /**
+         * @brief checks if state was already explored
+         * @param action_name
+         * @param params params of action
+         * @param explored_states list of already explored states
+         * @return true if action was successfully simulated, false otherwise
+         */
+        bool stateIsRepeated(std::string action_name, std::vector<std::string> params,
+                            std::vector<std::vector<rosplan_knowledge_msgs::KnowledgeItem>> explored_states,
+                            std::vector<int> open_list);
+
+        /**
          * @brief shift nodes from open list (O) to ordered plans (R) offering different execution alternatives
          * @param open_list the list of nodes which have not yet being ordered, at startup is composed of all nodes
          * in the partially ordered plan, later the game is take from it the applicable nodes and pass them to
          * the ordered list (which is used also as stack for the DFS search with backtrack)
          * @return true if at least one valid execution was found, false otherwise
          */
-        bool orderNodes(std::vector<int> open_list, int &number_expanded_nodes, double plan_prob, std::vector<std::vector<rosplan_knowledge_msgs::KnowledgeItem>> states);
+        bool orderNodes(std::vector<int> open_list, int &number_expanded_nodes, double plan_prob,
+                        std::vector<std::vector<rosplan_knowledge_msgs::KnowledgeItem>> states);
 
         /**
          * @brief backtrack: popf, remove last element from f, store in variable and revert that action

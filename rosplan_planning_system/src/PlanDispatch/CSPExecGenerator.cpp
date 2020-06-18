@@ -422,31 +422,44 @@ double CSPExecGenerator::computePlanProbability(std::vector<int> &ordered_nodes,
     return combined_probability;
 }
 
-bool CSPExecGenerator::statesAreEqual(std::vector<rosplan_knowledge_msgs::KnowledgeItem> state1, std::vector<rosplan_knowledge_msgs::KnowledgeItem> state2){
+bool CSPExecGenerator::statesAreEqual(std::vector<rosplan_knowledge_msgs::KnowledgeItem> state1,
+                                        std::vector<rosplan_knowledge_msgs::KnowledgeItem> state2){
     
     // If states have a different number of facts then they are different
     if(state1.size() != state2.size())
         return false;
-    
+
+    ///////////////////////////////////////////
+    ROS_INFO(">>> State 1: <<<");
+    std::stringstream ss;
+    for(auto&& fact1: state1){
+        ss << action_simulator_.convertPredToString(fact1);
+        ss << " || ";
+    }
+    ROS_INFO("%s", ss.str().c_str());
+
+    ROS_INFO(">>> State 2: <<<");
+    ss.str(std::string());;
+    for(auto&& fact2: state2){
+        ss << action_simulator_.convertPredToString(fact2);
+        ss << " || ";
+    }
+    ROS_INFO("%s", ss.str().c_str());
+    ///////////////////////////////////////////
     for(auto&& fact1: state1){
         bool fact_found = false;
         for(auto&& fact2: state2){
+
             // If fact1 is found in state2, then we can stop searching state2
             // and start searching for the next fact1 in state2
-            if(fact1.attribute_name == fact2.attribute_name
-            && fact1.function_value == fact2.function_value
-            && fact1.instance_name == fact2.instance_name
-            && fact1.instance_type == fact2.instance_type
-            && fact1.is_negative == fact2.is_negative
-            && fact1.knowledge_type == fact2.knowledge_type)
-            {
+            if(action_simulator_.convertPredToString(fact1) == action_simulator_.convertPredToString(fact2)){
                 fact_found = true;
                 break;
             }
+        }
         // If fact1 was not found in state2 then state1 and state2 are different
         if(!fact_found)
             return false;
-        }
     }
     return true;
 
@@ -469,15 +482,92 @@ std::stringstream CSPExecGenerator::getFullActionName(std::string action_name, s
     return ss;
 }
 
-bool CSPExecGenerator::orderNodes(std::vector<int> open_list, int &number_expanded_nodes, double plan_prob, std::vector<std::vector<rosplan_knowledge_msgs::KnowledgeItem>> explored_states)
+bool CSPExecGenerator::simulateAction(bool action_start, std::string action_name, std::vector<std::string> params){
+    if(action_start) {
+        // action start
+        ROS_DEBUG("apply action a : (%s)", action_simulator_.convertPredToString(action_name, params).c_str());
+        if(!action_simulator_.simulateActionStart(action_name, params)) {
+            ROS_ERROR("could not simulate action start");
+            return false;
+        }
+    }
+    else {
+        // action end
+        if(!action_simulator_.simulateActionEnd(action_name, params)) {
+            ROS_ERROR("could not simulate action end");
+            return false;
+        }
+    }
+    return true;
+}
+
+bool CSPExecGenerator::stateIsRepeated(std::string action_name, std::vector<std::string> params,
+                                        std::vector<std::vector<rosplan_knowledge_msgs::KnowledgeItem>> explored_states,
+                                        std::vector<int> open_list){
+
+    bool start_action_executed = false;
+    std::string action1 = getFullActionName(action_name, params, true).str();
+
+    for(auto a=open_list.begin(); a!=open_list.end(); a++){
+        // get action properties (name, params, type) from node id
+        std::string name;
+        std::vector<std::string> parameters;
+        bool action_start;
+        int action_id;
+        if(!getAction(*a, name, parameters, original_plan_, action_start, action_id)) {
+            ROS_ERROR("failed to get action properties (while applying action)");
+            return false;
+        }
+        
+        std::string action2 = getFullActionName(name, parameters, action_start).str();
+
+        if(action1 == action2){
+            // ROS_INFO("Found action");
+            start_action_executed = true;
+            action1 = getFullActionName(action_name, params, !start_action_executed).str();
+            if(!simulateAction(action_start, name, parameters)){
+                ROS_ERROR("Could not simulate action: %s", action2.c_str());
+                return false;
+            }
+            ordered_nodes_.push_back(*a);
+            // We restart the loop because the action end may be
+            // before the action start in the open_list
+            if(action_start)
+                a = open_list.begin();
+            else
+                break;
+            
+        }
+    }
+
+    std::vector<rosplan_knowledge_msgs::KnowledgeItem> state_after_action = action_simulator_.getCurrentState();
+
+    bool repeated_state = false;
+    for(auto&& state: explored_states){
+        if(statesAreEqual(state, state_after_action)){
+            repeated_state = true;
+            break;
+        }
+    }
+
+    backtrack("Checked if action is repeated 1");
+    backtrack("Checked if action is repeated 2");
+
+    // ROS_INFO(repeated_state ? "??? State is repeated ???":"!!! State is new !!!");
+
+    return repeated_state;
+}
+
+bool CSPExecGenerator::orderNodes(std::vector<int> open_list, int &number_expanded_nodes, double plan_prob,
+                                    std::vector<std::vector<rosplan_knowledge_msgs::KnowledgeItem>> explored_states)
 {
     // shift nodes from open list (O) to ordered plans (R)
     // offering all possible different execution alternatives via DFS (Depth first search)
 
     ROS_DEBUG("order nodes (recurse)");
 
-    std::vector<rosplan_knowledge_msgs::KnowledgeItem> current_state;
-    action_simulator_.getAllGroundedFacts(current_state);
+    // Add current state to explored_states
+    std::vector<rosplan_knowledge_msgs::KnowledgeItem> current_state = action_simulator_.getCurrentState();
     explored_states.push_back(current_state);
 
     if(!checkTemporalConstraints(ordered_nodes_, set_of_constraints_)) {
@@ -540,26 +630,10 @@ bool CSPExecGenerator::orderNodes(std::vector<int> open_list, int &number_expand
 
         // Print valid nodes
         std::stringstream ss = getNodesWithNames(valid_nodes);
-        ROS_INFO("&&&& Valid Nodes: %s", ss.str().c_str());
-
-        // printNodes("stack before adding", ordered_nodes_);
-
-        // ROS_DEBUG("KB before applying action %d", *a);
-        // action_simulator_.printInternalKBFacts();
-
-        // ROS_INFO("$$ Number of expanded nodes so far: %d", number_expanded_nodes);
-
-        // ROS_DEBUG("KB after applying action %d", *a);
-        // action_simulator_.printInternalKBFacts();
+        ROS_INFO("[ Valid Nodes: %s ]", ss.str().c_str());
 
         std::vector<int> open_list_copy = open_list;
-        branch_and_bound = true;
 
-        // remove a (action) and s (skipped nodes) from open list (O)
-        open_list_copy.erase(std::remove(open_list_copy.begin(), open_list_copy.end(), *a), open_list_copy.end());
-
-        // printNodes("Open list", open_list);
-        // printNodes("Valid nodes", valid_nodes);
 
         // get action properties (name, params, type) from node id
         std::string action_name;
@@ -571,9 +645,19 @@ bool CSPExecGenerator::orderNodes(std::vector<int> open_list, int &number_expand
             return false;
         }
 
-        std::stringstream full_action_name = getFullActionName(action_name, params, action_start);
+        branch_and_bound = true;
+        bool repeated_state = false;
+
+        if(action_start){
+            repeated_state = stateIsRepeated(action_name, params, explored_states, open_list_copy);
+        }
+
+        // remove a (action) and s (skipped nodes) from open list (O)
+        open_list_copy.erase(std::remove(open_list_copy.begin(), open_list_copy.end(), *a), open_list_copy.end());
+
 
         if(branch_and_bound){
+            if(!repeated_state){
             rosplan_dispatch_msgs::CalculateProbability srv;
             srv.request.nodes = ordered_nodes_;
             double plan_success_probability;
@@ -607,56 +691,19 @@ bool CSPExecGenerator::orderNodes(std::vector<int> open_list, int &number_expand
             // ROS_INFO(">>> Current probability: %f", plan_success_probability);
             // ROS_INFO(">>> Best probability yet: %f", best_prob_yet);
 
-            // ROS_INFO(">>>>> Apply action : (%d)", *a);
-
             if(plan_success_probability > best_prob_yet){
                 number_expanded_nodes++;
 
-                ROS_INFO(">>>>> Apply action : %s", full_action_name.str().c_str());
+                std::stringstream full_action_name = getFullActionName(action_name, params, action_start);
+                ROS_INFO(">>>>> Apply action : %s <<<<<", full_action_name.str().c_str());
                 // Add action to queue
                 ordered_nodes_.push_back(*a);
 
-                // Simulate action
-                if(action_start) {
-                    // action start
-                    ROS_DEBUG("apply action a : (%s)", action_simulator_.convertPredToString(action_name, params).c_str());
-                    if(!action_simulator_.simulateActionStart(action_name, params)) {
-                        ROS_ERROR("could not simulate action start");
-                        return false;
-                    }
-                }
-                else {
-                    // action end
-                    if(!action_simulator_.simulateActionEnd(action_name, params)) {
-                        ROS_ERROR("could not simulate action end");
-                        return false;
-                    }
-                }
+                if(!simulateAction(action_start, action_name, params)){
+                    return false;
+                }                
 
-                //////////////////////////////////////////////////////////////////////////////////////
-                std::vector<rosplan_knowledge_msgs::KnowledgeItem> new_state;
-                action_simulator_.getAllGroundedFacts(new_state);
-
-                bool repeated_state = false;
-
-                for(auto&& state: explored_states){
-                    if(statesAreEqual(state, new_state)){
-                        repeated_state = true;
-                        break;
-                    }
-                }
-
-                if(repeated_state){
-                    ROS_INFO("------- REPEATED STATE -------");
-                    backtrack("State already explored");
-                }
-                else{
-                    ROS_INFO("+++ NEW STATE +++");
-                    // recurse
-                    orderNodes(open_list_copy, number_expanded_nodes, plan_success_probability, explored_states);
-                }
-
-                //////////////////////////////////////////////////////////////////////////////////////
+                orderNodes(open_list_copy, number_expanded_nodes, plan_success_probability, explored_states);
 
                 // printNodes("stack after adding", ordered_nodes_);
 
@@ -670,7 +717,10 @@ bool CSPExecGenerator::orderNodes(std::vector<int> open_list, int &number_expand
             }
             
         }
+
+        }
         else{
+            //// Original version on code ////
             number_expanded_nodes++;
             // ROS_INFO(">>>>> Apply action : (%d)", *a);
             ordered_nodes_.push_back(*a);

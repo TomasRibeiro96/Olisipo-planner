@@ -1254,6 +1254,10 @@ bool ActionSimulator::areGoalsAchieved()
     return goal_state_reached;
 }
 
+std::vector<rosplan_knowledge_msgs::KnowledgeItem> ActionSimulator::getCurrentState(){
+    return kb_facts_;
+}
+
 int main(int argc, char **argv)
 {
     // init node
