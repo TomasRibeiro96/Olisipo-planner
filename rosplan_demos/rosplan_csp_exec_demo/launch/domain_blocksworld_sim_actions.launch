@@ -1,0 +1,27 @@
+<?xml version="1.0"?>
+<launch>
+
+    <!-- sim actions for blocksworld domain (domain_blocksworld.pddl) -->
+
+    <include file="$(find rosplan_planning_system)/launch/includes/simulated_action.launch" >
+        <arg name="pddl_action_name" value="pick-up" />
+        <arg name="action_duration" value="1" />
+    </include>
+
+    <include file="$(find rosplan_planning_system)/launch/includes/simulated_action.launch" >
+        <arg name="pddl_action_name" value="put-down" />
+        <arg name="action_duration" value="1" />
+    </include>
+
+    <include file="$(find rosplan_planning_system)/launch/includes/simulated_action.launch" >
+        <arg name="pddl_action_name" value="stack" />
+        <arg name="action_duration" value="1" />
+    </include>
+
+    <include file="$(find rosplan_planning_system)/launch/includes/simulated_action.launch" >
+        <arg name="pddl_action_name" value="unstack" />
+        <arg name="action_duration" value="1" />
+    </include>
+
+
+</launch>

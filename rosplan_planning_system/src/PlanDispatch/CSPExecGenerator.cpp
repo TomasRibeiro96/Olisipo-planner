@@ -17,7 +17,7 @@
 int total_number_nodes_expanded = 1;
 bool branch_and_bound;
 int number_service_calls = 0;
-double service_time_sum = 0;
+// double service_time_sum = 0;
 
 CSPExecGenerator::CSPExecGenerator() : nh_("~"), is_esterel_plan_received_(false), max_search_depth_(0)
 {
@@ -54,10 +54,18 @@ void CSPExecGenerator::printNodes(std::string msg, std::vector<int> &nodes)
 {
     std::stringstream ss;
     for(auto nit=nodes.begin(); nit!=nodes.end(); nit++) {
-        ss << *nit;
-        ss << ",";
+        std::string action_name;
+        std::vector<std::string> params;
+        bool action_start;
+        int action_id;
+        if(!getAction(*nit, action_name, params, original_plan_, action_start, action_id)) {
+            ROS_ERROR("failed to get action properties (while applying action)");
+        }
+        std::stringstream full_name = getFullActionName(action_name, params, action_start);
+        ss << full_name.str();
+        ss << " | ";
     }
-    ROS_INFO("%s : {%s}", msg.c_str(), ss.str().c_str());
+    ROS_INFO("%s: {%s}", msg.c_str(), ss.str().c_str());
 }
 
 void CSPExecGenerator::esterelPlanCB(const rosplan_dispatch_msgs::EsterelPlan::ConstPtr& msg)
@@ -422,6 +430,15 @@ double CSPExecGenerator::computePlanProbability(std::vector<int> &ordered_nodes,
     return combined_probability;
 }
 
+std::string CSPExecGenerator::getStateAsString(std::vector<rosplan_knowledge_msgs::KnowledgeItem> state){
+    std::stringstream ss;
+    for(auto&& fact1: state){
+        ss << action_simulator_.convertPredToString(fact1);
+        ss << " || ";
+    }
+    return ss.str();
+}
+
 bool CSPExecGenerator::statesAreEqual(std::vector<rosplan_knowledge_msgs::KnowledgeItem> state1,
                                         std::vector<rosplan_knowledge_msgs::KnowledgeItem> state2){
     
@@ -429,23 +446,10 @@ bool CSPExecGenerator::statesAreEqual(std::vector<rosplan_knowledge_msgs::Knowle
     if(state1.size() != state2.size())
         return false;
 
-    ///////////////////////////////////////////
-    ROS_INFO(">>> State 1: <<<");
-    std::stringstream ss;
-    for(auto&& fact1: state1){
-        ss << action_simulator_.convertPredToString(fact1);
-        ss << " || ";
-    }
-    ROS_INFO("%s", ss.str().c_str());
+    // ROS_INFO(">>> State 1: %s", getStateAsString(state1).c_str());
 
-    ROS_INFO(">>> State 2: <<<");
-    ss.str(std::string());;
-    for(auto&& fact2: state2){
-        ss << action_simulator_.convertPredToString(fact2);
-        ss << " || ";
-    }
-    ROS_INFO("%s", ss.str().c_str());
-    ///////////////////////////////////////////
+    // ROS_INFO(">>> State 2: %s", getStateAsString(state2).c_str());
+
     for(auto&& fact1: state1){
         bool fact_found = false;
         for(auto&& fact2: state2){
@@ -501,11 +505,21 @@ bool CSPExecGenerator::simulateAction(bool action_start, std::string action_name
     return true;
 }
 
-bool CSPExecGenerator::stateIsRepeated(std::string action_name, std::vector<std::string> params,
-                                        std::vector<std::vector<rosplan_knowledge_msgs::KnowledgeItem>> explored_states,
-                                        std::vector<int> open_list){
+bool CSPExecGenerator::stateIsRepeated(std::vector<rosplan_knowledge_msgs::KnowledgeItem> state,
+                                        std::vector<std::vector<rosplan_knowledge_msgs::KnowledgeItem>> explored_states){
+    bool repeated_state = false;
+    for(auto&& state_explored: explored_states){
+        if(statesAreEqual(state, state_explored)){
+            return true;
+        }
+    }
+    return false;
+}
 
-    bool start_action_executed = false;
+std::vector<rosplan_knowledge_msgs::KnowledgeItem> CSPExecGenerator::getStateAfterAction(std::string action_name,
+                                                                                        std::vector<std::string> params,
+                                                                                        std::vector<int> open_list){
+
     std::string action1 = getFullActionName(action_name, params, true).str();
 
     for(auto a=open_list.begin(); a!=open_list.end(); a++){
@@ -516,18 +530,15 @@ bool CSPExecGenerator::stateIsRepeated(std::string action_name, std::vector<std:
         int action_id;
         if(!getAction(*a, name, parameters, original_plan_, action_start, action_id)) {
             ROS_ERROR("failed to get action properties (while applying action)");
-            return false;
         }
         
         std::string action2 = getFullActionName(name, parameters, action_start).str();
 
         if(action1 == action2){
             // ROS_INFO("Found action");
-            start_action_executed = true;
-            action1 = getFullActionName(action_name, params, !start_action_executed).str();
+            action1 = getFullActionName(action_name, params, false).str();
             if(!simulateAction(action_start, name, parameters)){
                 ROS_ERROR("Could not simulate action: %s", action2.c_str());
-                return false;
             }
             ordered_nodes_.push_back(*a);
             // We restart the loop because the action end may be
@@ -542,21 +553,12 @@ bool CSPExecGenerator::stateIsRepeated(std::string action_name, std::vector<std:
 
     std::vector<rosplan_knowledge_msgs::KnowledgeItem> state_after_action = action_simulator_.getCurrentState();
 
-    bool repeated_state = false;
-    for(auto&& state: explored_states){
-        if(statesAreEqual(state, state_after_action)){
-            repeated_state = true;
-            break;
-        }
-    }
+    backtrack("Got state after action 1");
+    backtrack("Got state after action 2");
 
-    backtrack("Checked if action is repeated 1");
-    backtrack("Checked if action is repeated 2");
-
-    // ROS_INFO(repeated_state ? "??? State is repeated ???":"!!! State is new !!!");
-
-    return repeated_state;
+    return state_after_action;
 }
+
 
 bool CSPExecGenerator::orderNodes(std::vector<int> open_list, int &number_expanded_nodes, double plan_prob,
                                     std::vector<std::vector<rosplan_knowledge_msgs::KnowledgeItem>> explored_states)
@@ -589,12 +591,23 @@ bool CSPExecGenerator::orderNodes(std::vector<int> open_list, int &number_expand
         // add new valid ordering to ordered plans (R)
         exec_aternatives_msg_.esterel_plans.push_back(esterel_plan_msg);
 
-        // compute plan probability
-        double plan_success_probability = computePlanProbability(ordered_nodes_, action_prob_map_);
+        best_plan_ = ordered_nodes_;
 
+        // compute plan probability
+        rosplan_dispatch_msgs::CalculateProbability srv;
+        double plan_success_probability;
+        srv.request.nodes = ordered_nodes_;
+        if(calculate_prob_client_.call(srv)){
+            plan_success_probability = srv.response.plan_success_probability;
+        }
+        else{
+            plan_success_probability = computePlanProbability(ordered_nodes_, action_prob_map_);
+        }
         exec_aternatives_msg_.plan_success_prob.push_back(plan_success_probability);
 
         // ROS_INFO(">>> Goal achieved with probability %f <<<\n", plan_success_probability);
+
+        expected_state_ = state_after_first_action_;
 
         // backtrack: popf, remove last element from f, store in variable and revert that action
         backtrack("goal was achieved");
@@ -629,11 +642,10 @@ bool CSPExecGenerator::orderNodes(std::vector<int> open_list, int &number_expand
     for(auto a=valid_nodes.begin(); a!=valid_nodes.end(); a++) {
 
         // Print valid nodes
-        std::stringstream ss = getNodesWithNames(valid_nodes);
-        ROS_INFO("[ Valid Nodes: %s ]", ss.str().c_str());
+        // std::stringstream ss = getNodesWithNames(valid_nodes);
+        // ROS_INFO("[ Valid Nodes: %s ]", ss.str().c_str());
 
         std::vector<int> open_list_copy = open_list;
-
 
         // get action properties (name, params, type) from node id
         std::string action_name;
@@ -649,37 +661,42 @@ bool CSPExecGenerator::orderNodes(std::vector<int> open_list, int &number_expand
         bool repeated_state = false;
 
         if(action_start){
-            repeated_state = stateIsRepeated(action_name, params, explored_states, open_list_copy);
+            std::vector<rosplan_knowledge_msgs::KnowledgeItem> state_after_action = getStateAfterAction(action_name, params, open_list_copy);
+            repeated_state = stateIsRepeated(state_after_action, explored_states);
+            if(ordered_nodes_.size() == 0)
+                state_after_first_action_ = state_after_action;
+            // ROS_INFO(">>> State after action: %s", getStateAsString(state_after_first_action).c_str());
+            // ROS_INFO(">>> Current state: %s", getStateAsString(current_state).c_str());
+            // ROS_INFO(repeated_state ? "+++ State is repeated +++" : "--- State is NOT repeated");
         }
 
         // remove a (action) and s (skipped nodes) from open list (O)
         open_list_copy.erase(std::remove(open_list_copy.begin(), open_list_copy.end(), *a), open_list_copy.end());
 
-
+        // repeated_state = false;
         if(branch_and_bound){
             if(!repeated_state){
-            rosplan_dispatch_msgs::CalculateProbability srv;
-            srv.request.nodes = ordered_nodes_;
+            
             double plan_success_probability;
             std::chrono::steady_clock::time_point call_time = std::chrono::steady_clock::now();
 
-            if(calculate_prob_client_.call(srv)){
-                std::chrono::steady_clock::time_point response_time = std::chrono::steady_clock::now();
-                double full_service_time = std::chrono::duration_cast<std::chrono::nanoseconds> (response_time - call_time).count() * (double)pow(10,-9);
-                double computing_service_time = srv.response.computing_time;
-                service_time_sum += full_service_time - computing_service_time;
-                number_service_calls++;
-                // ROS_INFO("|||| Service time: %f s|||", service_time_s);
-                plan_success_probability = srv.response.plan_success_probability;
-                // ROS_INFO("||| Received response: %f |||", plan_success_probability);
-            }
-            else{
+            // if(calculate_prob_client_.call(srv)){
+            //     std::chrono::steady_clock::time_point response_time = std::chrono::steady_clock::now();
+            //     double full_service_time = std::chrono::duration_cast<std::chrono::nanoseconds> (response_time - call_time).count() * (double)pow(10,-9);
+            //     // double computing_service_time = srv.response.computing_time;
+            //     // service_time_sum += full_service_time - computing_service_time;
+            //     number_service_calls++;
+            //     // ROS_INFO("|||| Service time: %f s|||", service_time_s);
+            //     plan_success_probability = srv.response.plan_success_probability;
+            //     // ROS_INFO("||| Received response: %f |||", plan_success_probability);
+            // }
+            // else{
                 // ROS_INFO("||| DID NOT RECEIVE RESPONSE |||");
                 std::map<int, double>::const_iterator prob_it = action_prob_map_.find(*a);
                 double action_prob = prob_it->second;
                 plan_success_probability = plan_prob*action_prob;
                 // plan_success_probability = computePlanProbability(ordered_nodes_, action_prob_map_);
-            }
+            // }
 
             // TODO: Save length of plan and save the shortest one with the highest success probability
             //// If success probability is the same, save it if the number of actions is lower
@@ -694,15 +711,14 @@ bool CSPExecGenerator::orderNodes(std::vector<int> open_list, int &number_expand
             if(plan_success_probability > best_prob_yet){
                 number_expanded_nodes++;
 
-                std::stringstream full_action_name = getFullActionName(action_name, params, action_start);
-                ROS_INFO(">>>>> Apply action : %s <<<<<", full_action_name.str().c_str());
+                // std::stringstream full_action_name = getFullActionName(action_name, params, action_start);
+                // ROS_INFO(">>>>> Apply action : %s <<<<<", full_action_name.str().c_str());
                 // Add action to queue
                 ordered_nodes_.push_back(*a);
 
-                if(!simulateAction(action_start, action_name, params)){
+                if(!simulateAction(action_start, action_name, params))
                     return false;
-                }                
-
+               
                 orderNodes(open_list_copy, number_expanded_nodes, plan_success_probability, explored_states);
 
                 // printNodes("stack after adding", ordered_nodes_);
@@ -813,6 +829,7 @@ std::stringstream CSPExecGenerator::getNodesWithNames(std::vector<int> &nodes)
 
 bool CSPExecGenerator::generatePlans()
 {
+    ROS_INFO("\n");
     // get current state (S) and store in memory
     action_simulator_.saveKBSnapshot();
 
@@ -834,6 +851,30 @@ bool CSPExecGenerator::generatePlans()
         }
     }
 
+    printNodes(">>> Open list", open_list);
+
+    // Check if current state is the same as expected state
+    if(!expected_state_.empty()){
+        ROS_INFO(">>> Expected state: %s", getStateAsString(expected_state_).c_str());
+        ROS_INFO(">>> Current state:  %s", getStateAsString(action_simulator_.getCurrentState()).c_str());
+        ROS_INFO("States are equal: %s", statesAreEqual(expected_state_, action_simulator_.getCurrentState())? "YES" : "NO");
+        if(statesAreEqual(expected_state_, action_simulator_.getCurrentState())){
+            // discard first action (already executed)
+            best_plan_.erase(best_plan_.begin());
+
+            // convert list of orderes nodes into esterel plan (reuses the originally received esterel plan)
+            rosplan_dispatch_msgs::EsterelPlan esterel_plan_msg = convertListToEsterel(best_plan_);
+
+            // add new valid ordering to ordered plans (R)
+            exec_aternatives_msg_.esterel_plans.push_back(esterel_plan_msg);
+
+            double plan_success_probability = computePlanProbability(best_plan_, action_prob_map_);
+            exec_aternatives_msg_.plan_success_prob.push_back(plan_success_probability);
+
+            return true;
+        }
+    }
+
     // printNodes("open list", open_list);
     // printNodesWithNames(open_list);
 
@@ -848,12 +889,7 @@ bool CSPExecGenerator::generatePlans()
     std::vector<std::vector<rosplan_knowledge_msgs::KnowledgeItem>> explored_states;
     int number_expanded_nodes = 0;
 
-    std::stringstream ss;
-    ss = getNodesWithNames(open_list);
-    ROS_INFO("-------------------------------------------------------------------------");
-    ROS_INFO("@@@ Nodes with names : {%s}", ss.str().c_str());
-    ROS_INFO("@@@ Total number of actions: %d @@@", (int)open_list.size());
-    ROS_INFO("-------------------------------------------------------------------------");
+    ROS_INFO("Total number of actions: %d", (int)open_list.size());
 
     // find plan
     // if true, it means at least one valid execution alternative was found
@@ -861,8 +897,8 @@ bool CSPExecGenerator::generatePlans()
     // ROS_INFO("#### Number of nodes expanded: %d ####", number_expanded_nodes);
     total_number_nodes_expanded += number_expanded_nodes;
     ROS_INFO("//// Total number of nodes expanded: %d ////", total_number_nodes_expanded);
-    double average_service_time = service_time_sum/(double)number_service_calls;
-    ROS_INFO("|||| Average service call time: %f", average_service_time);
+    // double average_service_time = service_time_sum/(double)number_service_calls;
+    // ROS_INFO("|||| Average service call time: %f", average_service_time);
     return (exec_aternatives_msg_.esterel_plans.size()>0);
 }
 
@@ -1063,6 +1099,17 @@ bool CSPExecGenerator::srvCB(rosplan_dispatch_msgs::ExecAlternatives::Request& r
 
         // publish esterel array msg
         pub_valid_plans_.publish(exec_aternatives_msg_);
+
+        int a = best_plan_[0];
+        std::string action_name;
+        std::vector<std::string> params;
+        bool action_start;
+        int action_id;
+        if(!getAction(a, action_name, params, original_plan_, action_start, action_id)) {
+            ROS_ERROR("failed to get action properties (while applying action)");
+            return false;
+        }
+        ROS_INFO(">>> Action to be executed: %s", getFullActionName(action_name, params, action_start).str().c_str());
     }
     else
     {

@@ -1,27 +1,25 @@
 (define (problem task)
-(:domain robot_delivery)
+(:domain skip_door)
 (:objects
-    wp0 wp1 wp2 wp3 - waypoint
-    robot0 robot1 robot2 - robot
-    machine0 machine1 machine2 - machine
+    mbot - robot
+    door1 door2 door3 - door
+    wp1 wp2 wp3 - waypoint
 )
 (:init
-    (robot_at robot0 wp0)
-    (robot_at robot1 wp0)
-    (robot_at robot2 wp0)
+    (robot_at mbot wp1)
 
-    (undocked robot0)
-    (undocked robot1)
-    (undocked robot2)
+    (connected wp1 wp2)
+    (connected wp2 wp3)
 
+    (door_at door1 wp1)
+    (door_at door2 wp2)
+    (door_at door3 wp3)
 
-    (localised robot0)
-    (localised robot1)
-    (localised robot2)
+    (door_is_open door1)
+    (door_is_open door3)
 
-
-
-    (nocarrying_order robot0)
-    (nocarrying_order robot1)
-    (nocarrying_order robot2)
-
+)
+(:goal (and
+    (robot_at mbot wp3)
+))
+)

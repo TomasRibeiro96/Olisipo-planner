@@ -134,6 +134,8 @@ class CSPExecGenerator
          */
         double computePlanProbability(std::vector<int> &ordered_nodes, std::map<int, double> &action_prob_map);
 
+        std::string getStateAsString(std::vector<rosplan_knowledge_msgs::KnowledgeItem> state);
+
         /**
          * @brief checks if two states are the same
          * @param state1
@@ -167,9 +169,12 @@ class CSPExecGenerator
          * @param explored_states list of already explored states
          * @return true if action was successfully simulated, false otherwise
          */
-        bool stateIsRepeated(std::string action_name, std::vector<std::string> params,
-                            std::vector<std::vector<rosplan_knowledge_msgs::KnowledgeItem>> explored_states,
-                            std::vector<int> open_list);
+        bool stateIsRepeated(std::vector<rosplan_knowledge_msgs::KnowledgeItem> state,
+                            std::vector<std::vector<rosplan_knowledge_msgs::KnowledgeItem>> explored_states);
+
+        std::vector<rosplan_knowledge_msgs::KnowledgeItem> getStateAfterAction(std::string action_name,
+                                                                                std::vector<std::string> params,
+                                                                                std::vector<int> open_list);
 
         /**
          * @brief shift nodes from open list (O) to ordered plans (R) offering different execution alternatives
@@ -271,5 +276,13 @@ class CSPExecGenerator
         /// the msg that contains all the esterel plans to be published
         /// R: is stored in exec_aternatives_msg_.esterel_plans
         rosplan_dispatch_msgs::EsterelPlanArray exec_aternatives_msg_;
+
+        std::vector<rosplan_knowledge_msgs::KnowledgeItem> expected_state_;
+        
+        std::vector<rosplan_knowledge_msgs::KnowledgeItem> state_after_first_action_;
+
+        std::vector<int> best_plan_;
+
+
 };
 #endif  // CSP_EXEC_GENERATOR_NODE_H

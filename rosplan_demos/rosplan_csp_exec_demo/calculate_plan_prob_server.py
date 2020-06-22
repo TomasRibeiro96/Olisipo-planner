@@ -20,7 +20,7 @@ pred_probabilities_map = dict()
 action_probabilities_map = dict()
 cpds_map = dict()
 receivedPlan = False
-testing = False
+testing = True
 returned_times = 1
 
 
@@ -1002,9 +1002,9 @@ def convert_plan_to_actionStart_End():
 
 ######### MAIN FUNCTION #########
 ## Builds, prunes and writes network to file
-def handle_request(list_actions):
-    start_time = time.time()
-# def handle_request(original_plan, initial_state, goal):
+# def handle_request(list_actions):
+    # start_time = time.time()
+def handle_request(original_plan, initial_state, goal):
     global returned_times
     if testing:
         create_grounded_actions()
@@ -1094,11 +1094,10 @@ def handle_request(list_actions):
         print(goal_distr)
 
     rospy.loginfo('Returned ' + str(returned_times))
-    returned_times = returned_times + 1
-    elapsed_time = time.time() - start_time
-    # rospy.loginfo('>> Elapsed time: ' + str(elapsed_time))
-    return CalculateProbabilityResponse(1.0, elapsed_time)
-    # return 1.0
+    # returned_times = returned_times + 1
+    # elapsed_time = time.time() - start_time
+    # return CalculateProbabilityResponse(1.0, elapsed_time)
+    return CalculateProbabilityResponse(1.0)
 
 
 ######### GET STUFF #########
