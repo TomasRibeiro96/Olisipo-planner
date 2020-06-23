@@ -177,6 +177,17 @@ class CSPExecGenerator
                                                                                 std::vector<int> open_list);
 
         /**
+         * @brief splits string on delimeter
+         * @param strToSplit
+         * @param delimeter
+         * @return vector of strings
+         */
+        std::vector<std::string> split(std::string strToSplit, char delimeter);
+
+        void fillExpectedStates(std::vector<rosplan_knowledge_msgs::KnowledgeItem> all_facts,
+                                std::vector<std::string> expected_predicates);
+
+        /**
          * @brief shift nodes from open list (O) to ordered plans (R) offering different execution alternatives
          * @param open_list the list of nodes which have not yet being ordered, at startup is composed of all nodes
          * in the partially ordered plan, later the game is take from it the applicable nodes and pass them to
@@ -191,6 +202,8 @@ class CSPExecGenerator
          * @param reason_for_reverse used for log information and feedback to user
          */
         void reverseLastAction(std::string reason_for_reverse);
+
+        bool currentStateContainsExpectedFacts();
 
         /**
          * @brief generate plan alternatives based on search
@@ -277,10 +290,8 @@ class CSPExecGenerator
         /// R: is stored in exec_aternatives_msg_.esterel_plans
         rosplan_dispatch_msgs::EsterelPlanArray exec_aternatives_msg_;
 
-        std::vector<rosplan_knowledge_msgs::KnowledgeItem> expected_state_;
+        std::vector<std::vector<rosplan_knowledge_msgs::KnowledgeItem>> expected_facts_;
         
-        std::vector<rosplan_knowledge_msgs::KnowledgeItem> state_after_first_action_;
-
         std::vector<int> best_plan_;
 
 

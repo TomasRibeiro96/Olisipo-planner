@@ -23,7 +23,7 @@ receivedPlan = False
 testing = True
 returned_times = 1
 
-
+#### TODO: Retornar os predicados relevantes em cada layer para verificar se eh preciso replanear depois de executar acao
 
 class Action:
 
@@ -568,6 +568,10 @@ class ActionEnd:
 
 
 
+def isPredicate(node_name):
+    return len(node_name.split('%')) > 1
+
+
 ######### SIMPLIFY NAMES #########
 def removeStartEndFromName(name):
     ''' Removes time from action name, works with or without parameters in name '''
@@ -610,7 +614,7 @@ def writePredicatesToFile(all_nodes):
     file = open('predicate_layers.txt', 'w')
     file.write('PREDICATE LAYERS:\n')
     for node_name in all_nodes:
-        if len(node_name.split('%')) > 1:
+        if isPredicate(node_name):
             file.write(node_name+'\n')
     # for layer_num in range(plan_length+1):
     #     file.write('>> Layer: ' + str(layer_num) + '\n')
@@ -875,8 +879,8 @@ def addActionEdges(action, action_name, predicates_par_child, actions_par_child,
 
 
 ######### REMOVE NODES #########
-def removeNode(node, all_nodes, actions_par_child, predicates_par_child, isPredicate):    
-    if isPredicate:
+def removeNode(node, all_nodes, actions_par_child, predicates_par_child, is_predicate):    
+    if is_predicate:
         predicates_par_child.pop(node)
     else:
         actions_par_child.pop(node)
@@ -905,9 +909,7 @@ def pruneNetwork(all_nodes, actions_par_child, predicates_par_child, goal):
         goal_with_time.add(item + '%' + str(size))
 
     for node in reversed(all_nodes):
-        isPredicate = False
-        if len(node.split('%')) > 1:
-            isPredicate = True
+        is_predicate = isPredicate(node)
 
         # print('>>> Node: ' + node)
         # if isPredicate:
@@ -917,12 +919,12 @@ def pruneNetwork(all_nodes, actions_par_child, predicates_par_child, goal):
         #     print('> Children: ' + str(actions_par_child[node]['children']))
         #     print('> Parents: ' + str(actions_par_child[node]['parents']))
 
-        if isPredicate:
+        if is_predicate:
             ##### Rule 1 #####
             # If predicate does not have children and is not the goal, then remove it
             if not node in goal_with_time:
                 if not predicates_par_child[node]['children']:
-                    removeNode(node, all_nodes, actions_par_child, predicates_par_child, isPredicate)
+                    removeNode(node, all_nodes, actions_par_child, predicates_par_child, is_predicate)
                     continue
 
             for action_name in actions_par_child.keys():
@@ -975,7 +977,7 @@ def buildNetworkInModel(model, all_nodes, actions_par_child, predicates_par_chil
         nodes_dict[node_name] = node
         model.add_node(node)
 
-        if len(node_name.split('%')) > 1:
+        if isPredicate(node_name):
             parents_dict = predicates_par_child
         else:
             parents_dict = actions_par_child
@@ -1054,6 +1056,22 @@ def getElementsFromStateList(elements_list):
             element_name = element_name + '#' + value.value
         elements_set.add(element_name)
     return elements_set
+
+
+def getNodesLayers(nodes, plan):
+    nodes_layers = list()
+
+    # for layer_number in range(len(plan)):
+    #     nodes_layers[layer_number] = set()
+
+    for node in nodes:
+        if isPredicate(node):
+            # index = int(node.split('%')[1])
+            # nodes_layers[index].add(node)
+            new_node = node.replace('#', ' ')
+            nodes_layers.append(new_node)
+    
+    return nodes_layers
 
 
 # Gets everything needed to start building the network
@@ -1169,6 +1187,8 @@ def handleRequest(original_plan):
     print('Writing nodes and CPDs to file')
     writeNodesAndCPDsToFile(all_nodes, cpds_map)
 
+    predicates = getNodesLayers(all_nodes)
+
     size = len(plan)
     distr_dict = dict()
     for item in all_nodes:
@@ -1191,7 +1211,8 @@ def handleRequest(original_plan):
 
     rospy.loginfo('Returned ' + str(returned_times))
     returned_times = returned_times + 1
-    return CalculateProbabilityResponse(1.0)
+    # TODO: It's just returning a number, it's not calculating the probability yet
+    return CalculateProbabilityResponse(0.3, predicates)
 
 
 ######### SERVER INITIALISATION #########

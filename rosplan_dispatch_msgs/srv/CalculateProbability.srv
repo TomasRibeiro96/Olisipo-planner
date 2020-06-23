@@ -2,4 +2,4 @@ int32[] nodes
 ---
 float32 plan_success_probability
 # float32 computing_time
-# int32[int32[]] expected_predicates
+string[] expected_predicates

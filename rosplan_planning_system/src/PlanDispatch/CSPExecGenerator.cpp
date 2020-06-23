@@ -559,6 +559,42 @@ std::vector<rosplan_knowledge_msgs::KnowledgeItem> CSPExecGenerator::getStateAft
     return state_after_action;
 }
 
+std::vector<std::string> CSPExecGenerator::split(std::string strToSplit, char delimeter){
+    // std::string split implementation by using delimiter as a character.
+    std::stringstream ss(strToSplit);
+    std::string item;
+    std::vector<std::string> splittedStrings;
+    while (std::getline(ss, item, delimeter))
+    {
+       splittedStrings.push_back(item);
+    }
+    return splittedStrings;
+}
+
+void CSPExecGenerator::fillExpectedStates(std::vector<rosplan_knowledge_msgs::KnowledgeItem> all_facts,
+                                            std::vector<std::string> expected_predicates){
+    for(auto&& predicate: expected_predicates){
+        for(auto&& fact: all_facts){
+            std::vector<std::string> splitted_string = split(predicate, ' ');
+            // If both facts have the same name
+            if(splitted_string[0] == fact.attribute_name){
+                int i = 1;
+                bool params_equal = true;
+                // And the same parameters
+                for(auto&& param: fact.values){
+                    if(splitted_string[i] != param.value){
+                        params_equal = false;
+                    }
+                }
+                // Then fact has been found and add to expected_states on respective layer
+                if(params_equal){
+                    int index = std::stoi(splitted_string[1]);
+                    expected_facts_[index].push_back(fact);
+                }
+            }
+        }
+    }
+}
 
 bool CSPExecGenerator::orderNodes(std::vector<int> open_list, int &number_expanded_nodes, double plan_prob,
                                     std::vector<std::vector<rosplan_knowledge_msgs::KnowledgeItem>> explored_states)
@@ -597,17 +633,25 @@ bool CSPExecGenerator::orderNodes(std::vector<int> open_list, int &number_expand
         rosplan_dispatch_msgs::CalculateProbability srv;
         double plan_success_probability;
         srv.request.nodes = ordered_nodes_;
+
         if(calculate_prob_client_.call(srv)){
             plan_success_probability = srv.response.plan_success_probability;
+            std::vector<std::string> expected_predicates;
+            // TODO: Split strings (index and predicate) and add it to another variable
+            expected_predicates = srv.response.expected_predicates;
+            std::vector<std::vector<rosplan_knowledge_msgs::KnowledgeItem>> expected_facts_;
+            std::vector<rosplan_knowledge_msgs::KnowledgeItem> all_facts;
+            
+            if(action_simulator_.getAllGroundedFacts(all_facts)){
+                fillExpectedStates(all_facts, expected_predicates);
+            }
         }
-        else{
+        else
             plan_success_probability = computePlanProbability(ordered_nodes_, action_prob_map_);
-        }
+
         exec_aternatives_msg_.plan_success_prob.push_back(plan_success_probability);
 
         // ROS_INFO(">>> Goal achieved with probability %f <<<\n", plan_success_probability);
-
-        expected_state_ = state_after_first_action_;
 
         // backtrack: popf, remove last element from f, store in variable and revert that action
         backtrack("goal was achieved");
@@ -663,8 +707,6 @@ bool CSPExecGenerator::orderNodes(std::vector<int> open_list, int &number_expand
         if(action_start){
             std::vector<rosplan_knowledge_msgs::KnowledgeItem> state_after_action = getStateAfterAction(action_name, params, open_list_copy);
             repeated_state = stateIsRepeated(state_after_action, explored_states);
-            if(ordered_nodes_.size() == 0)
-                state_after_first_action_ = state_after_action;
             // ROS_INFO(">>> State after action: %s", getStateAsString(state_after_first_action).c_str());
             // ROS_INFO(">>> Current state: %s", getStateAsString(current_state).c_str());
             // ROS_INFO(repeated_state ? "+++ State is repeated +++" : "--- State is NOT repeated");
@@ -677,63 +719,59 @@ bool CSPExecGenerator::orderNodes(std::vector<int> open_list, int &number_expand
         if(branch_and_bound){
             if(!repeated_state){
             
-            double plan_success_probability;
-            std::chrono::steady_clock::time_point call_time = std::chrono::steady_clock::now();
+                double plan_success_probability;
+                std::chrono::steady_clock::time_point call_time = std::chrono::steady_clock::now();
 
-            // if(calculate_prob_client_.call(srv)){
-            //     std::chrono::steady_clock::time_point response_time = std::chrono::steady_clock::now();
-            //     double full_service_time = std::chrono::duration_cast<std::chrono::nanoseconds> (response_time - call_time).count() * (double)pow(10,-9);
-            //     // double computing_service_time = srv.response.computing_time;
-            //     // service_time_sum += full_service_time - computing_service_time;
-            //     number_service_calls++;
-            //     // ROS_INFO("|||| Service time: %f s|||", service_time_s);
-            //     plan_success_probability = srv.response.plan_success_probability;
-            //     // ROS_INFO("||| Received response: %f |||", plan_success_probability);
-            // }
-            // else{
-                // ROS_INFO("||| DID NOT RECEIVE RESPONSE |||");
-                std::map<int, double>::const_iterator prob_it = action_prob_map_.find(*a);
-                double action_prob = prob_it->second;
-                plan_success_probability = plan_prob*action_prob;
-                // plan_success_probability = computePlanProbability(ordered_nodes_, action_prob_map_);
-            // }
+                // if(calculate_prob_client_.call(srv)){
+                //     std::chrono::steady_clock::time_point response_time = std::chrono::steady_clock::now();
+                //     double full_service_time = std::chrono::duration_cast<std::chrono::nanoseconds> (response_time - call_time).count() * (double)pow(10,-9);
+                //     // double computing_service_time = srv.response.computing_time;
+                //     // service_time_sum += full_service_time - computing_service_time;
+                //     number_service_calls++;
+                //     // ROS_INFO("|||| Service time: %f s|||", service_time_s);
+                //     plan_success_probability = srv.response.plan_success_probability;
+                //     // ROS_INFO("||| Received response: %f |||", plan_success_probability);
+                // }
+                // else{
+                    // ROS_INFO("||| DID NOT RECEIVE RESPONSE |||");
+                    std::map<int, double>::const_iterator prob_it = action_prob_map_.find(*a);
+                    double action_prob = prob_it->second;
+                    plan_success_probability = plan_prob*action_prob;
+                    // plan_success_probability = computePlanProbability(ordered_nodes_, action_prob_map_);
+                // }
 
-            // TODO: Save length of plan and save the shortest one with the highest success probability
-            //// If success probability is the same, save it if the number of actions is lower
-            int size = exec_aternatives_msg_.plan_success_prob.size();
-            double best_prob_yet = 0;
-            if(size != 0)
-                best_prob_yet = exec_aternatives_msg_.plan_success_prob[size-1];
-            
-            // ROS_INFO(">>> Current probability: %f", plan_success_probability);
-            // ROS_INFO(">>> Best probability yet: %f", best_prob_yet);
+                // TODO: Save length of plan and save the shortest one with the highest success probability
+                //// If success probability is the same, save it if the number of actions is lower
+                int size = exec_aternatives_msg_.plan_success_prob.size();
+                double best_prob_yet = 0;
+                if(size != 0)
+                    best_prob_yet = exec_aternatives_msg_.plan_success_prob[size-1];
+                
+                // ROS_INFO(">>> Current probability: %f", plan_success_probability);
+                // ROS_INFO(">>> Best probability yet: %f", best_prob_yet);
 
-            if(plan_success_probability > best_prob_yet){
-                number_expanded_nodes++;
+                if(plan_success_probability > best_prob_yet){
+                    number_expanded_nodes++;
 
-                // std::stringstream full_action_name = getFullActionName(action_name, params, action_start);
-                // ROS_INFO(">>>>> Apply action : %s <<<<<", full_action_name.str().c_str());
-                // Add action to queue
-                ordered_nodes_.push_back(*a);
+                    // std::stringstream full_action_name = getFullActionName(action_name, params, action_start);
+                    // ROS_INFO(">>>>> Apply action : %s <<<<<", full_action_name.str().c_str());
+                    // Add action to queue
+                    ordered_nodes_.push_back(*a);
 
-                if(!simulateAction(action_start, action_name, params))
-                    return false;
-               
-                orderNodes(open_list_copy, number_expanded_nodes, plan_success_probability, explored_states);
+                    if(!simulateAction(action_start, action_name, params))
+                        return false;
+                
+                    // printNodes("stack after adding", ordered_nodes_);
 
-                // printNodes("stack after adding", ordered_nodes_);
+                    // ROS_INFO("++++ Performed action");
+                    // printNodes("stack after adding", ordered_nodes_);
 
-                // ROS_INFO("++++ Performed action");
-                // printNodes("stack after adding", ordered_nodes_);
+                    orderNodes(open_list_copy, number_expanded_nodes, plan_success_probability, explored_states);                    
+                }
+                else{
+                    // ROS_INFO("---- Skipped action");
+                } 
             }
-            else{
-                // ROS_INFO("---- Skipped action");
-                // printNodes("stack after adding", ordered_nodes_);
-                // backtrack("success probability lower than best one so far");
-            }
-            
-        }
-
         }
         else{
             //// Original version on code ////
@@ -827,6 +865,19 @@ std::stringstream CSPExecGenerator::getNodesWithNames(std::vector<int> &nodes)
     return ss;
 }
 
+bool CSPExecGenerator::currentStateContainsExpectedFacts(){
+    std::vector<rosplan_knowledge_msgs::KnowledgeItem> current_state = action_simulator_.getCurrentState();
+    std::vector<rosplan_knowledge_msgs::KnowledgeItem> expected_facts = expected_facts_[0];
+    bool all_facts_are_present = true;
+    for(auto&& fact: expected_facts){
+        if(std::find(current_state.begin(), current_state.end(), fact) == current_state.end()){
+            all_facts_are_present = false;
+            break;
+        }
+    }
+    return all_facts_are_present;
+}
+
 bool CSPExecGenerator::generatePlans()
 {
     ROS_INFO("\n");
@@ -853,14 +904,14 @@ bool CSPExecGenerator::generatePlans()
 
     printNodes(">>> Open list", open_list);
 
-    // Check if current state is the same as expected state
-    if(!expected_state_.empty()){
-        ROS_INFO(">>> Expected state: %s", getStateAsString(expected_state_).c_str());
-        ROS_INFO(">>> Current state:  %s", getStateAsString(action_simulator_.getCurrentState()).c_str());
-        ROS_INFO("States are equal: %s", statesAreEqual(expected_state_, action_simulator_.getCurrentState())? "YES" : "NO");
-        if(statesAreEqual(expected_state_, action_simulator_.getCurrentState())){
+    // Check if current state contains expected facts
+    if(!expected_facts_.empty()){
+        if(currentStateContainsExpectedFacts());{
             // discard first action (already executed)
             best_plan_.erase(best_plan_.begin());
+
+            // discard first layer (current layer) of expected facts
+            expected_facts_.erase(expected_facts_.begin());
 
             // convert list of orderes nodes into esterel plan (reuses the originally received esterel plan)
             rosplan_dispatch_msgs::EsterelPlan esterel_plan_msg = convertListToEsterel(best_plan_);
