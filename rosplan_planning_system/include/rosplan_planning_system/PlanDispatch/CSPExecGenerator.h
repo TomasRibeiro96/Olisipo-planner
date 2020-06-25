@@ -50,7 +50,7 @@ class CSPExecGenerator
          * @brief easy print vector nodes' names
          * @param nodes the node list
          */
-        std::stringstream getNodesWithNames(std::vector<int> &nodes);
+        std::vector<std::string> getNodesWithNames(std::vector<int> &nodes);
 
         /**
          * @brief callback to receive the fully ordered esterel plan
@@ -136,6 +136,8 @@ class CSPExecGenerator
 
         std::string getStateAsString(std::vector<rosplan_knowledge_msgs::KnowledgeItem> state);
 
+        bool factsAreEqual(rosplan_knowledge_msgs::KnowledgeItem fact1, rosplan_knowledge_msgs::KnowledgeItem fact2);
+
         /**
          * @brief checks if two states are the same
          * @param state1
@@ -144,6 +146,8 @@ class CSPExecGenerator
          */
         bool statesAreEqual(std::vector<rosplan_knowledge_msgs::KnowledgeItem> state1, std::vector<rosplan_knowledge_msgs::KnowledgeItem> state2);
         
+        std::string buildActionName(std::string action_name, std::vector<std::string> params, bool action_start);
+
         /**
          * @brief returns an action's name with parameters
          * @param action_name
@@ -151,7 +155,7 @@ class CSPExecGenerator
          * @param action_start true if it's action start and false otherwise
          * @return action_name%param1%param2...
          */
-        std::stringstream getFullActionName(std::string action_name, std::vector<std::string> params, bool action_start);
+        std::string getFullActionName(int a);
 
         /**
          * @brief simulates action
@@ -184,8 +188,7 @@ class CSPExecGenerator
          */
         std::vector<std::string> split(std::string strToSplit, char delimeter);
 
-        void fillExpectedStates(std::vector<rosplan_knowledge_msgs::KnowledgeItem> all_facts,
-                                std::vector<std::string> expected_predicates);
+        void fillExpectedFacts(std::vector<std::string> expected_predicates);
 
         /**
          * @brief shift nodes from open list (O) to ordered plans (R) offering different execution alternatives
@@ -203,7 +206,17 @@ class CSPExecGenerator
          */
         void reverseLastAction(std::string reason_for_reverse);
 
-        bool currentStateContainsExpectedFacts();
+        bool stateHasFact(std::vector<rosplan_knowledge_msgs::KnowledgeItem> state, rosplan_knowledge_msgs::KnowledgeItem fact);
+
+        bool stateContainsFacts(std::vector<rosplan_knowledge_msgs::KnowledgeItem> state,
+                                        std::vector<rosplan_knowledge_msgs::KnowledgeItem> facts);
+
+        /**
+         * @brief checks if current state contains the facts in any layer of expected_states_
+         * @return index of the latter layer which contains facts present in the current state.
+         *         Returns -1 if the facts are not present in any layer
+         */
+        int currentStateContainsExpectedFacts();
 
         /**
          * @brief generate plan alternatives based on search
@@ -253,6 +266,14 @@ class CSPExecGenerator
          */
         void update();
 
+        bool isStartAction(int a);
+
+        bool atStartAlreadyExecuted(int a);
+
+        bool actionsHaveSameNameAndParams(int action1, int action2);
+
+        void removeStartActionFromOccurringActions(int action);
+
     private:
         // ros related variables
         ros::NodeHandle nh_;
@@ -294,6 +315,9 @@ class CSPExecGenerator
         
         std::vector<int> best_plan_;
 
+        std::vector<int> actions_occurring_;
+
+        int action_to_be_executed_;
 
 };
 #endif  // CSP_EXEC_GENERATOR_NODE_H

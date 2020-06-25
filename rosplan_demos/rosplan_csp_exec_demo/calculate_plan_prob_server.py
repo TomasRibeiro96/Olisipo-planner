@@ -15,12 +15,11 @@ from pomegranate import *
 import collections
 import time
 
-original_plan = list()
 pred_probabilities_map = dict()
 action_probabilities_map = dict()
 cpds_map = dict()
 receivedPlan = False
-testing = True
+testing = False
 returned_times = 1
 
 #### TODO: Retornar os predicados relevantes em cada layer para verificar se eh preciso replanear depois de executar acao
@@ -275,6 +274,13 @@ class Action:
                 return item
         return None
 
+    @classmethod
+    def getActionNamesList(cls):
+        names_list = list()
+        for item in Action.actionsList:
+            names_list.append(item.name)
+        return names_list
+
 
 
 class GroundedAction:
@@ -381,11 +387,11 @@ class GroundedAction:
 
 
     @classmethod
-    def printGroundedActions(cls):
+    def getGroundedActionsList(cls):
         list_actions = list()
         for grounded_action in GroundedAction.actionsList:
             list_actions.append(grounded_action.name)
-        print(str(list_actions))
+        return list_actions
 
 
 
@@ -715,7 +721,7 @@ def createActions(operators):
         Action(action_name)
 
 
-def createGroundedActions():
+def createGroundedActions(original_plan):
     for action_name in original_plan:
         name = removeStartEndParamsFromName(action_name)
         if not Action.getAction(name):
@@ -850,10 +856,10 @@ def connectActionEndToActionStart(action, action_name, end_index, all_nodes, act
         action_start_name = action_start.name + '$' + str(j)
         if action_start_name in all_nodes:
             # Connecting ActionEnd to ActionStart
-            # model.add_edge(action_start_node, action_node)
             actions_par_child[action_name]['parents'].add(action_start_name)
             actions_par_child[action_start_name]['children'].add(action_name)
             return j
+    return 0
 
 
 def connectActionToOverAllPredicates(action, action_name, start_index, end_index, actions_par_child, predicates_par_child):
@@ -875,6 +881,7 @@ def addActionEdges(action, action_name, predicates_par_child, actions_par_child,
     if isinstance(action, ActionEnd):
         end_index = layer_number
         start_index = connectActionEndToActionStart(action, action_name, end_index, all_nodes, actions_par_child)
+        # If action has no action_start then do not connect to over all predicates
         connectActionToOverAllPredicates(action, action_name, start_index, end_index, actions_par_child, predicates_par_child)
 
 
@@ -988,10 +995,11 @@ def buildNetworkInModel(model, all_nodes, actions_par_child, predicates_par_chil
 
 
 ######### PARSE PLAN #########
-def convertPlanToActionStart_End():
+def convertPlanToActionStart_End(original_plan):
     plan = list()
     for action_name in original_plan:
         name = removeStartEndFromName(action_name)
+        # print("Name: " + name)
         grounded_action = GroundedAction.getGroundedAction(name)
         if action_name.split('#')[0][-5:] == 'start':
             action_start = ActionStart(grounded_action)
@@ -1003,20 +1011,20 @@ def convertPlanToActionStart_End():
 
 
 ######### GET STUFF #########
-def getOnePlan(data):
-    global receivedPlan
-    global original_plan
-    if receivedPlan is False:
-        ordered_plan = data.esterel_plans[0].nodes
+# def getOnePlan(data):
+#     global receivedPlan
+#     global original_plan
+#     if receivedPlan is False:
+#         ordered_plan = data.esterel_plans[0].nodes
 
-        for item in ordered_plan:
-            name = str(item.name)  
-            # adds the action parameters to the name
-            for param in item.action.parameters:
-                name = name + '#' + str(param.value)
-            original_plan.append(name)
+#         for item in ordered_plan:
+#             name = str(item.name)  
+#             # adds the action parameters to the name
+#             for param in item.action.parameters:
+#                 name = name + '#' + str(param.value)
+#             original_plan.append(name)
         
-        receivedPlan = True
+#         receivedPlan = True
 
 
 def getProbabilities():
@@ -1058,57 +1066,47 @@ def getElementsFromStateList(elements_list):
     return elements_set
 
 
-def getNodesLayers(nodes, plan):
+def getNodesLayers(nodes):
     nodes_layers = list()
-
-    # for layer_number in range(len(plan)):
-    #     nodes_layers[layer_number] = set()
 
     for node in nodes:
         if isPredicate(node):
-            # index = int(node.split('%')[1])
-            # nodes_layers[index].add(node)
-            new_node = node.replace('#', ' ')
-            nodes_layers.append(new_node)
+            nodes_layers.append(node)
     
     return nodes_layers
 
 
 # Gets everything needed to start building the network
 def setupEverything():
-    print ("Waiting for service")
+    # print ("Waiting for service")
     rospy.wait_for_service('/rosplan_knowledge_base/domain/operators')
     rospy.wait_for_service('/rosplan_knowledge_base/domain/operator_details')
 
-    print ("Obtaining operators")
+    # print ("Obtaining operators")
     domain_operators = rospy.ServiceProxy('/rosplan_knowledge_base/domain/operators', GetDomainOperatorService)
 
-    createGroundedActions()
-
-    print('Obtaining goal')
+    # print('Obtaining goal')
     goals_list = rospy.ServiceProxy("/rosplan_knowledge_base/state/goals", GetAttributeService)().attributes
     goal = getElementsFromStateList(goals_list)
-    print(goal)
 
-    print('Obtaining initial state')
+    # print('Obtaining initial state')
     initial_state_list = rospy.ServiceProxy('/rosplan_knowledge_base/state/propositions', GetAttributeService)().attributes
     initial_state = getElementsFromStateList(initial_state_list)
-    print(initial_state)
 
-    if testing:
-        # Gets a totally-ordered plan from service
-        print('Obtaining plan')
-        rospy.Subscriber("/csp_exec_generator/valid_plans", EsterelPlanArray, getOnePlan)
-        while receivedPlan is False:
-            continue
-        print(original_plan)
+    # if testing:
+    #     # Gets a totally-ordered plan from service
+    #     # print('Obtaining plan')
+    #     rospy.Subscriber("/csp_exec_generator/valid_plans", EsterelPlanArray, getOnePlan)
+    #     while receivedPlan is False:
+    #         continue
+    #     print(original_plan)
 
-    print('Obtaining probabilities')
+    # print('Obtaining probabilities')
     getProbabilities()
-    print('   Predicates: ' + str(pred_probabilities_map))
-    print('   Actions: ' + str(action_probabilities_map))
+    # print('   Predicates: ' + str(pred_probabilities_map))
+    # print('   Actions: ' + str(action_probabilities_map))
 
-    print('Creating actions')
+    # print('Creating actions')
     operators = domain_operators().operators
     createActions(operators)
 
@@ -1117,14 +1115,25 @@ def setupEverything():
 
 ######### MAIN FUNCTION #########
 ## Builds, prunes and writes network to file
-def handleRequest(original_plan):
+def handleRequest(req):
+
+    original_plan = req.nodes
+
 
     initial_state, goal = setupEverything()
+    # print("Initial state: " + str(initial_state))
+    # print("Goal: " + str(goal))
 
     global returned_times
 
+    createGroundedActions(original_plan)
+
+    # print("Original plan: " + str(original_plan))
+    # print("Actions: " + str(Action.getActionNamesList()))
+    # print("Grounded actions: " + str(GroundedAction.getGroundedActionsList()))
+
     # Get plan as a list of ActionStart and ActionEnd's instances
-    plan = convertPlanToActionStart_End()
+    plan = convertPlanToActionStart_End(original_plan)
 
     predicates_set = set()
     all_nodes = list()
@@ -1167,52 +1176,54 @@ def handleRequest(original_plan):
     # model.plot()
     # plt.show()
 
-    print('Checking for repeated nodes')
-    checkForRepeatedNodes(all_nodes)
-    # print('Checking nodes without parents')
-    # checkNodesWithoutParents(parents)
-    # print('Checking nodes without children')
-    # checkNodesWithoutChildren(children, plan)
-    # print('Checking for cycles')
-    # if checkCycles(all_nodes, children):
-    #     print('  Network has no cycles')
-    # else:
-    #     print('!!! Network has cycles !!! ')
-    print('Writing predicates to file')
-    writePredicatesToFile(all_nodes)
-    print('Writing parents to file')
-    writeParentsToFile(predicates_par_child)
-    print('Writing actions_par_child to file')
-    writeActionsToFile(actions_par_child)
-    print('Writing nodes and CPDs to file')
-    writeNodesAndCPDsToFile(all_nodes, cpds_map)
-
-    predicates = getNodesLayers(all_nodes)
-
-    size = len(plan)
-    distr_dict = dict()
-    for item in all_nodes:
-        # If item is part of initial state then set it to true, else false
-        if len(item.split('%')) > 1:
-            if item.split('%')[1] == '0':
-                if item.split('%')[0] in initial_state:
-                    distr_dict[item] = 'T'
-                else:
-                    distr_dict[item] = 'F'
-    prob_distr = model.predict_proba([distr_dict])[0]
-
-    goal_distr = dict()
-    for item in goal:
-        index = all_nodes.index(item + '%' + str(size))
-        goal_distr[all_nodes[index]] = prob_distr[index]
+    # print('Checking for repeated nodes')
+    # checkForRepeatedNodes(all_nodes)
+    # # print('Checking nodes without parents')
+    # # checkNodesWithoutParents(parents)
+    # # print('Checking nodes without children')
+    # # checkNodesWithoutChildren(children, plan)
+    # # print('Checking for cycles')
+    # # if checkCycles(all_nodes, children):
+    # #     print('  Network has no cycles')
+    # # else:
+    # #     print('!!! Network has cycles !!! ')
+    # print('Writing predicates to file')
+    # writePredicatesToFile(all_nodes)
+    # print('Writing parents to file')
+    # writeParentsToFile(predicates_par_child)
+    # print('Writing actions_par_child to file')
+    # writeActionsToFile(actions_par_child)
+    # print('Writing nodes and CPDs to file')
+    # writeNodesAndCPDsToFile(all_nodes, cpds_map)
     
-    print('\n\n>>> Goal distribution: ')
-    print(goal_distr)
+    # print("All nodes: " + str(all_nodes))
+    relevant_predicates = getNodesLayers(all_nodes)
+
+    # size = len(plan)
+    # distr_dict = dict()
+    # for item in all_nodes:
+    #     # If item is part of initial state then set it to true, else false
+    #     if len(item.split('%')) > 1:
+    #         if item.split('%')[1] == '0':
+    #             if item.split('%')[0] in initial_state:
+    #                 distr_dict[item] = 'T'
+    #             else:
+    #                 distr_dict[item] = 'F'
+    # prob_distr = model.predict_proba([distr_dict])[0]
+
+    # goal_distr = dict()
+    # for item in goal:
+    #     index = all_nodes.index(item + '%' + str(size))
+    #     goal_distr[all_nodes[index]] = prob_distr[index]
+    
+    # print('\n\n>>> Goal distribution: ')
+    # print(goal_distr)
 
     rospy.loginfo('Returned ' + str(returned_times))
     returned_times = returned_times + 1
+    print('>>> Relevant predicates: ' + str(relevant_predicates))
     # TODO: It's just returning a number, it's not calculating the probability yet
-    return CalculateProbabilityResponse(0.3, predicates)
+    return CalculateProbabilityResponse(0.4, relevant_predicates)
 
 
 ######### SERVER INITIALISATION #########

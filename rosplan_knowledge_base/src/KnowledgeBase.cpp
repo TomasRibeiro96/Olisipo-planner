@@ -99,12 +99,22 @@ namespace KCL_rosplan {
 				break;
 			}
 
+			// stringstream for printing facts
+			// std::stringstream ss;
+			// ss << iit->attribute_name;
+			// for(auto&& param: iit->values){
+			// 	ss << " ";
+			// 	ss << param.value;
+			// }
+
 			if(!present) {
 				res.all_true = false;
 				res.results.push_back(false);
 				res.false_knowledge.push_back(*iit);
+				// ROS_INFO("--- Fact not present: %s ---", ss.str().c_str());
 			} else {
 				res.results.push_back(true);
+				// ROS_INFO("--- Fact present: %s ---", ss.str().c_str());
 			}
 		}
 

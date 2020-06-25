@@ -19,6 +19,9 @@ bool branch_and_bound;
 int number_service_calls = 0;
 // double service_time_sum = 0;
 
+// TODO: When service is called again, if the at_start effects of an action
+// are alreasdy present in the current state, then remove it from the open list
+
 CSPExecGenerator::CSPExecGenerator() : nh_("~"), is_esterel_plan_received_(false), max_search_depth_(0)
 {
     // subscriptions: subscribe to esterel plan, a fully ordered plan
@@ -61,8 +64,8 @@ void CSPExecGenerator::printNodes(std::string msg, std::vector<int> &nodes)
         if(!getAction(*nit, action_name, params, original_plan_, action_start, action_id)) {
             ROS_ERROR("failed to get action properties (while applying action)");
         }
-        std::stringstream full_name = getFullActionName(action_name, params, action_start);
-        ss << full_name.str();
+        std::string full_name = buildActionName(action_name, params, action_start);
+        ss << full_name;
         ss << " | ";
     }
     ROS_INFO("%s: {%s}", msg.c_str(), ss.str().c_str());
@@ -434,9 +437,13 @@ std::string CSPExecGenerator::getStateAsString(std::vector<rosplan_knowledge_msg
     std::stringstream ss;
     for(auto&& fact1: state){
         ss << action_simulator_.convertPredToString(fact1);
-        ss << " || ";
+        ss << ", ";
     }
     return ss.str();
+}
+
+bool CSPExecGenerator::factsAreEqual(rosplan_knowledge_msgs::KnowledgeItem fact1, rosplan_knowledge_msgs::KnowledgeItem fact2){
+    return action_simulator_.convertPredToString(fact1) == action_simulator_.convertPredToString(fact2);
 }
 
 bool CSPExecGenerator::statesAreEqual(std::vector<rosplan_knowledge_msgs::KnowledgeItem> state1,
@@ -456,7 +463,7 @@ bool CSPExecGenerator::statesAreEqual(std::vector<rosplan_knowledge_msgs::Knowle
 
             // If fact1 is found in state2, then we can stop searching state2
             // and start searching for the next fact1 in state2
-            if(action_simulator_.convertPredToString(fact1) == action_simulator_.convertPredToString(fact2)){
+            if(factsAreEqual(fact1, fact2)){
                 fact_found = true;
                 break;
             }
@@ -469,7 +476,18 @@ bool CSPExecGenerator::statesAreEqual(std::vector<rosplan_knowledge_msgs::Knowle
 
 }
 
-std::stringstream CSPExecGenerator::getFullActionName(std::string action_name, std::vector<std::string> params, bool action_start){
+std::string CSPExecGenerator::getFullActionName(int a){
+    std::string action_name;
+    std::vector<std::string> params;
+    bool action_start;
+    int action_id;
+    if(!getAction(a, action_name, params, original_plan_, action_start, action_id)) {
+        ROS_ERROR("failed to get action properties (while getting name");
+    }
+    return buildActionName(action_name, params, action_start);
+}
+
+std::string CSPExecGenerator::buildActionName(std::string action_name, std::vector<std::string> params, bool action_start){
     std::stringstream ss;
     ss << action_name;
     if(action_start){
@@ -482,8 +500,7 @@ std::stringstream CSPExecGenerator::getFullActionName(std::string action_name, s
         ss << "%";
         ss << parameter;
     }
-
-    return ss;
+    return ss.str();
 }
 
 bool CSPExecGenerator::simulateAction(bool action_start, std::string action_name, std::vector<std::string> params){
@@ -520,7 +537,7 @@ std::vector<rosplan_knowledge_msgs::KnowledgeItem> CSPExecGenerator::getStateAft
                                                                                         std::vector<std::string> params,
                                                                                         std::vector<int> open_list){
 
-    std::string action1 = getFullActionName(action_name, params, true).str();
+    std::string action1 = buildActionName(action_name, params, true);
 
     for(auto a=open_list.begin(); a!=open_list.end(); a++){
         // get action properties (name, params, type) from node id
@@ -532,11 +549,11 @@ std::vector<rosplan_knowledge_msgs::KnowledgeItem> CSPExecGenerator::getStateAft
             ROS_ERROR("failed to get action properties (while applying action)");
         }
         
-        std::string action2 = getFullActionName(name, parameters, action_start).str();
+        std::string action2 = buildActionName(name, parameters, action_start);
 
         if(action1 == action2){
             // ROS_INFO("Found action");
-            action1 = getFullActionName(action_name, params, false).str();
+            action1 = buildActionName(action_name, params, false);
             if(!simulateAction(action_start, name, parameters)){
                 ROS_ERROR("Could not simulate action: %s", action2.c_str());
             }
@@ -571,29 +588,56 @@ std::vector<std::string> CSPExecGenerator::split(std::string strToSplit, char de
     return splittedStrings;
 }
 
-void CSPExecGenerator::fillExpectedStates(std::vector<rosplan_knowledge_msgs::KnowledgeItem> all_facts,
-                                            std::vector<std::string> expected_predicates){
+void CSPExecGenerator::fillExpectedFacts(std::vector<std::string> expected_predicates){
+
+    expected_facts_.clear();
+
+    std::stringstream ss;
     for(auto&& predicate: expected_predicates){
-        for(auto&& fact: all_facts){
-            std::vector<std::string> splitted_string = split(predicate, ' ');
-            // If both facts have the same name
-            if(splitted_string[0] == fact.attribute_name){
-                int i = 1;
-                bool params_equal = true;
-                // And the same parameters
-                for(auto&& param: fact.values){
-                    if(splitted_string[i] != param.value){
-                        params_equal = false;
-                    }
-                }
-                // Then fact has been found and add to expected_states on respective layer
-                if(params_equal){
-                    int index = std::stoi(splitted_string[1]);
-                    expected_facts_[index].push_back(fact);
-                }
-            }
+        ss << predicate;
+        ss << " | ";
+    }
+
+    ROS_INFO(">>> Expected predicates: %s", ss.str().c_str());
+
+    int index = 0;
+    std::vector<rosplan_knowledge_msgs::KnowledgeItem> current_layer;
+    for(auto&& predicate: expected_predicates){
+        std::vector<std::string> name_index = split(predicate, '%');
+        // Get index of fact (layer)
+        int new_index = std::stoi(name_index[1]);
+        std::vector<std::string> name_params = split(name_index[0], '#');
+        // Name of predicate
+        std::string predicate_name = name_params[0];
+        // Parameters of predicate
+        std::vector<std::string> predicate_params = name_params;
+        predicate_params.erase(predicate_params.begin());
+
+        rosplan_knowledge_msgs::KnowledgeItem fact = action_simulator_.createFactKnowledgeItem(predicate_name, predicate_params, false);
+
+        if(new_index == index){
+            current_layer.push_back(fact);
+        }
+        else{
+            expected_facts_.push_back(current_layer);
+            current_layer.clear();
+            current_layer.push_back(fact);
+            index = new_index;
         }
     }
+
+    for(int i = 0; i < expected_facts_.size(); i++){
+        std::stringstream ss;
+        ss << "Layer ";
+        ss << i;
+        ss << ": ";
+        for(auto&& predicate: expected_facts_[i]){
+            ss << action_simulator_.convertPredToString(predicate);
+            ss << " | ";
+        }
+        ROS_INFO("%s", ss.str().c_str());
+    }
+
 }
 
 bool CSPExecGenerator::orderNodes(std::vector<int> open_list, int &number_expanded_nodes, double plan_prob,
@@ -629,25 +673,24 @@ bool CSPExecGenerator::orderNodes(std::vector<int> open_list, int &number_expand
 
         best_plan_ = ordered_nodes_;
 
+        action_to_be_executed_ = best_plan_[0];
+
         // compute plan probability
         rosplan_dispatch_msgs::CalculateProbability srv;
         double plan_success_probability;
-        srv.request.nodes = ordered_nodes_;
-
+        std::vector<std::string> plan_with_names = getNodesWithNames(ordered_nodes_);
+        srv.request.nodes = plan_with_names;
         if(calculate_prob_client_.call(srv)){
             plan_success_probability = srv.response.plan_success_probability;
             std::vector<std::string> expected_predicates;
             // TODO: Split strings (index and predicate) and add it to another variable
             expected_predicates = srv.response.expected_predicates;
-            std::vector<std::vector<rosplan_knowledge_msgs::KnowledgeItem>> expected_facts_;
-            std::vector<rosplan_knowledge_msgs::KnowledgeItem> all_facts;
-            
-            if(action_simulator_.getAllGroundedFacts(all_facts)){
-                fillExpectedStates(all_facts, expected_predicates);
-            }
+            fillExpectedFacts(expected_predicates);
         }
-        else
+        else{
             plan_success_probability = computePlanProbability(ordered_nodes_, action_prob_map_);
+            ROS_ERROR("Failed to get all grounded facts");
+        }
 
         exec_aternatives_msg_.plan_success_prob.push_back(plan_success_probability);
 
@@ -838,13 +881,11 @@ void CSPExecGenerator::reverseLastAction(std::string reason_for_reverse)
     }
 }
 
-std::stringstream CSPExecGenerator::getNodesWithNames(std::vector<int> &nodes)
+std::vector<std::string> CSPExecGenerator::getNodesWithNames(std::vector<int> &nodes)
 {
-    std::stringstream ss;
+    std::vector<std::string> vec;
     for(auto nit=nodes.begin(); nit!=nodes.end(); nit++) {
-        if(nit != nodes.begin()){
-            ss << " | ";
-        }
+        std::stringstream ss;
         std::string action_name;
         std::vector<std::string> params;
         bool action_start;
@@ -857,25 +898,109 @@ std::stringstream CSPExecGenerator::getNodesWithNames(std::vector<int> &nodes)
             ss << "_end";
         int size = params.size();
         for(int i=0; i<size; i++){
-            ss << "%";
+            ss << "#";
             ss << params[i];
         }
+        vec.push_back(ss.str());
     }
 
-    return ss;
+    return vec;
 }
 
-bool CSPExecGenerator::currentStateContainsExpectedFacts(){
-    std::vector<rosplan_knowledge_msgs::KnowledgeItem> current_state = action_simulator_.getCurrentState();
-    std::vector<rosplan_knowledge_msgs::KnowledgeItem> expected_facts = expected_facts_[0];
-    bool all_facts_are_present = true;
-    for(auto&& fact: expected_facts){
-        if(std::find(current_state.begin(), current_state.end(), fact) == current_state.end()){
-            all_facts_are_present = false;
-            break;
+bool CSPExecGenerator::stateHasFact(std::vector<rosplan_knowledge_msgs::KnowledgeItem> state, rosplan_knowledge_msgs::KnowledgeItem fact){
+    for(auto&& fact_in_state: state){
+        if(factsAreEqual(fact_in_state, fact))
+            return true;
+    }
+    return false;
+}
+
+bool CSPExecGenerator::stateContainsFacts(std::vector<rosplan_knowledge_msgs::KnowledgeItem> state,
+                                                    std::vector<rosplan_knowledge_msgs::KnowledgeItem> facts){
+    for(auto&& fact: facts){
+        if(!stateHasFact(state, fact)){
+            return false;
         }
     }
-    return all_facts_are_present;
+    return true;
+}
+
+bool CSPExecGenerator::actionsHaveSameNameAndParams(int action1, int action2){
+    bool same_name_params;
+    
+    std::string name1;
+    std::string name2;
+    std::vector<std::string> params1;
+    std::vector<std::string> params2;
+    bool action_start1;
+    bool action_start2;
+    int action_id1;
+    int action_id2;
+
+    if(!getAction(action1, name1, params1, original_plan_, action_start1, action_id1)) {
+        ROS_ERROR("failed to get action properties (while checking same name and params 1");
+    }
+
+    if(!getAction(action2, name2, params2, original_plan_, action_start2, action_id2)) {
+        ROS_ERROR("failed to get action properties (while checking same name and params 1");
+    }
+
+    if( name1 == name2 && params1 == params2)
+        same_name_params = true;
+    else
+        same_name_params = false;
+    
+    return same_name_params;
+}
+
+bool CSPExecGenerator::atStartAlreadyExecuted(int a){
+
+    bool at_start_executed = false;
+
+    if(!isStartAction(a)){
+        for(auto&& action: actions_occurring_){
+            if(actionsHaveSameNameAndParams(a, action)){
+                if(isStartAction(action)){
+                    at_start_executed = true;
+                    break;
+                }
+            }
+        }
+    }
+
+    return at_start_executed;
+}
+
+int CSPExecGenerator::currentStateContainsExpectedFacts(){
+
+    std::vector<rosplan_knowledge_msgs::KnowledgeItem> current_state = action_simulator_.getCurrentState();
+    ROS_INFO(">>> Current state: %s", getStateAsString(current_state).c_str());
+    printNodes(">>> Best plan: ", best_plan_);
+    printNodes(">>> Actions occurring: ", actions_occurring_);
+    for (int i = expected_facts_.size(); i-- > 0; ){
+        std::vector<rosplan_knowledge_msgs::KnowledgeItem> expected_facts = expected_facts_[i];
+        ROS_INFO(">>> Expected facts: %d | %s", i, getStateAsString(expected_facts).c_str());
+        bool all_facts_are_present = true;
+        for(auto&& fact: expected_facts){
+            if(!stateHasFact(current_state, fact)){
+                all_facts_are_present = false;
+            }
+        }
+        // If layer has all facts then check if action after layer is at_start
+        // or if at_end but it's at_start has already been executed
+        if(all_facts_are_present){
+            int action = best_plan_[i];
+            ROS_INFO(">>> Action after layer: %s", getFullActionName(action).c_str());
+            // If action is at_start or at_start has already been executed
+            ROS_INFO(isStartAction(action)? "Start action: YES":"Start action: NO");
+            ROS_INFO(atStartAlreadyExecuted(action)? "At start executed: YES":"At start executed: NO");            
+            if(isStartAction(action) || atStartAlreadyExecuted(action)){
+                return i;
+            }
+        }
+    }
+    
+    return -1;
 }
 
 bool CSPExecGenerator::generatePlans()
@@ -905,29 +1030,39 @@ bool CSPExecGenerator::generatePlans()
     printNodes(">>> Open list", open_list);
 
     // Check if current state contains expected facts
+    // It starts from the end of expected facts because the state might
+    // have unexpectedly changed and we may be able to skip actions
+    ROS_INFO(expected_facts_.empty()? "Expected facts: EMPTY":"Expected facts: FILLED");
     if(!expected_facts_.empty()){
-        if(currentStateContainsExpectedFacts());{
-            // discard first action (already executed)
-            best_plan_.erase(best_plan_.begin());
+        int index_facts = currentStateContainsExpectedFacts();
+        ROS_INFO(">>> Layer selected: %d", index_facts);
+        if(index_facts >= 0){
 
-            // discard first layer (current layer) of expected facts
-            expected_facts_.erase(expected_facts_.begin());
+            // Create plan with only the necessary actions
+            std::vector<int> plan = best_plan_;
+            plan.erase(plan.begin(), plan.begin() + index_facts);
+
+            action_to_be_executed_ = plan.front();
+
+            printNodes(">>> New plan: ", plan);
+
+            ROS_INFO(">>> Action to be executed 1: %s", getFullActionName(action_to_be_executed_).c_str());
 
             // convert list of orderes nodes into esterel plan (reuses the originally received esterel plan)
-            rosplan_dispatch_msgs::EsterelPlan esterel_plan_msg = convertListToEsterel(best_plan_);
+            rosplan_dispatch_msgs::EsterelPlan esterel_plan_msg = convertListToEsterel(plan);
 
             // add new valid ordering to ordered plans (R)
             exec_aternatives_msg_.esterel_plans.push_back(esterel_plan_msg);
 
-            double plan_success_probability = computePlanProbability(best_plan_, action_prob_map_);
-            exec_aternatives_msg_.plan_success_prob.push_back(plan_success_probability);
+            // double plan_success_probability = computePlanProbability(best_plan_, action_prob_map_);
+            // TODO: Calculate prob
+            exec_aternatives_msg_.plan_success_prob.push_back(0.3);
 
             return true;
         }
     }
 
     // printNodes("open list", open_list);
-    // printNodesWithNames(open_list);
 
     // init set of constraints (C)
     initConstraints(set_of_constraints_);
@@ -1111,6 +1246,32 @@ rosplan_dispatch_msgs::EsterelPlan CSPExecGenerator::convertListToEsterel(std::v
     return esterel_plan;
 }
 
+bool CSPExecGenerator::isStartAction(int a){
+    std::string action_name;
+    std::vector<std::string> params;
+    bool action_start;
+    int action_id;
+    if(!getAction(a, action_name, params, original_plan_, action_start, action_id)) {
+        ROS_ERROR("failed to get action properties (while getting name");
+    }
+    return action_start;
+
+}
+
+void CSPExecGenerator::removeStartActionFromOccurringActions(int action1){
+    if(!isStartAction(action1)){
+        int i;
+        for(i = 0; i<actions_occurring_.size(); i++){
+            if(actionsHaveSameNameAndParams(action1, actions_occurring_[i])){
+                if(actions_occurring_[i]){
+                    break;
+                }
+            }
+        }
+        actions_occurring_.erase(actions_occurring_.begin()+i);
+    }
+}
+
 bool CSPExecGenerator::srvCB(rosplan_dispatch_msgs::ExecAlternatives::Request& req, rosplan_dispatch_msgs::ExecAlternatives::Response& res)
 {
     ROS_INFO("generating execution alternatives service is computing now");
@@ -1151,16 +1312,14 @@ bool CSPExecGenerator::srvCB(rosplan_dispatch_msgs::ExecAlternatives::Request& r
         // publish esterel array msg
         pub_valid_plans_.publish(exec_aternatives_msg_);
 
-        int a = best_plan_[0];
-        std::string action_name;
-        std::vector<std::string> params;
-        bool action_start;
-        int action_id;
-        if(!getAction(a, action_name, params, original_plan_, action_start, action_id)) {
-            ROS_ERROR("failed to get action properties (while applying action)");
-            return false;
+        ROS_INFO(">>> Action to be executed: %s", getFullActionName(action_to_be_executed_).c_str());
+
+        if(isStartAction(action_to_be_executed_)){
+            actions_occurring_.push_back(action_to_be_executed_);
         }
-        ROS_INFO(">>> Action to be executed: %s", getFullActionName(action_name, params, action_start).str().c_str());
+        else if(atStartAlreadyExecuted(action_to_be_executed_)){
+            removeStartActionFromOccurringActions(action_to_be_executed_);
+        }
     }
     else
     {

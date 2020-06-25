@@ -246,7 +246,12 @@ namespace KCL_rosplan {
 			ros::spinOnce();
 			loop_rate.sleep();
 
-			if(state_changed) {
+			if(goalAchieved()){
+				ROS_INFO("KCL: (%s) Goal is achieved", ros::this_node::getName().c_str());
+				finished_execution = true;
+			}
+			else if(state_changed) {
+				ROS_INFO("KCL: (%s) Goal is not achieved", ros::this_node::getName().c_str());
                 ROS_INFO("KCL: (%s) Calling the alternatives generator.", ros::this_node::getName().c_str());
                 rosplan_dispatch_msgs::ExecAlternatives srv;
                 srv.request.actions_executing = actions_executing;

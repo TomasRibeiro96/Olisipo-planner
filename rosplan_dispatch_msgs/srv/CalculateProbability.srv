@@ -1,4 +1,4 @@
-int32[] nodes
+string[] nodes
 ---
 float32 plan_success_probability
 # float32 computing_time

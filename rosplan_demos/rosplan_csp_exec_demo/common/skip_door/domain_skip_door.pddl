@@ -22,6 +22,10 @@
 	:condition (and
 					(at start (robot_at ?r ?origin))
 					(at start (connected ?origin ?dest))
+					; Added these at start below
+					(at start (door_at ?dorigin ?origin))
+				    (at start (door_at ?ddest ?dest))
+					(at start (door_is_open ?dorigin))
 
 					(over all (door_at ?dorigin ?origin))
 				    (over all (door_at ?ddest ?dest))
@@ -39,6 +43,8 @@
 	:duration ( = ?duration 1)
 	:condition (and
 					(at start (robot_at ?r ?wp))
+					; Added this at start below
+					(at start (door_at ?door ?wp))
 					(over all (door_at ?door ?wp))
 			   )
 	:effect (and
