@@ -12,7 +12,7 @@ find_package(catkin REQUIRED COMPONENTS
   diagnostic_msgs
   visualization_msgs
   tf
-  occupancy_grid_utils
+  # occupancy_grid_utils
   message_generation
   genmsg
 )
