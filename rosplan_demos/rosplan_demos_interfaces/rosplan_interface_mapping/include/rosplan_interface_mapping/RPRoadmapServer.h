@@ -32,8 +32,8 @@
 #include <rosplan_knowledge_msgs/KnowledgeItem.h>
 #include <rosplan_knowledge_msgs/KnowledgeUpdateService.h>
 #include <rosplan_knowledge_msgs/KnowledgeUpdateServiceArray.h>
-#include <occupancy_grid_utils/ray_tracer.h>
-#include <occupancy_grid_utils/coordinate_conversions.h>
+// #include <occupancy_grid_utils/ray_tracer.h>
+// #include <occupancy_grid_utils/coordinate_conversions.h>
 #include <std_srvs/Trigger.h>
 
 #include "rosplan_interface_mapping/CreatePRM.h"
