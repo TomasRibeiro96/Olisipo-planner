@@ -17,7 +17,6 @@
 int total_number_nodes_expanded = 1;
 bool new_algorithm = true;
 int number_service_calls = 0;
-bool use_ros_service = false;
 // double service_time_sum = 0;
 
 // TODO: When service is called again, if the at_start effects of an action
@@ -818,35 +817,12 @@ bool CSPExecGenerator::orderNodes(std::vector<int> open_list, int &number_expand
         double plan_success_probability;
 
         if(new_algorithm){
-            std::vector<std::string> plan_with_names = getNodesWithNames(ordered_nodes_);
-            std::vector<std::string> expected_predicates;
-            // With ROS Service to calculate plan probability
-            if(use_ros_service){
-                rosplan_dispatch_msgs::CalculateProbability srv;
-                srv.request.nodes = plan_with_names;
-                if(calculate_prob_client_.call(srv)){
-                    plan_success_probability = srv.response.plan_success_probability;
-                    plan_success_probability = computePlanProbability(ordered_nodes_, action_prob_map_);
-                    expected_predicates = srv.response.expected_predicates;
-                    fillExpectedFacts(expected_predicates);
-                }
-                else{
-                    plan_success_probability = computePlanProbability(ordered_nodes_, action_prob_map_);
-                    ROS_ERROR("Failed to get all grounded facts");
-                }
-            }
-            // With Python embedded function
-            else{
-                plan_success_probability = getCurrentPlanProbabilityAndFillExpectedFacts();
-            }
-
+            plan_success_probability = getCurrentPlanProbabilityAndFillExpectedFacts();
             exec_aternatives_msg_.plan_success_prob.push_back(plan_success_probability);
         }
         else{
             exec_aternatives_msg_.plan_success_prob.push_back(plan_prob);
         }
-
-        // ROS_INFO(">>> Goal achieved with probability %f <<<\n", plan_success_probability);
 
         // backtrack: popf, remove last element from f, store in variable and revert that action
         backtrack("goal was achieved");
@@ -913,26 +889,11 @@ bool CSPExecGenerator::orderNodes(std::vector<int> open_list, int &number_expand
         if(new_algorithm){
             if(!repeated_state){
             
+                // TODO: Insert here call to python code where it will calculate the actions' success probability
                 double plan_success_probability;
-                // std::chrono::steady_clock::time_point call_time = std::chrono::steady_clock::now();
-
-                // if(calculate_prob_client_.call(srv)){
-                //     std::chrono::steady_clock::time_point response_time = std::chrono::steady_clock::now();
-                //     double full_service_time = std::chrono::duration_cast<std::chrono::nanoseconds> (response_time - call_time).count() * (double)pow(10,-9);
-                //     // double computing_service_time = srv.response.computing_time;
-                //     // service_time_sum += full_service_time - computing_service_time;
-                //     number_service_calls++;
-                //     // ROS_INFO("|||| Service time: %f s|||", service_time_s);
-                //     plan_success_probability = srv.response.plan_success_probability;
-                //     // ROS_INFO("||| Received response: %f |||", plan_success_probability);
-                // }
-                // else{
-                    // ROS_INFO("||| DID NOT RECEIVE RESPONSE |||");
-                    std::map<int, double>::const_iterator prob_it = action_prob_map_.find(*a);
-                    double action_prob = prob_it->second;
-                    plan_success_probability = plan_prob*action_prob;
-                    // plan_success_probability = computePlanProbability(ordered_nodes_, action_prob_map_);
-                // }
+                std::map<int, double>::const_iterator prob_it = action_prob_map_.find(*a);
+                double action_prob = prob_it->second;
+                plan_success_probability = plan_prob*action_prob;
 
                 // TODO: Save length of plan and save the shortest one with the highest success probability
                 //// If success probability is the same, save it if the number of actions is lower
@@ -969,7 +930,6 @@ bool CSPExecGenerator::orderNodes(std::vector<int> open_list, int &number_expand
             }
         }
         else{
-            //// Original version on code ////
             number_expanded_nodes++;
             // ROS_INFO(">>>>> Apply action : (%d)", *a);
             ordered_nodes_.push_back(*a);

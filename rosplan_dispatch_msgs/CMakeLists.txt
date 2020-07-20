@@ -32,7 +32,6 @@ add_service_files(
   GetPlanningParams.srv
   DispatchService.srv
   ExecAlternatives.srv
-  CalculateProbability.srv
 )
 
 add_action_files(

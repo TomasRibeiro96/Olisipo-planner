@@ -1,5 +1,0 @@
-string[] nodes
----
-float32 plan_success_probability
-# float32 computing_time
-string[] expected_predicates
