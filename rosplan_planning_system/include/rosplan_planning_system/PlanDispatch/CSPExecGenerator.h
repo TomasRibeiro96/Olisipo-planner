@@ -24,6 +24,11 @@
 #include <diagnostic_msgs/KeyValue.h>
 #include "rosplan_action_interface/ActionSimulator.h"
 #include <algorithm>
+// #include </usr/local/include/python3.8/Python.h>
+// #include </usr/include/python3.5m/Python.h>
+#include </usr/include/python2.7/Python.h>
+#include </home/tomas/ros_ws/src/ROSPlan/src/rosplan/rosplan_planning_system/include/rosplan_planning_system/PlanDispatch/pyhelper.hpp>
+
 
 class CSPExecGenerator
 {
@@ -273,6 +278,18 @@ class CSPExecGenerator
         bool actionsHaveSameNameAndParams(int action1, int action2);
 
         void removeStartActionFromOccurringActions(int action);
+
+        PyObject* convertVectorToPythonList(std::vector<std::string> plan_with_names);
+
+        PyObject* convertVectorToPythonTuple(std::vector<std::string> plan_with_names);
+
+        std::vector<std::string> convertCPyObjectToVector(CPyObject pList);
+
+        double getCurrentPlanProbabilityAndFillExpectedFacts();
+
+        void printVectorOfStrings(std::string msg, std::vector<std::string> vec);
+
+        void printExpectedFacts();
 
     private:
         // ros related variables

@@ -11,12 +11,13 @@
  */
 
 #include <rosplan_planning_system/PlanDispatch/CSPExecGenerator.h>
-#include <chrono>
+// #include <chrono>
 #include <algorithm>
 
 int total_number_nodes_expanded = 1;
-bool branch_and_bound;
+bool new_algorithm = true;
 int number_service_calls = 0;
+bool use_ros_service = false;
 // double service_time_sum = 0;
 
 // TODO: When service is called again, if the at_start effects of an action
@@ -588,17 +589,36 @@ std::vector<std::string> CSPExecGenerator::split(std::string strToSplit, char de
     return splittedStrings;
 }
 
+void CSPExecGenerator::printVectorOfStrings(std::string msg, std::vector<std::string> vec){
+    std::stringstream ss;
+    ss << msg;
+    for(auto&& item: vec){
+        ss << item;
+        ss << ", ";
+    }
+    ROS_INFO("%s", ss.str().c_str());
+}
+
+void CSPExecGenerator::printExpectedFacts(){
+    ROS_INFO(">>> Expected facts:");
+    for(int i = 0; i < expected_facts_.size(); i++){
+        std::stringstream ss;
+        ss << "Layer ";
+        ss << i;
+        ss << ": ";
+        for(auto&& predicate: expected_facts_[i]){
+            ss << action_simulator_.convertPredToString(predicate);
+            ss << ", ";
+        }
+        ROS_INFO("%s", ss.str().c_str());
+    }
+}
+
 void CSPExecGenerator::fillExpectedFacts(std::vector<std::string> expected_predicates){
 
     expected_facts_.clear();
 
-    std::stringstream ss;
-    for(auto&& predicate: expected_predicates){
-        ss << predicate;
-        ss << " | ";
-    }
-
-    ROS_INFO(">>> Expected predicates: %s", ss.str().c_str());
+    // printVectorOfStrings("Expected predicates: ", expected_predicates);
 
     int index = 0;
     std::vector<rosplan_knowledge_msgs::KnowledgeItem> current_layer;
@@ -626,18 +646,138 @@ void CSPExecGenerator::fillExpectedFacts(std::vector<std::string> expected_predi
         }
     }
 
-    for(int i = 0; i < expected_facts_.size(); i++){
-        std::stringstream ss;
-        ss << "Layer ";
-        ss << i;
-        ss << ": ";
-        for(auto&& predicate: expected_facts_[i]){
-            ss << action_simulator_.convertPredToString(predicate);
-            ss << " | ";
-        }
-        ROS_INFO("%s", ss.str().c_str());
+    // printExpectedFacts();
+
+}
+
+PyObject* CSPExecGenerator::convertVectorToPythonList(std::vector<std::string> plan_with_names){
+    
+    PyObject* pList = PyList_New(plan_with_names.size());
+    PyObject* pName;
+
+    for(int i = 0; i < plan_with_names.size(); i++){
+        pName = PyUnicode_FromString(plan_with_names[i].c_str());
+        PyList_SetItem(pList, i, pName);
     }
 
+    return pList;
+}
+
+PyObject* CSPExecGenerator::convertVectorToPythonTuple(std::vector<std::string> plan_with_names){
+    
+    PyObject* pTuple = PyTuple_New(plan_with_names.size());
+    PyObject* pName;
+
+    for(int i = 0; i < plan_with_names.size(); i++){
+        pName = PyUnicode_FromString(plan_with_names[i].c_str());
+        PyTuple_SetItem(pTuple, i, pName);
+    }
+
+    return pTuple;
+}
+
+std::vector<std::string> CSPExecGenerator::convertCPyObjectToVector(CPyObject pList){
+    
+    if(!pList){
+        ROS_ERROR("Expected predicates list is null");
+    }
+
+    std::vector<std::string> vec;
+    Py_ssize_t size = PyList_Size(pList);
+    std::string predicate;
+
+    ROS_INFO("Starting for loop");
+    for(int i = 0; i < size; i++){
+        PyObject* item = PyList_GetItem(pList, i);
+        predicate = PyBytes_AsString(item);
+        vec.push_back(predicate);
+    }
+
+    return vec;
+}
+
+double CSPExecGenerator::getCurrentPlanProbabilityAndFillExpectedFacts(){
+    CPyInstance hInstance;
+
+    double plan_success_probability;
+    std::vector<std::string> expected_predicates;
+    std::vector<std::string> plan_with_names = getNodesWithNames(ordered_nodes_);
+
+    // Add current directory to sys.path
+    PyObject* sysPath = PySys_GetObject((char*)"path");
+    PyList_Append(sysPath, PyUnicode_FromString("/home/tomas/ros_ws/src/ROSPlan/src/rosplan/rosplan_planning_system/src/PlanDispatch/"));
+
+    ROS_INFO("Setting arguments");
+    int argc = 1;
+    char *argv[1];
+    PySys_SetArgv(argc, argv);
+
+    // ROS_INFO("Importing rospy");
+    PyObject *rospy = PyImport_ImportModule("rospy");
+	if (!rospy){
+        ROS_ERROR("ERROR: Failed to import rospy");
+	    PyErr_Print();
+	}
+
+    // ROS_INFO("Getting rospy init_node");
+    PyObject *init_node = PyObject_GetAttrString(rospy, "init_node");
+	if (!init_node){
+        ROS_ERROR("ERROR: Failed to initialise rospy node");
+	    PyErr_Print();
+	}
+
+    ROS_INFO("Initiliasing rospy node");
+    PyObject *init_node_args = PyTuple_New(1);
+	PyObject *node_name = PyString_FromString("bayesian_network_calculator");	
+	PyTuple_SetItem(init_node_args, 0, node_name);
+	PyObject_CallObject(init_node, init_node_args);
+
+    ROS_INFO("Importing module");
+    CPyObject pName = PyUnicode_FromString("calculate_plan_prob");
+    CPyObject pModule = PyImport_Import(pName);
+
+    if(pModule){
+        // ROS_INFO("Calling calculateProbability");
+        CPyObject pFuncCalcProb = PyObject_GetAttrString(pModule, "calculateProbability");
+        if(pFuncCalcProb && PyCallable_Check(pFuncCalcProb)){
+            // ROS_INFO("calculateProbability is callable");
+            
+            PyObject* pArgs = PyTuple_New(1);
+            CPyObject py_plan_with_names = convertVectorToPythonList(plan_with_names);
+            PyTuple_SetItem(pArgs, 0, py_plan_with_names);
+            
+            CPyObject pReturnedProbability = PyObject_CallObject(pFuncCalcProb, pArgs);
+            plan_success_probability = PyFloat_AsDouble(pReturnedProbability);
+            // ROS_INFO("Plan probability: %f", plan_success_probability);
+        }
+        else{
+            PyErr_Print();
+            ROS_ERROR("ERROR: Failed to call calculateProbability");
+        }
+
+        // ROS_INFO("Calling getNodesLayers");
+        CPyObject pFuncGetLayers = PyObject_GetAttrString(pModule, "getNodesLayers");
+        if(pFuncGetLayers && PyCallable_Check(pFuncGetLayers)){
+            // ROS_INFO("Got answer from getNodesLayers");
+            CPyObject pReturned = PyObject_CallObject(pFuncGetLayers, NULL);
+            // ROS_INFO("Converting CPyObject to Vector");
+            expected_predicates = convertCPyObjectToVector(pReturned);
+            // ROS_INFO("Filling expected facts");
+            fillExpectedFacts(expected_predicates);
+        }
+        else{
+            PyErr_Print();
+            ROS_ERROR("ERROR: Failed to call getNodesLayers");
+        }
+    
+    }
+    else{
+        PyErr_Print();
+        ROS_ERROR("ERROR: Unable to import module");
+    }
+
+    ROS_INFO("Returning plan_success_probability");
+    return plan_success_probability;
 }
 
 bool CSPExecGenerator::orderNodes(std::vector<int> open_list, int &number_expanded_nodes, double plan_prob,
@@ -675,24 +815,36 @@ bool CSPExecGenerator::orderNodes(std::vector<int> open_list, int &number_expand
 
         action_to_be_executed_ = best_plan_[0];
 
-        // compute plan probability
-        rosplan_dispatch_msgs::CalculateProbability srv;
         double plan_success_probability;
-        std::vector<std::string> plan_with_names = getNodesWithNames(ordered_nodes_);
-        srv.request.nodes = plan_with_names;
-        if(calculate_prob_client_.call(srv)){
-            plan_success_probability = srv.response.plan_success_probability;
+
+        if(new_algorithm){
+            std::vector<std::string> plan_with_names = getNodesWithNames(ordered_nodes_);
             std::vector<std::string> expected_predicates;
-            // TODO: Split strings (index and predicate) and add it to another variable
-            expected_predicates = srv.response.expected_predicates;
-            fillExpectedFacts(expected_predicates);
+            // With ROS Service to calculate plan probability
+            if(use_ros_service){
+                rosplan_dispatch_msgs::CalculateProbability srv;
+                srv.request.nodes = plan_with_names;
+                if(calculate_prob_client_.call(srv)){
+                    plan_success_probability = srv.response.plan_success_probability;
+                    plan_success_probability = computePlanProbability(ordered_nodes_, action_prob_map_);
+                    expected_predicates = srv.response.expected_predicates;
+                    fillExpectedFacts(expected_predicates);
+                }
+                else{
+                    plan_success_probability = computePlanProbability(ordered_nodes_, action_prob_map_);
+                    ROS_ERROR("Failed to get all grounded facts");
+                }
+            }
+            // With Python embedded function
+            else{
+                plan_success_probability = getCurrentPlanProbabilityAndFillExpectedFacts();
+            }
+
+            exec_aternatives_msg_.plan_success_prob.push_back(plan_success_probability);
         }
         else{
-            plan_success_probability = computePlanProbability(ordered_nodes_, action_prob_map_);
-            ROS_ERROR("Failed to get all grounded facts");
+            exec_aternatives_msg_.plan_success_prob.push_back(plan_prob);
         }
-
-        exec_aternatives_msg_.plan_success_prob.push_back(plan_success_probability);
 
         // ROS_INFO(">>> Goal achieved with probability %f <<<\n", plan_success_probability);
 
@@ -705,12 +857,12 @@ bool CSPExecGenerator::orderNodes(std::vector<int> open_list, int &number_expand
         ROS_DEBUG("goals not achieved yet");
 
     // cap the maximum amount of plans to generate
-    if(exec_aternatives_msg_.esterel_plans.size() > max_search_depth_) {
-        ROS_DEBUG("returning early : max amount of plans reached (%ld)", exec_aternatives_msg_.esterel_plans.size());
-        // ROS_INFO("$$$ Maximum plan size reached $$$");
-        backtrack("We do not want to search deeper");
-        return true;
-    }
+    // if(exec_aternatives_msg_.esterel_plans.size() > max_search_depth_) {
+    //     ROS_DEBUG("returning early : max amount of plans reached (%ld)", exec_aternatives_msg_.esterel_plans.size());
+    //     // ROS_INFO("$$$ Maximum plan size reached $$$");
+    //     backtrack("We do not want to search deeper");
+    //     return true;
+    // }
 
     ROS_DEBUG("finding valid nodes from open list now");
     std::vector<int> valid_nodes;
@@ -744,7 +896,7 @@ bool CSPExecGenerator::orderNodes(std::vector<int> open_list, int &number_expand
             return false;
         }
 
-        branch_and_bound = true;
+        // Initialised as false in case it's action_end
         bool repeated_state = false;
 
         if(action_start){
@@ -758,12 +910,11 @@ bool CSPExecGenerator::orderNodes(std::vector<int> open_list, int &number_expand
         // remove a (action) and s (skipped nodes) from open list (O)
         open_list_copy.erase(std::remove(open_list_copy.begin(), open_list_copy.end(), *a), open_list_copy.end());
 
-        // repeated_state = false;
-        if(branch_and_bound){
+        if(new_algorithm){
             if(!repeated_state){
             
                 double plan_success_probability;
-                std::chrono::steady_clock::time_point call_time = std::chrono::steady_clock::now();
+                // std::chrono::steady_clock::time_point call_time = std::chrono::steady_clock::now();
 
                 // if(calculate_prob_client_.call(srv)){
                 //     std::chrono::steady_clock::time_point response_time = std::chrono::steady_clock::now();
@@ -808,6 +959,7 @@ bool CSPExecGenerator::orderNodes(std::vector<int> open_list, int &number_expand
 
                     // ROS_INFO("++++ Performed action");
                     // printNodes("stack after adding", ordered_nodes_);
+
 
                     orderNodes(open_list_copy, number_expanded_nodes, plan_success_probability, explored_states);                    
                 }
@@ -974,12 +1126,12 @@ bool CSPExecGenerator::atStartAlreadyExecuted(int a){
 int CSPExecGenerator::currentStateContainsExpectedFacts(){
 
     std::vector<rosplan_knowledge_msgs::KnowledgeItem> current_state = action_simulator_.getCurrentState();
-    ROS_INFO(">>> Current state: %s", getStateAsString(current_state).c_str());
+    // ROS_INFO(">>> Current state: %s", getStateAsString(current_state).c_str());
     printNodes(">>> Best plan: ", best_plan_);
     printNodes(">>> Actions occurring: ", actions_occurring_);
     for (int i = expected_facts_.size(); i-- > 0; ){
         std::vector<rosplan_knowledge_msgs::KnowledgeItem> expected_facts = expected_facts_[i];
-        ROS_INFO(">>> Expected facts: %d | %s", i, getStateAsString(expected_facts).c_str());
+        // ROS_INFO(">>> Expected facts: %d | %s", i, getStateAsString(expected_facts).c_str());
         bool all_facts_are_present = true;
         for(auto&& fact: expected_facts){
             if(!stateHasFact(current_state, fact)){
@@ -990,10 +1142,10 @@ int CSPExecGenerator::currentStateContainsExpectedFacts(){
         // or if at_end but it's at_start has already been executed
         if(all_facts_are_present){
             int action = best_plan_[i];
-            ROS_INFO(">>> Action after layer: %s", getFullActionName(action).c_str());
+            // ROS_INFO(">>> Action after layer: %s", getFullActionName(action).c_str());
             // If action is at_start or at_start has already been executed
-            ROS_INFO(isStartAction(action)? "Start action: YES":"Start action: NO");
-            ROS_INFO(atStartAlreadyExecuted(action)? "At start executed: YES":"At start executed: NO");            
+            // ROS_INFO(isStartAction(action)? "Start action: YES":"Start action: NO");
+            // ROS_INFO(atStartAlreadyExecuted(action)? "At start executed: YES":"At start executed: NO");            
             if(isStartAction(action) || atStartAlreadyExecuted(action)){
                 return i;
             }
@@ -1027,41 +1179,46 @@ bool CSPExecGenerator::generatePlans()
         }
     }
 
-    printNodes(">>> Open list", open_list);
+    // printNodes(">>> Open list", open_list);
 
     // Check if current state contains expected facts
     // It starts from the end of expected facts because the state might
     // have unexpectedly changed and we may be able to skip actions
-    ROS_INFO(expected_facts_.empty()? "Expected facts: EMPTY":"Expected facts: FILLED");
-    if(!expected_facts_.empty()){
-        int index_facts = currentStateContainsExpectedFacts();
-        ROS_INFO(">>> Layer selected: %d", index_facts);
-        if(index_facts >= 0){
+    // ROS_INFO(expected_facts_.empty()? "Expected facts: EMPTY":"Expected facts: FILLED");
+    if(new_algorithm){
+        if(!expected_facts_.empty()){
+            int index_facts = currentStateContainsExpectedFacts();
+            // ROS_INFO(">>> Layer selected: %d", index_facts);
+            if(index_facts >= 0){
+                ROS_INFO(">>> Reusing plan");
 
-            // Create plan with only the necessary actions
-            std::vector<int> plan = best_plan_;
-            plan.erase(plan.begin(), plan.begin() + index_facts);
+                // Create plan with only the necessary actions
+                std::vector<int> plan = best_plan_;
+                plan.erase(plan.begin(), plan.begin() + index_facts);
 
-            action_to_be_executed_ = plan.front();
+                action_to_be_executed_ = plan.front();
 
-            printNodes(">>> New plan: ", plan);
+                // printNodes(">>> New plan: ", plan);
+                ROS_INFO("//// Total number of nodes expanded: %d ////", total_number_nodes_expanded);
 
-            ROS_INFO(">>> Action to be executed 1: %s", getFullActionName(action_to_be_executed_).c_str());
+                // ROS_INFO(">>> Action to be executed 1: %s", getFullActionName(action_to_be_executed_).c_str());
 
-            // convert list of orderes nodes into esterel plan (reuses the originally received esterel plan)
-            rosplan_dispatch_msgs::EsterelPlan esterel_plan_msg = convertListToEsterel(plan);
+                // convert list of orderes nodes into esterel plan (reuses the originally received esterel plan)
+                rosplan_dispatch_msgs::EsterelPlan esterel_plan_msg = convertListToEsterel(plan);
 
-            // add new valid ordering to ordered plans (R)
-            exec_aternatives_msg_.esterel_plans.push_back(esterel_plan_msg);
+                // add new valid ordering to ordered plans (R)
+                exec_aternatives_msg_.esterel_plans.push_back(esterel_plan_msg);
 
-            // double plan_success_probability = computePlanProbability(best_plan_, action_prob_map_);
-            // TODO: Calculate prob
-            exec_aternatives_msg_.plan_success_prob.push_back(0.3);
+                // double plan_success_probability = computePlanProbability(best_plan_, action_prob_map_);
+                // TODO: Calculate prob
+                exec_aternatives_msg_.plan_success_prob.push_back(0.4);
 
-            return true;
+                return true;
+            }
         }
     }
 
+    ROS_INFO(">>> Building new plan");
     // printNodes("open list", open_list);
 
     // init set of constraints (C)
@@ -1075,7 +1232,7 @@ bool CSPExecGenerator::generatePlans()
     std::vector<std::vector<rosplan_knowledge_msgs::KnowledgeItem>> explored_states;
     int number_expanded_nodes = 0;
 
-    ROS_INFO("Total number of actions: %d", (int)open_list.size());
+    // ROS_INFO("Total number of actions: %d", (int)open_list.size());
 
     // find plan
     // if true, it means at least one valid execution alternative was found

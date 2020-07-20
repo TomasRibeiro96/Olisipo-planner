@@ -17,8 +17,6 @@
     (door_at door3 wp3)
 
     (door_is_open door1)
-    ;(door_is_open door2)
-    (door_is_open door3)
 )
 
 (:goal (and

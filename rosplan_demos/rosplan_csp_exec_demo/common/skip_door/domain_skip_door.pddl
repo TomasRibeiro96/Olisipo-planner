@@ -45,6 +45,7 @@
 					(at start (robot_at ?r ?wp))
 					; Added this at start below
 					(at start (door_at ?door ?wp))
+					
 					(over all (door_at ?door ?wp))
 			   )
 	:effect (and

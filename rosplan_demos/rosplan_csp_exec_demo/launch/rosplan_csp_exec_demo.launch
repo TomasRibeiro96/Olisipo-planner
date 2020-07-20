@@ -8,18 +8,31 @@
     
     <arg name="category" default="skip_door" />
     <arg name="domain" default="domain_skip_door" />
-    <arg name="problem" default="problem_01" />
+    <arg name="problem" default="problem_r1_w3" />
+    <!-- <arg name="problem" default="problem_r1_w4" /> -->
+    <!-- <arg name="problem" default="problem_r1_w5" /> -->
+    <!-- <arg name="problem" default="problem_r1_w6" /> -->
+    <!-- <arg name="problem" default="problem_r1_w7" /> -->
+    <!-- <arg name="problem" default="problem_r1_w8" /> -->
+    <!-- <arg name="problem" default="problem_r1_w9" /> -->
+    <!-- <arg name="problem" default="problem_r1_w10" /> -->
+    <!-- <arg name="problem" default="problem_r1_w11" /> -->
+    <!-- <arg name="problem" default="problem_r1_w12" /> -->
+    <!-- <arg name="problem" default="problem_r1_w13" /> -->
+    <!-- <arg name="problem" default="problem_r1_w14" /> -->
+    <!-- <arg name="problem" default="problem_r1_w15" /> -->
+    <!-- <arg name="problem" default="problem_r2_w3" /> -->
     
     <!--
     <arg name="category" default="domain_blocksworld" />
     <arg name="domain" default="domain_blocksworld" />
     <arg name="problem" default="problem_blocksworld" />
     -->
-    <!--
-    <arg name="domain" default="domain_robot_delivery" />
+    
+    <!-- <arg name="domain" default="domain_robot_delivery" />
     <arg name="problem" default="problem_w4_m3_g2" />
-    <arg name="category" default="iros_problems_free" />
-    -->
+    <arg name="category" default="iros_problems_free" /> -->
+   
     <!-- select between normal or smart plan dispatcher -->
     <arg name="adaptable_plan_dispatcher_required" default="true" />
 
