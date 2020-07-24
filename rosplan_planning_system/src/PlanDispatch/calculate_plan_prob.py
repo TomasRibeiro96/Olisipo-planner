@@ -1136,9 +1136,9 @@ def buildCPDs(actions_par_child, predicates_par_child):
                 action_cpd_elements = list()
                 for i in range(len(cpd_lines)):
                     lst = list(cpd_lines[i])
-                    if all(elem == 'T' for elem in lst):
+                    if all([elem == 'T' for elem in lst]):
                         lst.append(1)
-                    elif all(elem == 'T' for elem in lst[:-1]):
+                    elif all([elem == 'T' for elem in lst[:-1]]):
                         lst.append(0)
                     elif lst[-1] == 'T':
                         lst.append(0)
@@ -1161,15 +1161,20 @@ def buildCPDs(actions_par_child, predicates_par_child):
                 action_name_without_time = removeStartEndFromName(node).split('$')[0]
                 success_prob = action_probabilities_map_[action_name_without_time][0]
 
+                rospy.loginfo('>>> CPD Lines: \n' + str(cpd_lines))
                 action_cpd_elements = list()
-                for i in range(len(cpd_lines)):
-                    lst = list(cpd_lines[i])
-                    if all(elem == 'T' for elem in lst):
+                for line in cpd_lines:
+                    lst = list(line)
+                    # If all the preconditions are true and the action is successful
+                    if all([elem == 'T' for elem in lst]):
                         lst.append(success_prob)
-                    elif all(elem == 'T' for elem in lst[:-1]):
+                    # If all the preconditions are true and the action fails
+                    elif all([elem == 'T' for elem in lst[:-1]]):
                         lst.append(1-success_prob)
+                    # If not all the preconditions are true and the action is successful
                     elif lst[-1] == 'T':
                         lst.append(0)
+                    # If not all the preconditions are true and the action fails
                     else:
                         lst.append(1)
                     action_cpd_elements.append(lst)
@@ -1339,7 +1344,7 @@ def calculateProbability(original_plan):
     # rospy.loginfo(getPredicateParentsAsString(predicates_par_child))
 
     # print('>>> All nodes: \n' + str(all_nodes_))
-    pruneNetwork(actions_par_child, predicates_par_child)
+    # pruneNetwork(actions_par_child, predicates_par_child)
 
     # model = BayesianNetwork()
     # buildNetworkInModel(model, actions_par_child, predicates_par_child)

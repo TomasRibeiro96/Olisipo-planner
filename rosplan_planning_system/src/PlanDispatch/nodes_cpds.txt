@@ -25,6 +25,19 @@ NODES AND CPDs:
     ],
     "name" :"DiscreteDistribution"
 }
+>>> Node: door_is_open#door2%0
+{
+    "frozen" :false,
+    "dtype" :"str",
+    "class" :"Distribution",
+    "parameters" :[
+        {
+            "T" :0,
+            "F" :1
+        }
+    ],
+    "name" :"DiscreteDistribution"
+}
 >>> Node: door_at#door1#wp1%0
 {
     "frozen" :false,
@@ -58,8 +71,34 @@ NODES AND CPDs:
     "class" :"Distribution",
     "parameters" :[
         {
+            "T" :0,
+            "F" :1
+        }
+    ],
+    "name" :"DiscreteDistribution"
+}
+>>> Node: robot_at#mbot#wp2%0
+{
+    "frozen" :false,
+    "dtype" :"str",
+    "class" :"Distribution",
+    "parameters" :[
+        {
             "T" :1,
             "F" :0
+        }
+    ],
+    "name" :"DiscreteDistribution"
+}
+>>> Node: robot_at#mbot#wp3%0
+{
+    "frozen" :false,
+    "dtype" :"str",
+    "class" :"Distribution",
+    "parameters" :[
+        {
+            "T" :0,
+            "F" :1
         }
     ],
     "name" :"DiscreteDistribution"
@@ -91,70 +130,79 @@ NODES AND CPDs:
     "name" :"DiscreteDistribution"
 }
 >>> Node: navigate_start#mbot#wp1#wp2#door1#door2$1
-F	F	F	F	F	F	0.8
-F	F	F	F	F	T	0.8
-F	F	F	F	T	F	0.8
-F	F	F	F	T	T	0.8
-F	F	F	T	F	F	0.8
-F	F	F	T	F	T	0.8
-F	F	F	T	T	F	0.8
-F	F	F	T	T	T	0.8
-F	F	T	F	F	F	0.8
-F	F	T	F	F	T	0.8
-F	F	T	F	T	F	0.8
-F	F	T	F	T	T	0.8
-F	F	T	T	F	F	0.8
-F	F	T	T	F	T	0.8
-F	F	T	T	T	F	0.8
-F	F	T	T	T	T	0.8
-F	T	F	F	F	F	0.8
-F	T	F	F	F	T	0.8
-F	T	F	F	T	F	0.8
-F	T	F	F	T	T	0.8
-F	T	F	T	F	F	0.8
-F	T	F	T	F	T	0.8
-F	T	F	T	T	F	0.8
-F	T	F	T	T	T	0.8
-F	T	T	F	F	F	0.8
-F	T	T	F	F	T	0.8
-F	T	T	F	T	F	0.8
-F	T	T	F	T	T	0.8
-F	T	T	T	F	F	0.8
-F	T	T	T	F	T	0.8
-F	T	T	T	T	F	0.8
-F	T	T	T	T	T	0.8
-T	F	F	F	F	F	0.8
-T	F	F	F	F	T	0.8
-T	F	F	F	T	F	0.8
-T	F	F	F	T	T	0.8
-T	F	F	T	F	F	0.8
-T	F	F	T	F	T	0.8
-T	F	F	T	T	F	0.8
-T	F	F	T	T	T	0.8
-T	F	T	F	F	F	0.8
-T	F	T	F	F	T	0.8
-T	F	T	F	T	F	0.8
-T	F	T	F	T	T	0.8
-T	F	T	T	F	F	0.8
-T	F	T	T	F	T	0.8
-T	F	T	T	T	F	0.8
-T	F	T	T	T	T	0.8
-T	T	F	F	F	F	0.8
-T	T	F	F	F	T	0.8
-T	T	F	F	T	F	0.8
-T	T	F	F	T	T	0.8
-T	T	F	T	F	F	0.8
-T	T	F	T	F	T	0.8
-T	T	F	T	T	F	0.8
-T	T	F	T	T	T	0.8
-T	T	T	F	F	F	0.8
-T	T	T	F	F	T	0.8
-T	T	T	F	T	F	0.8
-T	T	T	F	T	T	0.8
-T	T	T	T	F	F	0.8
-T	T	T	T	F	T	0.8
-T	T	T	T	T	F	0.8
+F	F	F	F	F	F	1.0
+F	F	F	F	F	T	0.0
+F	F	F	F	T	F	1.0
+F	F	F	F	T	T	0.0
+F	F	F	T	F	F	1.0
+F	F	F	T	F	T	0.0
+F	F	F	T	T	F	1.0
+F	F	F	T	T	T	0.0
+F	F	T	F	F	F	1.0
+F	F	T	F	F	T	0.0
+F	F	T	F	T	F	1.0
+F	F	T	F	T	T	0.0
+F	F	T	T	F	F	1.0
+F	F	T	T	F	T	0.0
+F	F	T	T	T	F	1.0
+F	F	T	T	T	T	0.0
+F	T	F	F	F	F	1.0
+F	T	F	F	F	T	0.0
+F	T	F	F	T	F	1.0
+F	T	F	F	T	T	0.0
+F	T	F	T	F	F	1.0
+F	T	F	T	F	T	0.0
+F	T	F	T	T	F	1.0
+F	T	F	T	T	T	0.0
+F	T	T	F	F	F	1.0
+F	T	T	F	F	T	0.0
+F	T	T	F	T	F	1.0
+F	T	T	F	T	T	0.0
+F	T	T	T	F	F	1.0
+F	T	T	T	F	T	0.0
+F	T	T	T	T	F	1.0
+F	T	T	T	T	T	0.0
+T	F	F	F	F	F	1.0
+T	F	F	F	F	T	0.0
+T	F	F	F	T	F	1.0
+T	F	F	F	T	T	0.0
+T	F	F	T	F	F	1.0
+T	F	F	T	F	T	0.0
+T	F	F	T	T	F	1.0
+T	F	F	T	T	T	0.0
+T	F	T	F	F	F	1.0
+T	F	T	F	F	T	0.0
+T	F	T	F	T	F	1.0
+T	F	T	F	T	T	0.0
+T	F	T	T	F	F	1.0
+T	F	T	T	F	T	0.0
+T	F	T	T	T	F	1.0
+T	F	T	T	T	T	0.0
+T	T	F	F	F	F	1.0
+T	T	F	F	F	T	0.0
+T	T	F	F	T	F	1.0
+T	T	F	F	T	T	0.0
+T	T	F	T	F	F	1.0
+T	T	F	T	F	T	0.0
+T	T	F	T	T	F	1.0
+T	T	F	T	T	T	0.0
+T	T	T	F	F	F	1.0
+T	T	T	F	F	T	0.0
+T	T	T	F	T	F	1.0
+T	T	T	F	T	T	0.0
+T	T	T	T	F	F	1.0
+T	T	T	T	F	T	0.0
+T	T	T	T	T	F	0.2
 T	T	T	T	T	T	0.8
+>>> Node: robot_at#mbot#wp1%1
+F	F	T	0.05
+F	F	F	0.95
+F	T	T	0.93
+F	T	F	0.07
+T	F	T	0.9
+T	F	F	0.1
+T	T	T	0.9
+T	T	F	0.1
 >>> Node: door_is_open#door1%1
 T	T	0.93
 T	F	0.07
@@ -165,7 +213,27 @@ T	T	0.93
 T	F	0.07
 F	T	0.05
 F	F	0.95
+>>> Node: door_is_open#door2%1
+T	T	0.93
+T	F	0.07
+F	T	0.05
+F	F	0.95
 >>> Node: door_at#door1#wp1%1
+T	T	0.93
+T	F	0.07
+F	T	0.05
+F	F	0.95
+>>> Node: connected#wp1#wp2%1
+T	T	0.93
+T	F	0.07
+F	T	0.05
+F	F	0.95
+>>> Node: robot_at#mbot#wp2%1
+T	T	0.93
+T	F	0.07
+F	T	0.05
+F	F	0.95
+>>> Node: robot_at#mbot#wp3%1
 T	T	0.93
 T	F	0.07
 F	T	0.05
@@ -182,43 +250,77 @@ F	T	0.05
 F	F	0.95
 >>> Node: navigate_end#mbot#wp1#wp2#door1#door2$2
 F	F	F	F	F	1.0
-F	F	F	F	T	1.0
+F	F	F	F	T	0.0
 F	F	F	T	F	1.0
-F	F	F	T	T	1.0
+F	F	F	T	T	0.0
 F	F	T	F	F	1.0
-F	F	T	F	T	1.0
+F	F	T	F	T	0.0
 F	F	T	T	F	1.0
-F	F	T	T	T	1.0
+F	F	T	T	T	0.0
 F	T	F	F	F	1.0
-F	T	F	F	T	1.0
+F	T	F	F	T	0.0
 F	T	F	T	F	1.0
-F	T	F	T	T	1.0
+F	T	F	T	T	0.0
 F	T	T	F	F	1.0
-F	T	T	F	T	1.0
+F	T	T	F	T	0.0
 F	T	T	T	F	1.0
-F	T	T	T	T	1.0
+F	T	T	T	T	0.0
 T	F	F	F	F	1.0
-T	F	F	F	T	1.0
+T	F	F	F	T	0.0
 T	F	F	T	F	1.0
-T	F	F	T	T	1.0
+T	F	F	T	T	0.0
 T	F	T	F	F	1.0
-T	F	T	F	T	1.0
+T	F	T	F	T	0.0
 T	F	T	T	F	1.0
-T	F	T	T	T	1.0
+T	F	T	T	T	0.0
 T	T	F	F	F	1.0
-T	T	F	F	T	1.0
+T	T	F	F	T	0.0
 T	T	F	T	F	1.0
-T	T	F	T	T	1.0
+T	T	F	T	T	0.0
 T	T	T	F	F	1.0
-T	T	T	F	T	1.0
-T	T	T	T	F	1.0
+T	T	T	F	T	0.0
+T	T	T	T	F	0.0
 T	T	T	T	T	1.0
 >>> Node: robot_at#mbot#wp2%2
-T	T	0.9
-T	F	0.1
-F	T	0.0
-F	F	0.0
+F	F	T	0.05
+F	F	F	0.95
+F	T	T	0.93
+F	T	F	0.07
+T	F	T	0.9
+T	F	F	0.1
+T	T	T	0.9
+T	T	F	0.1
+>>> Node: door_is_open#door1%2
+T	T	0.93
+T	F	0.07
+F	T	0.05
+F	F	0.95
 >>> Node: door_at#door3#wp3%2
+T	T	0.93
+T	F	0.07
+F	T	0.05
+F	F	0.95
+>>> Node: door_is_open#door2%2
+T	T	0.93
+T	F	0.07
+F	T	0.05
+F	F	0.95
+>>> Node: door_at#door1#wp1%2
+T	T	0.93
+T	F	0.07
+F	T	0.05
+F	F	0.95
+>>> Node: connected#wp1#wp2%2
+T	T	0.93
+T	F	0.07
+F	T	0.05
+F	F	0.95
+>>> Node: robot_at#mbot#wp1%2
+T	T	0.93
+T	F	0.07
+F	T	0.05
+F	F	0.95
+>>> Node: robot_at#mbot#wp3%2
 T	T	0.93
 T	F	0.07
 F	T	0.05
@@ -235,27 +337,57 @@ F	T	0.05
 F	F	0.95
 >>> Node: open_door_start#mbot#wp2#door2$3
 F	F	F	F	1.0
-F	F	F	T	1.0
+F	F	F	T	0.0
 F	F	T	F	1.0
-F	F	T	T	1.0
+F	F	T	T	0.0
 F	T	F	F	1.0
-F	T	F	T	1.0
+F	T	F	T	0.0
 F	T	T	F	1.0
-F	T	T	T	1.0
+F	T	T	T	0.0
 T	F	F	F	1.0
-T	F	F	T	1.0
+T	F	F	T	0.0
 T	F	T	F	1.0
-T	F	T	T	1.0
+T	F	T	T	0.0
 T	T	F	F	1.0
-T	T	F	T	1.0
-T	T	T	F	1.0
+T	T	F	T	0.0
+T	T	T	F	0.0
 T	T	T	T	1.0
+>>> Node: door_is_open#door1%3
+T	T	0.93
+T	F	0.07
+F	T	0.05
+F	F	0.95
 >>> Node: door_at#door3#wp3%3
 T	T	0.93
 T	F	0.07
 F	T	0.05
 F	F	0.95
+>>> Node: door_is_open#door2%3
+T	T	0.93
+T	F	0.07
+F	T	0.05
+F	F	0.95
+>>> Node: door_at#door1#wp1%3
+T	T	0.93
+T	F	0.07
+F	T	0.05
+F	F	0.95
+>>> Node: connected#wp1#wp2%3
+T	T	0.93
+T	F	0.07
+F	T	0.05
+F	F	0.95
+>>> Node: robot_at#mbot#wp1%3
+T	T	0.93
+T	F	0.07
+F	T	0.05
+F	F	0.95
 >>> Node: robot_at#mbot#wp2%3
+T	T	0.93
+T	F	0.07
+F	T	0.05
+F	F	0.95
+>>> Node: robot_at#mbot#wp3%3
 T	T	0.93
 T	F	0.07
 F	T	0.05
@@ -272,24 +404,53 @@ F	T	0.05
 F	F	0.95
 >>> Node: open_door_end#mbot#wp2#door2$4
 F	F	F	1.0
-F	F	T	1.0
+F	F	T	0.0
 F	T	F	1.0
-F	T	T	1.0
+F	T	T	0.0
 T	F	F	1.0
-T	F	T	1.0
-T	T	F	1.0
+T	F	T	0.0
+T	T	F	0.0
 T	T	T	1.0
 >>> Node: door_is_open#door2%4
-T	T	0.9
-T	F	0.1
-F	T	0.0
-F	F	0.0
+F	F	T	0.05
+F	F	F	0.95
+F	T	T	0.93
+F	T	F	0.07
+T	F	T	0.9
+T	F	F	0.1
+T	T	T	0.9
+T	T	F	0.1
+>>> Node: door_is_open#door1%4
+T	T	0.93
+T	F	0.07
+F	T	0.05
+F	F	0.95
 >>> Node: door_at#door3#wp3%4
 T	T	0.93
 T	F	0.07
 F	T	0.05
 F	F	0.95
+>>> Node: door_at#door1#wp1%4
+T	T	0.93
+T	F	0.07
+F	T	0.05
+F	F	0.95
+>>> Node: connected#wp1#wp2%4
+T	T	0.93
+T	F	0.07
+F	T	0.05
+F	F	0.95
+>>> Node: robot_at#mbot#wp1%4
+T	T	0.93
+T	F	0.07
+F	T	0.05
+F	F	0.95
 >>> Node: robot_at#mbot#wp2%4
+T	T	0.93
+T	F	0.07
+F	T	0.05
+F	F	0.95
+>>> Node: robot_at#mbot#wp3%4
 T	T	0.93
 T	F	0.07
 F	T	0.05
@@ -306,139 +467,178 @@ F	T	0.05
 F	F	0.95
 >>> Node: navigate_start#mbot#wp2#wp3#door2#door3$5
 F	F	F	F	F	F	F	1.0
-F	F	F	F	F	F	T	1.0
+F	F	F	F	F	F	T	0.0
 F	F	F	F	F	T	F	1.0
-F	F	F	F	F	T	T	1.0
+F	F	F	F	F	T	T	0.0
 F	F	F	F	T	F	F	1.0
-F	F	F	F	T	F	T	1.0
+F	F	F	F	T	F	T	0.0
 F	F	F	F	T	T	F	1.0
-F	F	F	F	T	T	T	1.0
+F	F	F	F	T	T	T	0.0
 F	F	F	T	F	F	F	1.0
-F	F	F	T	F	F	T	1.0
+F	F	F	T	F	F	T	0.0
 F	F	F	T	F	T	F	1.0
-F	F	F	T	F	T	T	1.0
+F	F	F	T	F	T	T	0.0
 F	F	F	T	T	F	F	1.0
-F	F	F	T	T	F	T	1.0
+F	F	F	T	T	F	T	0.0
 F	F	F	T	T	T	F	1.0
-F	F	F	T	T	T	T	1.0
+F	F	F	T	T	T	T	0.0
 F	F	T	F	F	F	F	1.0
-F	F	T	F	F	F	T	1.0
+F	F	T	F	F	F	T	0.0
 F	F	T	F	F	T	F	1.0
-F	F	T	F	F	T	T	1.0
+F	F	T	F	F	T	T	0.0
 F	F	T	F	T	F	F	1.0
-F	F	T	F	T	F	T	1.0
+F	F	T	F	T	F	T	0.0
 F	F	T	F	T	T	F	1.0
-F	F	T	F	T	T	T	1.0
+F	F	T	F	T	T	T	0.0
 F	F	T	T	F	F	F	1.0
-F	F	T	T	F	F	T	1.0
+F	F	T	T	F	F	T	0.0
 F	F	T	T	F	T	F	1.0
-F	F	T	T	F	T	T	1.0
+F	F	T	T	F	T	T	0.0
 F	F	T	T	T	F	F	1.0
-F	F	T	T	T	F	T	1.0
+F	F	T	T	T	F	T	0.0
 F	F	T	T	T	T	F	1.0
-F	F	T	T	T	T	T	1.0
+F	F	T	T	T	T	T	0.0
 F	T	F	F	F	F	F	1.0
-F	T	F	F	F	F	T	1.0
+F	T	F	F	F	F	T	0.0
 F	T	F	F	F	T	F	1.0
-F	T	F	F	F	T	T	1.0
+F	T	F	F	F	T	T	0.0
 F	T	F	F	T	F	F	1.0
-F	T	F	F	T	F	T	1.0
+F	T	F	F	T	F	T	0.0
 F	T	F	F	T	T	F	1.0
-F	T	F	F	T	T	T	1.0
+F	T	F	F	T	T	T	0.0
 F	T	F	T	F	F	F	1.0
-F	T	F	T	F	F	T	1.0
+F	T	F	T	F	F	T	0.0
 F	T	F	T	F	T	F	1.0
-F	T	F	T	F	T	T	1.0
+F	T	F	T	F	T	T	0.0
 F	T	F	T	T	F	F	1.0
-F	T	F	T	T	F	T	1.0
+F	T	F	T	T	F	T	0.0
 F	T	F	T	T	T	F	1.0
-F	T	F	T	T	T	T	1.0
+F	T	F	T	T	T	T	0.0
 F	T	T	F	F	F	F	1.0
-F	T	T	F	F	F	T	1.0
+F	T	T	F	F	F	T	0.0
 F	T	T	F	F	T	F	1.0
-F	T	T	F	F	T	T	1.0
+F	T	T	F	F	T	T	0.0
 F	T	T	F	T	F	F	1.0
-F	T	T	F	T	F	T	1.0
+F	T	T	F	T	F	T	0.0
 F	T	T	F	T	T	F	1.0
-F	T	T	F	T	T	T	1.0
+F	T	T	F	T	T	T	0.0
 F	T	T	T	F	F	F	1.0
-F	T	T	T	F	F	T	1.0
+F	T	T	T	F	F	T	0.0
 F	T	T	T	F	T	F	1.0
-F	T	T	T	F	T	T	1.0
+F	T	T	T	F	T	T	0.0
 F	T	T	T	T	F	F	1.0
-F	T	T	T	T	F	T	1.0
+F	T	T	T	T	F	T	0.0
 F	T	T	T	T	T	F	1.0
-F	T	T	T	T	T	T	1.0
+F	T	T	T	T	T	T	0.0
 T	F	F	F	F	F	F	1.0
-T	F	F	F	F	F	T	1.0
+T	F	F	F	F	F	T	0.0
 T	F	F	F	F	T	F	1.0
-T	F	F	F	F	T	T	1.0
+T	F	F	F	F	T	T	0.0
 T	F	F	F	T	F	F	1.0
-T	F	F	F	T	F	T	1.0
+T	F	F	F	T	F	T	0.0
 T	F	F	F	T	T	F	1.0
-T	F	F	F	T	T	T	1.0
+T	F	F	F	T	T	T	0.0
 T	F	F	T	F	F	F	1.0
-T	F	F	T	F	F	T	1.0
+T	F	F	T	F	F	T	0.0
 T	F	F	T	F	T	F	1.0
-T	F	F	T	F	T	T	1.0
+T	F	F	T	F	T	T	0.0
 T	F	F	T	T	F	F	1.0
-T	F	F	T	T	F	T	1.0
+T	F	F	T	T	F	T	0.0
 T	F	F	T	T	T	F	1.0
-T	F	F	T	T	T	T	1.0
+T	F	F	T	T	T	T	0.0
 T	F	T	F	F	F	F	1.0
-T	F	T	F	F	F	T	1.0
+T	F	T	F	F	F	T	0.0
 T	F	T	F	F	T	F	1.0
-T	F	T	F	F	T	T	1.0
+T	F	T	F	F	T	T	0.0
 T	F	T	F	T	F	F	1.0
-T	F	T	F	T	F	T	1.0
+T	F	T	F	T	F	T	0.0
 T	F	T	F	T	T	F	1.0
-T	F	T	F	T	T	T	1.0
+T	F	T	F	T	T	T	0.0
 T	F	T	T	F	F	F	1.0
-T	F	T	T	F	F	T	1.0
+T	F	T	T	F	F	T	0.0
 T	F	T	T	F	T	F	1.0
-T	F	T	T	F	T	T	1.0
+T	F	T	T	F	T	T	0.0
 T	F	T	T	T	F	F	1.0
-T	F	T	T	T	F	T	1.0
+T	F	T	T	T	F	T	0.0
 T	F	T	T	T	T	F	1.0
-T	F	T	T	T	T	T	1.0
+T	F	T	T	T	T	T	0.0
 T	T	F	F	F	F	F	1.0
-T	T	F	F	F	F	T	1.0
+T	T	F	F	F	F	T	0.0
 T	T	F	F	F	T	F	1.0
-T	T	F	F	F	T	T	1.0
+T	T	F	F	F	T	T	0.0
 T	T	F	F	T	F	F	1.0
-T	T	F	F	T	F	T	1.0
+T	T	F	F	T	F	T	0.0
 T	T	F	F	T	T	F	1.0
-T	T	F	F	T	T	T	1.0
+T	T	F	F	T	T	T	0.0
 T	T	F	T	F	F	F	1.0
-T	T	F	T	F	F	T	1.0
+T	T	F	T	F	F	T	0.0
 T	T	F	T	F	T	F	1.0
-T	T	F	T	F	T	T	1.0
+T	T	F	T	F	T	T	0.0
 T	T	F	T	T	F	F	1.0
-T	T	F	T	T	F	T	1.0
+T	T	F	T	T	F	T	0.0
 T	T	F	T	T	T	F	1.0
-T	T	F	T	T	T	T	1.0
+T	T	F	T	T	T	T	0.0
 T	T	T	F	F	F	F	1.0
-T	T	T	F	F	F	T	1.0
+T	T	T	F	F	F	T	0.0
 T	T	T	F	F	T	F	1.0
-T	T	T	F	F	T	T	1.0
+T	T	T	F	F	T	T	0.0
 T	T	T	F	T	F	F	1.0
-T	T	T	F	T	F	T	1.0
+T	T	T	F	T	F	T	0.0
 T	T	T	F	T	T	F	1.0
-T	T	T	F	T	T	T	1.0
+T	T	T	F	T	T	T	0.0
 T	T	T	T	F	F	F	1.0
-T	T	T	T	F	F	T	1.0
+T	T	T	T	F	F	T	0.0
 T	T	T	T	F	T	F	1.0
-T	T	T	T	F	T	T	1.0
+T	T	T	T	F	T	T	0.0
 T	T	T	T	T	F	F	1.0
-T	T	T	T	T	F	T	1.0
-T	T	T	T	T	T	F	1.0
+T	T	T	T	T	F	T	0.0
+T	T	T	T	T	T	F	0.0
 T	T	T	T	T	T	T	1.0
+>>> Node: robot_at#mbot#wp2%5
+F	F	T	0.05
+F	F	F	0.95
+F	T	T	0.93
+F	T	F	0.07
+T	F	T	0.9
+T	F	F	0.1
+T	T	T	0.9
+T	T	F	0.1
+>>> Node: door_is_open#door1%5
+T	T	0.93
+T	F	0.07
+F	T	0.05
+F	F	0.95
 >>> Node: door_at#door3#wp3%5
 T	T	0.93
 T	F	0.07
 F	T	0.05
 F	F	0.95
 >>> Node: door_is_open#door2%5
+T	T	0.93
+T	F	0.07
+F	T	0.05
+F	F	0.95
+>>> Node: door_at#door1#wp1%5
+T	T	0.93
+T	F	0.07
+F	T	0.05
+F	F	0.95
+>>> Node: connected#wp1#wp2%5
+T	T	0.93
+T	F	0.07
+F	T	0.05
+F	F	0.95
+>>> Node: robot_at#mbot#wp1%5
+T	T	0.93
+T	F	0.07
+F	T	0.05
+F	F	0.95
+>>> Node: robot_at#mbot#wp3%5
+T	T	0.93
+T	F	0.07
+F	T	0.05
+F	F	0.95
+>>> Node: connected#wp2#wp3%5
 T	T	0.93
 T	F	0.07
 F	T	0.05
@@ -450,39 +650,88 @@ F	T	0.05
 F	F	0.95
 >>> Node: navigate_end#mbot#wp2#wp3#door2#door3$6
 F	F	F	F	F	1.0
-F	F	F	F	T	1.0
+F	F	F	F	T	0.0
 F	F	F	T	F	1.0
-F	F	F	T	T	1.0
+F	F	F	T	T	0.0
 F	F	T	F	F	1.0
-F	F	T	F	T	1.0
+F	F	T	F	T	0.0
 F	F	T	T	F	1.0
-F	F	T	T	T	1.0
+F	F	T	T	T	0.0
 F	T	F	F	F	1.0
-F	T	F	F	T	1.0
+F	T	F	F	T	0.0
 F	T	F	T	F	1.0
-F	T	F	T	T	1.0
+F	T	F	T	T	0.0
 F	T	T	F	F	1.0
-F	T	T	F	T	1.0
+F	T	T	F	T	0.0
 F	T	T	T	F	1.0
-F	T	T	T	T	1.0
+F	T	T	T	T	0.0
 T	F	F	F	F	1.0
-T	F	F	F	T	1.0
+T	F	F	F	T	0.0
 T	F	F	T	F	1.0
-T	F	F	T	T	1.0
+T	F	F	T	T	0.0
 T	F	T	F	F	1.0
-T	F	T	F	T	1.0
+T	F	T	F	T	0.0
 T	F	T	T	F	1.0
-T	F	T	T	T	1.0
+T	F	T	T	T	0.0
 T	T	F	F	F	1.0
-T	T	F	F	T	1.0
+T	T	F	F	T	0.0
 T	T	F	T	F	1.0
-T	T	F	T	T	1.0
+T	T	F	T	T	0.0
 T	T	T	F	F	1.0
-T	T	T	F	T	1.0
-T	T	T	T	F	1.0
+T	T	T	F	T	0.0
+T	T	T	T	F	0.0
 T	T	T	T	T	1.0
 >>> Node: robot_at#mbot#wp3%6
-T	T	0.9
-T	F	0.1
-F	T	0.0
-F	F	0.0
+F	F	T	0.05
+F	F	F	0.95
+F	T	T	0.93
+F	T	F	0.07
+T	F	T	0.9
+T	F	F	0.1
+T	T	T	0.9
+T	T	F	0.1
+>>> Node: door_is_open#door1%6
+T	T	0.93
+T	F	0.07
+F	T	0.05
+F	F	0.95
+>>> Node: door_at#door3#wp3%6
+T	T	0.93
+T	F	0.07
+F	T	0.05
+F	F	0.95
+>>> Node: door_is_open#door2%6
+T	T	0.93
+T	F	0.07
+F	T	0.05
+F	F	0.95
+>>> Node: door_at#door1#wp1%6
+T	T	0.93
+T	F	0.07
+F	T	0.05
+F	F	0.95
+>>> Node: connected#wp1#wp2%6
+T	T	0.93
+T	F	0.07
+F	T	0.05
+F	F	0.95
+>>> Node: robot_at#mbot#wp1%6
+T	T	0.93
+T	F	0.07
+F	T	0.05
+F	F	0.95
+>>> Node: robot_at#mbot#wp2%6
+T	T	0.93
+T	F	0.07
+F	T	0.05
+F	F	0.95
+>>> Node: connected#wp2#wp3%6
+T	T	0.93
+T	F	0.07
+F	T	0.05
+F	F	0.95
+>>> Node: door_at#door2#wp2%6
+T	T	0.93
+T	F	0.07
+F	T	0.05
+F	F	0.95
