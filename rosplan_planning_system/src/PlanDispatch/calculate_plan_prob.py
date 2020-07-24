@@ -975,15 +975,8 @@ def pruneNetwork(actions_par_child, predicates_par_child):
                                         [['T', 'T', effects_success],
                                         ['T', 'F', 1-effects_success],
                                         ['F', 'T', 0],
-                                        ['F', 'F', 0]], [action_cpd])
+                                        ['F', 'F', 1]], [action_cpd])
 
-
-            has_action_as_child = False
-            for child in predicates_par_child[node]['children']:
-                if not isPredicate(child):
-                    has_action_as_parent = True
-                    child_action = child
-                    break
 
             ##### Rule 2 #####
             ### If predicate is precondition of action_name then change its CPD to true
@@ -991,22 +984,42 @@ def pruneNetwork(actions_par_child, predicates_par_child):
             # We check if it has a predicate as parent because the predicates in the first layer don't
             # and the CPD would be different. We don't care about the predicates in the first layer
             # because the fact they are the initial state already defines their CPD
-            if has_action_as_child:
-                # Get all combinations of 'F' and 'T' has a list of len(actions_par_child[node]['parents'])+1 items
-                # I add 1 because the last entry represents the node itself
-                cpd_lines = list(itertools.product(['F', 'T'], repeat=len(actions_par_child[node]['parents'])+1))
-                action_cpd_elements = list()
-                for i in range(len(cpd_lines)):
-                    lst = list(cpd_lines[i])
-                    if all(elem == 'T' for elem in lst):
-                        lst.append(1)
-                    elif all(elem == 'T' for elem in lst[:-1]):
-                        lst.append(0)
-                    elif lst[-1] == 'T':
-                        lst.append(0)
-                    else:
-                        lst.append(1)
-                    action_cpd_elements.append(lst)                
+            if not node.split('%')[1] == str(0):
+
+                has_action_as_child = False
+                for child in predicates_par_child[node]['children']:
+                    if not isPredicate(child):
+                        has_action_as_child = True
+                        child_action = child
+                        break
+
+                if has_action_as_child:
+
+                    # Get all combinations of 'F' and 'T' has a list of len(actions_par_child[node]['parents'])+1 items
+                    # I add 1 because the last entry represents the node itself
+                    cpd_lines = list(itertools.product(['F', 'T'], repeat=len(predicates_par_child[node]['parents'])+1))
+
+                    cpd_elements = list()
+
+                    parents_cpd_list = list()
+                    for predicate in predicates_par_child[node]['parents']:
+                        parents_cpd_list.append(cpds_map_[predicate])
+                    parents_cpd_list.append(cpds_map_[parent_action])
+
+                    for line in cpd_lines:
+                        lst = list(line)
+                        if all([elem == 'T' for elem in lst]):
+                            lst.append(1)
+                        elif all([elem == 'T' for elem in lst[:-1]]):
+                            lst.append(0)
+                        elif lst[-1] == 'T':
+                            lst.append(0)
+                        else:
+                            lst.append(1)
+                        cpd_elements.append(lst)      
+                    
+                    cpd = ConditionalProbabilityTable(cpd_elements, parents_cpd_list)
+                    cpds_map_[node] = cpd
                 
 
 
@@ -1161,7 +1174,6 @@ def buildCPDs(actions_par_child, predicates_par_child):
                 action_name_without_time = removeStartEndFromName(node).split('$')[0]
                 success_prob = action_probabilities_map_[action_name_without_time][0]
 
-                rospy.loginfo('>>> CPD Lines: \n' + str(cpd_lines))
                 action_cpd_elements = list()
                 for line in cpd_lines:
                     lst = list(line)
@@ -1344,7 +1356,7 @@ def calculateProbability(original_plan):
     # rospy.loginfo(getPredicateParentsAsString(predicates_par_child))
 
     # print('>>> All nodes: \n' + str(all_nodes_))
-    # pruneNetwork(actions_par_child, predicates_par_child)
+    pruneNetwork(actions_par_child, predicates_par_child)
 
     # model = BayesianNetwork()
     # buildNetworkInModel(model, actions_par_child, predicates_par_child)

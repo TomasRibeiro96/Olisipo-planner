@@ -8,7 +8,6 @@ robot_at#mbot#wp1%0
 door_at#door1#wp1%0
 > Children:
 navigate_end#mbot#wp1#wp2#door1#door2$2
-robot_at#mbot#wp1%1
 ----------------------------
 >>> ACTION: navigate_end#mbot#wp1#wp2#door1#door2$2
 > Parents:
@@ -41,7 +40,6 @@ connected#wp2#wp3%4
 door_is_open#door2%4
 door_at#door3#wp3%4
 > Children:
-robot_at#mbot#wp2%5
 navigate_end#mbot#wp2#wp3#door2#door3$6
 ----------------------------
 >>> ACTION: navigate_end#mbot#wp2#wp3#door2#door3$6
