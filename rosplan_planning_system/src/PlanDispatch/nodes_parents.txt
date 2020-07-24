@@ -1,0 +1,81 @@
+NODES AND PARENTS:
+>>> Node: door_at#door1#wp1%0
+----------------------------
+>>> Node: connected#wp2#wp3%0
+----------------------------
+>>> Node: door_at#door3#wp3%0
+----------------------------
+>>> Node: connected#wp1#wp2%0
+----------------------------
+>>> Node: door_is_open#door1%0
+----------------------------
+>>> Node: door_at#door2#wp2%0
+----------------------------
+>>> Node: robot_at#mbot#wp1%0
+----------------------------
+>>> Node: door_at#door1#wp1%1
+door_at#door1#wp1%0
+----------------------------
+>>> Node: connected#wp2#wp3%1
+connected#wp2#wp3%0
+----------------------------
+>>> Node: door_at#door3#wp3%1
+door_at#door3#wp3%0
+----------------------------
+>>> Node: door_is_open#door1%1
+door_is_open#door1%0
+----------------------------
+>>> Node: door_at#door2#wp2%1
+door_at#door2#wp2%0
+----------------------------
+>>> Node: robot_at#mbot#wp2%2
+navigate_end#mbot#wp1#wp2#door1#door2$2
+----------------------------
+>>> Node: door_at#door3#wp3%2
+door_at#door3#wp3%1
+----------------------------
+>>> Node: connected#wp2#wp3%2
+connected#wp2#wp3%1
+----------------------------
+>>> Node: door_at#door2#wp2%2
+door_at#door2#wp2%1
+----------------------------
+>>> Node: connected#wp2#wp3%3
+connected#wp2#wp3%2
+----------------------------
+>>> Node: door_at#door3#wp3%3
+door_at#door3#wp3%2
+----------------------------
+>>> Node: robot_at#mbot#wp2%3
+robot_at#mbot#wp2%2
+----------------------------
+>>> Node: door_at#door2#wp2%3
+door_at#door2#wp2%2
+----------------------------
+>>> Node: robot_at#mbot#wp2%4
+robot_at#mbot#wp2%3
+----------------------------
+>>> Node: connected#wp2#wp3%4
+connected#wp2#wp3%3
+----------------------------
+>>> Node: door_at#door3#wp3%4
+door_at#door3#wp3%3
+----------------------------
+>>> Node: door_is_open#door2%4
+open_door_end#mbot#wp2#door2$4
+----------------------------
+>>> Node: door_at#door2#wp2%4
+door_at#door2#wp2%3
+----------------------------
+>>> Node: door_at#door3#wp3%5
+door_at#door3#wp3%4
+----------------------------
+>>> Node: door_is_open#door2%5
+door_is_open#door2%4
+----------------------------
+>>> Node: door_at#door2#wp2%5
+door_at#door2#wp2%4
+----------------------------
+>>> Node: robot_at#mbot#wp3%6
+navigate_end#mbot#wp2#wp3#door2#door3$6
+----------------------------

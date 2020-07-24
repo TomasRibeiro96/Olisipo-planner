@@ -685,7 +685,6 @@ std::vector<std::string> CSPExecGenerator::convertCPyObjectToVector(CPyObject pL
     Py_ssize_t size = PyList_Size(pList);
     std::string predicate;
 
-    ROS_INFO("Starting for loop");
     for(int i = 0; i < size; i++){
         PyObject* item = PyList_GetItem(pList, i);
         predicate = PyBytes_AsString(item);
@@ -747,7 +746,12 @@ double CSPExecGenerator::getCurrentPlanProbabilityAndFillExpectedFacts(){
             
             CPyObject pReturnedProbability = PyObject_CallObject(pFuncCalcProb, pArgs);
             plan_success_probability = PyFloat_AsDouble(pReturnedProbability);
-            // ROS_INFO("Plan probability: %f", plan_success_probability);
+            if(plan_success_probability == -1.0){
+                ROS_ERROR("Received NULL from probability calculation");
+            }
+            else{
+                ROS_INFO("Plan probability: %f", plan_success_probability);
+            }
         }
         else{
             PyErr_Print();
@@ -775,7 +779,6 @@ double CSPExecGenerator::getCurrentPlanProbabilityAndFillExpectedFacts(){
         ROS_ERROR("ERROR: Unable to import module");
     }
 
-    ROS_INFO("Returning plan_success_probability");
     return plan_success_probability;
 }
 

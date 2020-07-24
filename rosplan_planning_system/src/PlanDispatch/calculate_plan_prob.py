@@ -12,13 +12,23 @@ from numpy import *
 from pomegranate import *
 import collections
 import time
+import itertools
 
+# pred_probabilities_map_[predicate] = [spont_false_true, spont_true_false]
 pred_probabilities_map_ = dict()
+# action_probabilities_map_[action] = [action_success, effects_success]
+# effects_success[predicate_without_parameters] = probability
 action_probabilities_map_ = dict()
 cpds_map_ = dict()
 all_nodes_ = list()
+goal_ = set()
+initial_state_ = set()
 
 rospy.init_node('bayesian_network_calculator')
+
+# TODO: Prunning could be done at the same time as CPDs are defined
+#       Didn't do it so the code is clearer
+
 
 class Action:
 
@@ -32,7 +42,7 @@ class Action:
 
         self.parameters = list()
         operator_details = rospy.ServiceProxy('/rosplan_knowledge_base/domain/operator_details', GetDomainOperatorDetailsService)(name)
-        rospy.ServiceProxy('/rosplan_knowledge_base/domain/operator_details', GetDomainOperatorDetailsService)
+        # rospy.loginfo('Parameters: ' + str(operator_details))
         number_param = len(operator_details.op.formula.typed_parameters)
         for i in range(number_param):
             self.parameters.append(operator_details.op.formula.typed_parameters[i].key)
@@ -289,22 +299,35 @@ class GroundedAction:
         var_obj = dict(zip(variables, list_objects))
         self.name = str( action.name + '#' + '#'.join(str(v) for v in list_objects))
 
+        ### This block of code defines the effects as they were in Action, but replaces the variables
+        ### with objects, e.g. ['robot_at', 'r', 'dest'] -> ['robot_at', 'mbot', 'wp1']
         self.effects = dict()
+        # For each key and value of action effects
         for k, v in action.effects.items():
+            # Initialise value of grounded actions effects as list (e.g. k = 'at_start_add_effects')
             self.effects[k] = list()
+            # If the key has a value, meaning it has at_start_add_effects, for example
             if v:
                 i = 0
+                # e.g., for each effect, e.g. ['robot_at', 'r', 'dest']
                 for value in v:
+                    # append a list to the value of effects['at_start_add_effects']
                     self.effects[k].append(list())
+                    # For each word in effect, e.g. 'robot_at', 'r' and 'dest'
                     for item in value:
+                        # If word is in var_obj.keys(), meaning if it's a variable
                         if item in list(var_obj.keys()):
+                            # Then append the object associated with that variable, e.g. 'r'->'mbot'
                             self.effects[k][i].append(var_obj[item])
                         else:
+                            # If it's not a variable, then just append it, e.g. 'robot_at'
                             self.effects[k][i].append(item)
                     i = i + 1
+            # If it has no effects (empty), then just define it as it is
             else:
                 self.effects[k] = v
         
+        ### This does the same as the above but for conditions
         self.conditions = dict()
         for k, v in action.conditions.items():
             self.conditions[k] = list()
@@ -321,6 +344,7 @@ class GroundedAction:
             else:
                 self.conditions[k] = v
 
+        ### Same as the, but for comparison
         self.comparison = dict()
         for k, v in action.comparison.items():
             self.comparison[k] = list()
@@ -364,14 +388,19 @@ class GroundedAction:
         return predicates_set
 
 
-    def printAction(self):
-        print('>>>>>>>>>>>>>>>>>>>>>>>>')
-        print('Grounded Action name: ' + self.name)
-        # print('Action duration: ' + str(self.duration))
-        print('Conditions: ' + str(self.conditions))
-        print('Effects: ' + str(self.effects))
-        print('Comparison: ' + str(self.comparison))
-        print('<<<<<<<<<<<<<<<<<<<<<<<<')
+    def getString(self):
+        string = str()
+        string = string + '>>>>>>>>>>>>>>>>>>>>>>>>\n' + 'Grounded Action name: ' + self.name + '\n' + \
+                 'Conditions: ' + str(self.conditions) + '\n' + 'Effects: ' + str(self.effects) + '\n' + \
+                 '<<<<<<<<<<<<<<<<<<<<<<<<'
+        return string
+        # print('>>>>>>>>>>>>>>>>>>>>>>>>')
+        # print('Grounded Action name: ' + self.name)
+        # # print('Action duration: ' + str(self.duration))
+        # print('Conditions: ' + str(self.conditions))
+        # print('Effects: ' + str(self.effects))
+        # # print('Comparison: ' + str(self.comparison))
+        # print('<<<<<<<<<<<<<<<<<<<<<<<<')
 
 
     @classmethod
@@ -626,7 +655,7 @@ def writePredicatesToFile():
     file.close()
 
 
-def writeParentsToFile(predicates_par_child):
+def writePredicateParentsToFile(predicates_par_child):
     file = open('nodes_parents.txt', 'w')
     file.write('NODES AND PARENTS:\n')
     # For loop to print nodes in order
@@ -639,6 +668,20 @@ def writeParentsToFile(predicates_par_child):
                     file.write(par + '\n')
                 file.write('----------------------------\n')
     file.close()
+
+
+def getPredicateParentsAsString(predicates_par_child):
+    string = 'NODES AND PARENTS:\n'
+    # For loop to print nodes in order
+    for i in range(0, len(predicates_par_child.keys())):
+        for predicate in predicates_par_child.keys():
+            node_index = predicate.split('%')[1]
+            if node_index == str(i):
+                string = string + '>>> Node: ' + predicate + '\n'
+                for par in predicates_par_child[predicate]['parents']:
+                    string = string + par + '\n'
+                string = string + '----------------------------\n'
+    return string
 
 
 def writeActionsToFile(actions_par_child):
@@ -660,7 +703,7 @@ def writeActionsToFile(actions_par_child):
     file.close()
 
 
-def writeNodesAndCPDsToFile(cpds_map_):
+def writeNodesAndCPDsToFile():
     file = open('nodes_cpds.txt', 'w')
     file.write('NODES AND CPDs:\n')
     for node in all_nodes_:
@@ -761,17 +804,7 @@ def checkCycles(children):
 def addPredicate(predicate, predicates_par_child, layer_number):
     global all_nodes_
     prev_pred_name = predicate + '%' + str(layer_number-1)
-    parent_cpd = cpds_map_[prev_pred_name]
-    spont_false_true = pred_probabilities_map_[predicate][0]
-    spont_true_false = pred_probabilities_map_[predicate][1]
-    cpd = ConditionalProbabilityTable(
-        [['T', 'T', 1-spont_true_false],
-         ['T', 'F', spont_true_false],
-         ['F', 'T', spont_false_true],
-         ['F', 'F', 1-spont_false_true]], [parent_cpd]
-    )
-    pred_name = predicate+'%'+str(layer_number)
-    cpds_map_[pred_name] = cpd
+    pred_name = predicate + '%' + str(layer_number)
     all_nodes_.append(pred_name)
     predicates_par_child[pred_name] = dict()
     predicates_par_child[pred_name]['parents'] = set()
@@ -787,19 +820,15 @@ def addPredicateLayer(predicates_set, layer_number, predicates_par_child):
             addPredicate(predicate, predicates_par_child, layer_number)
 
 
-def addFirstLayerPredicates(predicates_set, predicates_par_child, initial_state):
+def addFirstLayerPredicates(predicates_set, predicates_par_child):
     global all_nodes_
     for predicate in predicates_set:
         pred_name = predicate + '%0'
-        if predicate in initial_state:
-            cpd = DiscreteDistribution({'T': 1, 'F': 0})
-        else:
-            cpd = DiscreteDistribution({'T': 0, 'F': 1})
         all_nodes_.append(pred_name)
-        cpds_map_[pred_name] = cpd
         predicates_par_child[pred_name] = dict()
         predicates_par_child[pred_name]['parents'] = set()
         predicates_par_child[pred_name]['children'] = set()
+
 
 
 ######### CONNECT PREDICATES #########
@@ -814,38 +843,19 @@ def connectActionToConditionPredicates(action, action_name, predicates_par_child
 
 def connectActionToEffectsPredicates(action, action_name, predicates_par_child, actions_par_child, layer_number):
     global all_nodes_
-    index = 0
+    
     for predicate in action.getEffectsPredicates():
+        # Add predicate to model
         pred_name = predicate + '%' + str(layer_number)
+        addPredicate(predicate, predicates_par_child, layer_number)
+        # Connect predicate to predicate in previous layer
         prev_pred_name = predicate + '%' + str(layer_number-1)
-        spont_false_true = pred_probabilities_map_[predicate][0]
-        spont_true_false = pred_probabilities_map_[predicate][1]
-        name_without_time = removeStartEndFromName(action_name).split('$')[0]
-        predicate_without_parameters = predicate.split('#')[0]
-        effects_success = action_probabilities_map_[name_without_time][1][predicate_without_parameters]
-        action_cpd = cpds_map_[action_name]
-        parent_cpd = cpds_map_[prev_pred_name]
-        pred_cpd = ConditionalProbabilityTable(
-            [['T', 'T', 'T', effects_success],
-             ['T', 'T', 'F', 1-effects_success],
-             ['T', 'F', 'T', 1-spont_true_false],
-             ['T', 'F', 'F', spont_true_false],
-             ['F', 'T', 'T', effects_success],
-             ['F', 'T', 'F', 1-effects_success],
-             ['F', 'F', 'T', spont_false_true],
-             ['F', 'F', 'F', 1-spont_false_true]], [parent_cpd, action_cpd]
-        )
-        all_nodes_.append(pred_name)
-        cpds_map_[pred_name] = pred_cpd
-        predicates_par_child[pred_name] = dict()
-        predicates_par_child[pred_name]['parents'] = set()
-        predicates_par_child[pred_name]['children'] = set()
-        # model.add_edge(action_node, node_predicate)
         predicates_par_child[pred_name]['parents'].add(action_name)
-        actions_par_child[action_name]['children'].add(pred_name)
         predicates_par_child[pred_name]['parents'].add(prev_pred_name)
         predicates_par_child[prev_pred_name]['children'].add(pred_name)
-        index = index + 1
+        # Connect predicate to action
+        actions_par_child[action_name]['children'].add(pred_name)
+        
 
 
 def connectActionEndToActionStart(action, action_name, end_index, actions_par_child):
@@ -893,7 +903,7 @@ def removeNode(node, actions_par_child, predicates_par_child, is_predicate):
         actions_par_child.pop(node)
 
     all_nodes_.remove(node)
-    cpds_map_.pop(node)
+    # cpds_map_.pop(node)
 
     for pred in predicates_par_child.keys():
         if node in predicates_par_child[pred]['parents']:
@@ -909,10 +919,10 @@ def removeNode(node, actions_par_child, predicates_par_child, is_predicate):
 
 
 ######### PRUNE NETWORK #########
-def pruneNetwork(actions_par_child, predicates_par_child, goal):
+def pruneNetwork(actions_par_child, predicates_par_child):
     size = len(actions_par_child)
     goal_with_time = set()
-    for item in goal:
+    for item in goal_:
         goal_with_time.add(item + '%' + str(size))
 
     for node in reversed(all_nodes_):
@@ -928,51 +938,76 @@ def pruneNetwork(actions_par_child, predicates_par_child, goal):
 
         if is_predicate:
             ##### Rule 1 #####
-            # If predicate does not have children and is not the goal, then remove it
+            # If predicate does not have children and is not the goal_, then remove it
             if not node in goal_with_time:
                 if not predicates_par_child[node]['children']:
                     removeNode(node, actions_par_child, predicates_par_child, is_predicate)
+                    # Skip to next node in for loop
                     continue
 
-            for action_name in actions_par_child.keys():
-
-                ##### Rule 2 #####
-                # If predicate is precondition of action_name then change its CPD to true
-                # if node in actions_par_child[action_name]['parents']:
-                #     cpds_map_[node] = DiscreteDistribution({'T': 1, 'F': 0})
-                #     # remove edges to parents
-                #     for parent in predicates_par_child[node]['parents']:
-                #         if len(parent.split('%')) > 1:
-                #             predicates_par_child[parent]['children'].remove(node)
-                #         else:
-                #             actions_par_child[parent]['children'].remove(node)
-                #     predicates_par_child[node]['parents'] = set()
+            has_action_as_parent = False
+            for parent in predicates_par_child[node]['parents']:
+                if not isPredicate(parent):
+                    has_action_as_parent = True
+                    parent_action = parent
+                    break
+            
+            ##### Rule 3 #####
+            ### If predicate is children of action, then remove
+            ### edges from other parents and replace CPD
+            if has_action_as_parent:
+                removed_parents = set()
+                for par in predicates_par_child[node]['parents']:
+                    # if parent is predicate, then remove edges
+                    if isPredicate(par):
+                        removed_parents.add(par)
+                # Had to remove it here and not inside the previous cycle because
+                # I can't change the size of a list while iterating over it
+                for par in removed_parents:
+                    predicates_par_child[par]['children'].remove(node)
+                    predicates_par_child[node]['parents'].remove(par)
                 
-                ##### Rule 3 #####
-                # If predicate is children of action_name, then remove edges from other parents
-                ## Replace CPD
-                if node in actions_par_child[action_name]['children']:
-                    removed_parents = set()
-                    for par in predicates_par_child[node]['parents']:
-                        # if parent is predicate, then remove edges
-                        if len(par.split('%')) > 1:
-                            removed_parents.add(par)
-                    # Had to remove it here and not inside the previous cycle because
-                    ## I can't change the size of a list while iterating over it
-                    for par in removed_parents:
-                        predicates_par_child[par]['children'].remove(node)
-                        predicates_par_child[node]['parents'].remove(par)
-                    
-                    action_name_no_time = removeStartEndFromName(action_name).split('$')[0]
-                    predicate_no_parameters = node.split('#')[0]
-                    effects_success = action_probabilities_map_[action_name_no_time][1][predicate_no_parameters]
-                    action_cpd = cpds_map_[action_name]
-                    # TODO: Check this table
-                    cpds_map_[node] = ConditionalProbabilityTable(
+                action_name_no_time = removeStartEndFromName(parent_action).split('$')[0]
+                predicate_no_parameters = node.split('#')[0]
+                effects_success = action_probabilities_map_[action_name_no_time][1][predicate_no_parameters]
+                action_cpd = cpds_map_[parent_action]
+                cpds_map_[node] = ConditionalProbabilityTable(
                                         [['T', 'T', effects_success],
-                                         ['T', 'F', 1-effects_success],
-                                         ['F', 'T', 0],
-                                         ['F', 'F', 0]], [action_cpd])
+                                        ['T', 'F', 1-effects_success],
+                                        ['F', 'T', 0],
+                                        ['F', 'F', 0]], [action_cpd])
+
+
+            has_action_as_child = False
+            for child in predicates_par_child[node]['children']:
+                if not isPredicate(child):
+                    has_action_as_parent = True
+                    child_action = child
+                    break
+
+            ##### Rule 2 #####
+            ### If predicate is precondition of action_name then change its CPD to true
+            # If node is parent of an action and has as parent a predicate, then change its CPD to true
+            # We check if it has a predicate as parent because the predicates in the first layer don't
+            # and the CPD would be different. We don't care about the predicates in the first layer
+            # because the fact they are the initial state already defines their CPD
+            if has_action_as_child:
+                # Get all combinations of 'F' and 'T' has a list of len(actions_par_child[node]['parents'])+1 items
+                # I add 1 because the last entry represents the node itself
+                cpd_lines = list(itertools.product(['F', 'T'], repeat=len(actions_par_child[node]['parents'])+1))
+                action_cpd_elements = list()
+                for i in range(len(cpd_lines)):
+                    lst = list(cpd_lines[i])
+                    if all(elem == 'T' for elem in lst):
+                        lst.append(1)
+                    elif all(elem == 'T' for elem in lst[:-1]):
+                        lst.append(0)
+                    elif lst[-1] == 'T':
+                        lst.append(0)
+                    else:
+                        lst.append(1)
+                    action_cpd_elements.append(lst)                
+                
 
 
 ######### BUILD NETWORK IN MODEL #########
@@ -994,12 +1029,161 @@ def buildNetworkInModel(model, actions_par_child, predicates_par_child):
             model.add_edge(parent_node, node)
 
 
+######### BUILD CPDs #########
+# # TODO: This needs to account for true and false predicates
+def buildCPDs(actions_par_child, predicates_par_child):
+
+    for node in all_nodes_:
+
+        if isPredicate(node):
+
+            node_without_time = node.split('%')[0]
+
+            # If node is in first layer
+            if int(node.split('%')[1]) == 0:
+                # If it is in initial state then node is true
+                if node.split('%')[0] in initial_state_:
+                    cpd = DiscreteDistribution({'T': 1, 'F': 0})
+                    cpds_map_[node] = cpd
+                    continue
+                # Else it is false
+                cpd = DiscreteDistribution({'T': 0, 'F': 1})
+                cpds_map_[node] = cpd
+                continue
+
+            # If predicate only has one parent, which can only be
+            # the same predicate in the previous layer
+            if len(predicates_par_child[node]['parents']) == 1:
+                spont_false_true = pred_probabilities_map_[node_without_time][0]
+                spont_true_false = pred_probabilities_map_[node_without_time][1]
+                parent = list(predicates_par_child[node]['parents'])[0]
+                parent_cpd = cpds_map_[parent]
+                cpd = ConditionalProbabilityTable(
+                        [['T', 'T', 1-spont_true_false],
+                        ['T', 'F', spont_true_false],
+                        ['F', 'T', spont_false_true],
+                        ['F', 'F', 1-spont_false_true]], [parent_cpd])
+                cpds_map_[node] = cpd
+                continue
+
+            # If predicate has more than one parent, then it has two:
+            # the predicate in the previous layer and an action
+            else:
+                for parent in predicates_par_child[node]['parents']:
+                    if isPredicate(parent):
+                        parent_predicate = parent
+                    else:
+                        parent_action = parent
+
+                try:
+                    parent_predicate
+                except NameError:
+                    rospy.logerr('Predicate has no predicate as parent')
+                try:
+                    parent_action
+                except NameError:
+                    rospy.logerr('Predicate has no action as parent')
+
+                parent_predicate_cpd = cpds_map_[parent_predicate]
+                parent_action_cpd = cpds_map_[parent_action]
+
+                spont_false_true = pred_probabilities_map_[node_without_time][0]
+                spont_true_false = pred_probabilities_map_[node_without_time][1]
+
+                action_name_without_time = removeStartEndFromName(parent_action).split('$')[0]
+                predicate_without_parameters = node.split('#')[0]
+                effects_success = action_probabilities_map_[action_name_without_time][1][predicate_without_parameters]
+
+                cpd = ConditionalProbabilityTable(
+                            [['F', 'F', 'T', spont_false_true],
+                            ['F', 'F', 'F', 1-spont_false_true],
+                            ['F', 'T', 'T', 1-spont_true_false],
+                            ['F', 'T', 'F', spont_true_false],
+                            ['T', 'F', 'T', effects_success],
+                            ['T', 'F', 'F', 1-effects_success],
+                            ['T', 'T', 'T', effects_success],
+                            ['T', 'T', 'F', 1-effects_success]], [parent_action_cpd, parent_predicate_cpd])
+                cpds_map_[node] = cpd
+        
+
+        # If node is an action
+        else:
+            parents_predicates = set()
+            for parent in actions_par_child[node]['parents']:
+                if isPredicate(parent):
+                    parents_predicates.add(parent)
+                # Each action can only have 1 action as parent, at most (in case is at_end action)
+                else:
+                    parent_action = parent
+
+            is_at_end_action = True
+            # If parent_action is not defined then action has no other
+            # action as parent hence it's an at_start action
+            try:
+                parent_action
+            except NameError:
+                is_at_end_action = False
+
+            if is_at_end_action:
+                parents_cpd_list = list()
+                for predicate in parents_predicates:
+                    parents_cpd_list.append(cpds_map_[predicate])
+                parents_cpd_list.append(cpds_map_[parent_action])
+
+                # Added 1 to account for the node itself, if it's true or false
+                cpd_lines = list(itertools.product(['F', 'T'], repeat=len(parents_cpd_list)+1))
+
+                action_cpd_elements = list()
+                for i in range(len(cpd_lines)):
+                    lst = list(cpd_lines[i])
+                    if all(elem == 'T' for elem in lst):
+                        lst.append(1)
+                    elif all(elem == 'T' for elem in lst[:-1]):
+                        lst.append(0)
+                    elif lst[-1] == 'T':
+                        lst.append(0)
+                    else:
+                        lst.append(1)
+                    action_cpd_elements.append(lst)
+
+                cpd = ConditionalProbabilityTable(action_cpd_elements, parents_cpd_list)
+
+                cpds_map_[node] = cpd
+
+            else:
+                parents_cpd_list = list()
+                for predicate in parents_predicates:
+                    parents_cpd_list.append(cpds_map_[predicate])
+
+                # Added 1 to account for the node itself, if it's true or false
+                cpd_lines = list(itertools.product(['F', 'T'], repeat=len(parents_cpd_list)+1))
+
+                action_name_without_time = removeStartEndFromName(node).split('$')[0]
+                success_prob = action_probabilities_map_[action_name_without_time][0]
+
+                action_cpd_elements = list()
+                for i in range(len(cpd_lines)):
+                    lst = list(cpd_lines[i])
+                    if all(elem == 'T' for elem in lst):
+                        lst.append(success_prob)
+                    elif all(elem == 'T' for elem in lst[:-1]):
+                        lst.append(1-success_prob)
+                    elif lst[-1] == 'T':
+                        lst.append(0)
+                    else:
+                        lst.append(1)
+                    action_cpd_elements.append(lst)
+
+                cpd = ConditionalProbabilityTable(action_cpd_elements, parents_cpd_list)
+
+                cpds_map_[node] = cpd
+
+
 ######### PARSE PLAN #########
 def convertPlanToActionStart_End(original_plan):
     plan = list()
     for action_name in original_plan:
         name = removeStartEndFromName(action_name)
-        # print("Name: " + name)
         grounded_action = GroundedAction.getGroundedAction(name)
         if action_name.split('#')[0][-5:] == 'start':
             action_start = ActionStart(grounded_action)
@@ -1013,7 +1197,9 @@ def convertPlanToActionStart_End(original_plan):
 ######### GET STUFF #########
 def getProbabilities():
     global pred_probabilities_map_
-    file = open('/home/tomas/ros_ws/src/ROSPlan/src/rosplan/rosplan_demos/rosplan_csp_exec_demo/probabilities.txt', 'r')
+    global action_probabilities_map_
+    
+    file = open('/home/tomas/ros_ws/src/ROSPlan/src/rosplan/probabilities.txt', 'r')
     line = file.readline()
     predicates = True
     actions_par_child = False
@@ -1057,8 +1243,7 @@ def getNodesLayers():
         if isPredicate(node):
             nodes_layers.append(node)
     
-    rospy.loginfo("Python: Returning nodes layers: " + str(nodes_layers))
-    print("Python: Returning nodes layers: " + str(nodes_layers))
+    rospy.loginfo("Returning nodes layers: " + str(nodes_layers))
 
     return nodes_layers
 
@@ -1072,13 +1257,15 @@ def setupEverything():
     # print ("Obtaining operators")
     domain_operators = rospy.ServiceProxy('/rosplan_knowledge_base/domain/operators', GetDomainOperatorService)
 
-    # print('Obtaining goal')
+    # print('Obtaining goal_')
+    global goal_
     goals_list = rospy.ServiceProxy("/rosplan_knowledge_base/state/goals", GetAttributeService)().attributes
-    goal = getElementsFromStateList(goals_list)
+    goal_ = getElementsFromStateList(goals_list)
 
     # print('Obtaining initial state')
+    global initial_state_
     initial_state_list = rospy.ServiceProxy('/rosplan_knowledge_base/state/propositions', GetAttributeService)().attributes
-    initial_state = getElementsFromStateList(initial_state_list)
+    initial_state_ = getElementsFromStateList(initial_state_list)
 
     # print('Obtaining probabilities')
     getProbabilities()
@@ -1089,23 +1276,19 @@ def setupEverything():
     operators = domain_operators().operators
     createActions(operators)
 
-    return initial_state, goal
-
 
 ######### MAIN FUNCTION #########
 ## Builds, prunes and writes network to file
 def calculateProbability(original_plan):
-# def calculateProbability():
-    rospy.loginfo("Inside Python code")
-    rospy.loginfo("Received plan: " + str(original_plan))
+    # rospy.loginfo("Received plan: " + str(original_plan))
     global all_nodes_
-    
-    initial_state, goal = setupEverything()
+
+    setupEverything()
 
     createGroundedActions(original_plan)
 
-    # print("Initial state: " + str(initial_state))
-    # print("Goal: " + str(goal))
+    # print("Initial state: " + str(initial_state_))
+    # print("goal_: " + str(goal_))
     # print("Original plan: " + str(original_plan))
     # print("Actions: " + str(Action.getActionNamesList()))
     # print("Grounded actions: " + str(GroundedAction.getGroundedActionsList()))
@@ -1122,30 +1305,41 @@ def calculateProbability(original_plan):
 
     for grounded_action in GroundedAction.actionsList:
         # Adds the predicates in the set grounded_action.getPredicates() to predicates_set
+        # Meaning, it adds all needed predicates to predicates_set
         predicates_set |= grounded_action.getPredicates()
 
-    addFirstLayerPredicates(predicates_set, predicates_par_child, initial_state)
+    addFirstLayerPredicates(predicates_set, predicates_par_child)
 
     layer_number = 1
     # Cycle which creates the entire Bayes Network until the end
     for action in plan:
-        action_name = action.name + '$' + str(layer_number)
-        success_prob = action_probabilities_map_[removeStartEndFromName(action.name)][0]
 
-        if isinstance(action, ActionStart):
-            cpd = DiscreteDistribution({'T': success_prob, 'F': 1-success_prob})
-        elif isinstance(action, ActionEnd):
-            cpd = DiscreteDistribution({'T': 1, 'F': 0})
-        cpds_map_[action_name] = cpd
+        action_name = action.name + '$' + str(layer_number)
 
         all_nodes_.append(action_name)
         addActionEdges(action, action_name, predicates_par_child, actions_par_child, layer_number)
-        addPredicateLayer(predicates_set, layer_number, predicates_par_child)
         
+        # if isinstance(action, ActionStart):
+        #     cpd = DiscreteDistribution({'T': success_prob, 'F': 1-success_prob})
+        # elif isinstance(action, ActionEnd):
+        #     cpd = DiscreteDistribution({'T': 1, 'F': 0})
+        # cpds_map_[action_name] = cpd
+
+        
+        addPredicateLayer(predicates_set, layer_number, predicates_par_child)
+
         layer_number = layer_number + 1
 
+    # rospy.loginfo('Predicates parents')
+    # rospy.loginfo(getPredicateParentsAsString(predicates_par_child))
+
+    buildCPDs(actions_par_child, predicates_par_child)
+
+    # rospy.loginfo('PRE-PRUNNING')
+    # rospy.loginfo(getPredicateParentsAsString(predicates_par_child))
+
     # print('>>> All nodes: \n' + str(all_nodes_))
-    pruneNetwork(actions_par_child, predicates_par_child, goal)
+    pruneNetwork(actions_par_child, predicates_par_child)
 
     # model = BayesianNetwork()
     # buildNetworkInModel(model, actions_par_child, predicates_par_child)
@@ -1165,40 +1359,36 @@ def calculateProbability(original_plan):
     # # else:
     # #     print('!!! Network has cycles !!! ')
     # print('Writing predicates to file')
-    # writePredicatesToFile(all_nodes_)
+    writePredicatesToFile()
     # print('Writing parents to file')
-    # writeParentsToFile(predicates_par_child)
+    writePredicateParentsToFile(predicates_par_child)
     # print('Writing actions_par_child to file')
-    # writeActionsToFile(actions_par_child)
+    writeActionsToFile(actions_par_child)
     # print('Writing nodes and CPDs to file')
-    # writeNodesAndCPDsToFile(all_nodes_, cpds_map_)
+    writeNodesAndCPDsToFile()
     
-    # print("All nodes: " + str(all_nodes_))
-    # relevant_predicates = getNodesLayers()
-
     # size = len(plan)
     # distr_dict = dict()
     # for item in all_nodes_:
     #     # If item is part of initial state then set it to true, else false
     #     if len(item.split('%')) > 1:
     #         if item.split('%')[1] == '0':
-    #             if item.split('%')[0] in initial_state:
+    #             if item.split('%')[0] in initial_state_:
     #                 distr_dict[item] = 'T'
     #             else:
     #                 distr_dict[item] = 'F'
     # prob_distr = model.predict_proba([distr_dict])[0]
 
     # goal_distr = dict()
-    # for item in goal:
+    # for item in goal_:
     #     index = all_nodes_.index(item + '%' + str(size))
     #     goal_distr[all_nodes_[index]] = prob_distr[index]
     
-    # print('\n\n>>> Goal distribution: ')
+    # print('\n\n>>> goal_ distribution: ')
     # print(goal_distr)
-
-    # print('>>> Relevant predicates: ' + str(relevant_predicates))
     # TODO: It's just returning a number, it's not calculating the probability yet
-    # return list(0.4, relevant_predicates)
-    rospy.loginfo("Python: Returning probability")
-    print("Python: Returning probability")
     return 0.001
+
+if __name__ == "__main__":
+    plan = ['navigate_start#mbot#wp1#wp2#door1#door2', 'navigate_end#mbot#wp1#wp2#door1#door2', 'open_door_start#mbot#wp2#door2', 'open_door_end#mbot#wp2#door2', 'navigate_start#mbot#wp2#wp3#door2#door3', 'navigate_end#mbot#wp2#wp3#door2#door3']
+    calculateProbability(plan)
