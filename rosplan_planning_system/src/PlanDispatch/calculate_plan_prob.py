@@ -430,15 +430,34 @@ class ActionStart:
         self.name = '#'.join(name_act)
         # Name format: goto_waypoint#robot0#wp0#machine
 
-        self.conditions = dict()
-        for k, v in grounded_action.conditions.items():
-            if k[:8] == 'at_start':
-                self.conditions[k[9:]] = grounded_action.conditions[k]
+
+        # self.conditions = dict()
+        # for k, v in grounded_action.conditions.items():
+        #     if k[:8] == 'at_start':
+        #         self.conditions[k[9:]] = grounded_action.conditions[k]
         
-        self.effects = dict()
+        # self.effects = dict()
+        # for k, v in grounded_action.effects.items():
+        #     if k[:8] == 'at_start':
+        #         self.effects[k[9:]] = grounded_action.effects[k]
+
+        rospy.loginfo(grounded_action.conditions)
+
+        self.pos_conditions = dict()
+        self.neg_conditions = dict()
+        for k, v in grounded_action.conditions.items():
+            if k == 'at_start_simple_condition':
+                self.pos_conditions[k[9:]] = grounded_action.conditions[k]
+            elif k == 'at_start_neg_condition':
+                self.neg_conditions[k[9:]] = grounded_action.conditions[k]
+
+        self.pos_effects = dict()
+        self.neg_effects = dict()
         for k, v in grounded_action.effects.items():
-            if k[:8] == 'at_start':
-                self.effects[k[9:]] = grounded_action.effects[k]
+            if k == 'at_start_add_effects':
+                self.pos_effects[k[9:]] = grounded_action.effects[k]
+            elif k == 'at_start_del_effects':
+                self.neg_effects[k[9:]] = grounded_action.effects[k]
         
         ActionStart.actionsList.append(self)
 
@@ -467,9 +486,45 @@ class ActionStart:
         return predicates_set
 
 
+    def getPositiveConditionPredicates(self):
+        predicates_set = set()
+        for k, v in self.pos_conditions.items():
+            for predicate in v:
+                predicates_set.add('#'.join(predicate))
+        
+        return predicates_set
+
+
+    def getNegativeConditionPredicates(self):
+        predicates_set = set()
+        for k, v in self.neg_conditions.items():
+            for predicate in v:
+                predicates_set.add('#'.join(predicate))
+        
+        return predicates_set
+
+
     def getEffectsPredicates(self):
         predicates_set = set()
         for k, v in self.effects.items():
+            for predicate in v:
+                predicates_set.add('#'.join(predicate))
+        
+        return predicates_set
+
+
+    def getPositiveEffectsPredicates(self):
+        predicates_set = set()
+        for k, v in self.pos_effects.items():
+            for predicate in v:
+                predicates_set.add('#'.join(predicate))
+        
+        return predicates_set
+
+
+    def getNegativeEffectsPredicates(self):
+        predicates_set = set()
+        for k, v in self.neg_effects.items():
             for predicate in v:
                 predicates_set.add('#'.join(predicate))
         
@@ -504,26 +559,51 @@ class ActionEnd:
         self.grounded_action = grounded_action
         self.name = '#'.join(name_act)
 
-        self.conditions = dict()
-        for k, v in grounded_action.conditions.items():
-            if k[:6] == 'at_end':
-                self.conditions[k[7:]] = grounded_action.conditions[k]
+        # self.conditions = dict()
+        # for k, v in grounded_action.conditions.items():
+        #     if k[:6] == 'at_end':
+        #         self.conditions[k[7:]] = grounded_action.conditions[k]
 
-        self.over_all_conditions = dict()
+        # self.effects = dict()
+        # for k, v in grounded_action.effects.items():
+        #     if k[:6] == 'at_end':
+        #         self.effects[k[7:]] = grounded_action.effects[k]
+
+        # self.over_all_conditions = dict()
+        # for k, v in grounded_action.conditions.items():
+        #     if k[:8] == 'over_all':
+        #         self.over_all_conditions[k[9:]] = grounded_action.conditions[k]
+
+
+        self.pos_conditions = dict()
+        self.neg_conditions = dict()
         for k, v in grounded_action.conditions.items():
-            if k[:8] == 'over_all':
-                self.over_all_conditions[k[9:]] = grounded_action.conditions[k]
+            if k == 'at_end_simple_condition':
+                self.pos_conditions[k[6:]] = grounded_action.conditions[k]
+            elif k == 'at_end_neg_condition':
+                self.neg_conditions[k[6:]] = grounded_action.conditions[k]
+
+        self.pos_effects = dict()
+        self.neg_effects = dict()
+        for k, v in grounded_action.effects.items():
+            if k == 'at_end_add_effects':
+                self.pos_effects[k[6:]] = grounded_action.effects[k]
+            elif k == 'at_end_del_effects':
+                self.neg_effects[k[6:]] = grounded_action.effects[k]
+
+        self.pos_over_all_conditions = dict()
+        self.neg_over_all_conditions = dict()
+        for k, v in grounded_action.conditions.items():
+            if k == 'over_all_simple_condition':
+                self.pos_over_all_conditions[k[9:]] = grounded_action.conditions[k]
+            elif k == 'over_all_neg_condition':
+                self.neg_over_all_conditions[k[9:]] = grounded_action.conditions[k]
 
         ### I don't think over all effects make sense
         # self.over_all_effects = dict()
         # for k, v in grounded_action.effects.items():
         #     if k[:8] == 'over_all':
         #         self.over_all_effects[k[9:]] = grounded_action.effects[k]
-
-        self.effects = dict()
-        for k, v in grounded_action.effects.items():
-            if k[:6] == 'at_end':
-                self.effects[k[7:]] = grounded_action.effects[k]
 
         ActionEnd.actionsList.append(self)
 
@@ -565,9 +645,36 @@ class ActionEnd:
         return predicates_set
 
 
-    def getOverAllPredicates(self):
+    def getPositiveConditionPredicates(self):
         predicates_set = set()
-        for k, v in self.over_all_conditions.items():
+        for k, v in self.pos_conditions.items():
+            for predicate in v:
+                predicates_set.add('#'.join(predicate))
+        
+        return predicates_set
+
+
+    def getNegativeConditionPredicates(self):
+        predicates_set = set()
+        for k, v in self.neg_conditions.items():
+            for predicate in v:
+                predicates_set.add('#'.join(predicate))
+        
+        return predicates_set
+
+
+    def getPositiveOverAllPredicates(self):
+        predicates_set = set()
+        for k, v in self.pos_over_all_conditions.items():
+            for predicate in v:
+                predicates_set.add('#'.join(predicate))
+        
+        return predicates_set
+
+
+    def getNegativeOverAllPredicates(self):
+        predicates_set = set()
+        for k, v in self.neg_over_all_conditions.items():
             for predicate in v:
                 predicates_set.add('#'.join(predicate))
         
@@ -577,6 +684,24 @@ class ActionEnd:
     def getEffectsPredicates(self):
         predicates_set = set()
         for k, v in self.effects.items():
+            for predicate in v:
+                predicates_set.add('#'.join(predicate))
+        
+        return predicates_set
+
+
+    def getPositiveEffectsPredicates(self):
+        predicates_set = set()
+        for k, v in self.pos_effects.items():
+            for predicate in v:
+                predicates_set.add('#'.join(predicate))
+        
+        return predicates_set
+
+
+    def getNegativeEffectsPredicates(self):
+        predicates_set = set()
+        for k, v in self.neg_effects.items():
             for predicate in v:
                 predicates_set.add('#'.join(predicate))
         
@@ -833,30 +958,61 @@ def addFirstLayerPredicates(predicates_set, predicates_par_child):
 
 ######### CONNECT PREDICATES #########
 def connectActionToConditionPredicates(action, action_name, predicates_par_child, actions_par_child, layer_number):
-    for predicate in action.getConditionPredicates():
+    # for predicate in action.getConditionPredicates():
+    #     pred_name = predicate + '%' + str(layer_number-1)
+    #     # node_predicate = get_node(all_nodes_, predicate + '%' + str(layer_number-1))
+    #     # model.add_edge(node_predicate, action_node)
+    #     predicates_par_child[pred_name]['children'].add(action_name)
+    #     actions_par_child[action_name]['parents'].add(pred_name)
+
+    for predicate in action.getPositiveConditionPredicates():
         pred_name = predicate + '%' + str(layer_number-1)
-        # node_predicate = get_node(all_nodes_, predicate + '%' + str(layer_number-1))
-        # model.add_edge(node_predicate, action_node)
         predicates_par_child[pred_name]['children'].add(action_name)
-        actions_par_child[action_name]['parents'].add(pred_name)
+        actions_par_child[action_name]['pos_parents'].add(pred_name)
+    
+    for predicate in action.getNegativeConditionPredicates():
+        pred_name = predicate + '%' + str(layer_number-1)
+        predicates_par_child[pred_name]['children'].add(action_name)
+        actions_par_child[action_name]['neg_parents'].add(pred_name)
 
 
 def connectActionToEffectsPredicates(action, action_name, predicates_par_child, actions_par_child, layer_number):
     global all_nodes_
     
-    for predicate in action.getEffectsPredicates():
-        # Add predicate to model
+    # for predicate in action.getEffectsPredicates():
+    #     # Add predicate to model
+    #     pred_name = predicate + '%' + str(layer_number)
+    #     addPredicate(predicate, predicates_par_child, layer_number)
+    #     # Connect predicate to predicate in previous layer
+    #     prev_pred_name = predicate + '%' + str(layer_number-1)
+    #     predicates_par_child[pred_name]['parents'].add(action_name)
+    #     predicates_par_child[pred_name]['parents'].add(prev_pred_name)
+    #     predicates_par_child[prev_pred_name]['children'].add(pred_name)
+    #     # Connect predicate to action
+    #     actions_par_child[action_name]['children'].add(pred_name)
+
+    for predicate in action.getPositiveEffectsPredicates():
         pred_name = predicate + '%' + str(layer_number)
+        prev_pred_name = predicate + '%' + str(layer_number-1)
         addPredicate(predicate, predicates_par_child, layer_number)
         # Connect predicate to predicate in previous layer
-        prev_pred_name = predicate + '%' + str(layer_number-1)
-        predicates_par_child[pred_name]['parents'].add(action_name)
         predicates_par_child[pred_name]['parents'].add(prev_pred_name)
         predicates_par_child[prev_pred_name]['children'].add(pred_name)
         # Connect predicate to action
-        actions_par_child[action_name]['children'].add(pred_name)
-        
+        predicates_par_child[pred_name]['parents'].add(action_name)
+        actions_par_child[action_name]['pos_children'].add(pred_name)
 
+    for predicate in action.getNegativeEffectsPredicates():
+        pred_name = predicate + '%' + str(layer_number)
+        prev_pred_name = predicate + '%' + str(layer_number-1)
+        addPredicate(predicate, predicates_par_child, layer_number)
+        # Connect predicate to predicate in previous layer
+        predicates_par_child[pred_name]['parents'].add(prev_pred_name)
+        predicates_par_child[prev_pred_name]['children'].add(pred_name)
+        # Connect predicate to action
+        predicates_par_child[pred_name]['parents'].add(action_name)
+        actions_par_child[action_name]['neg_children'].add(pred_name)
+        
 
 def connectActionEndToActionStart(action, action_name, end_index, actions_par_child):
     action_start = action.getActionStart()
@@ -865,24 +1021,38 @@ def connectActionEndToActionStart(action, action_name, end_index, actions_par_ch
         action_start_name = action_start.name + '$' + str(j)
         if action_start_name in all_nodes_:
             # Connecting ActionEnd to ActionStart
-            actions_par_child[action_name]['parents'].add(action_start_name)
-            actions_par_child[action_start_name]['children'].add(action_name)
+            actions_par_child[action_name]['action_start'].add(action_start_name)
+            actions_par_child[action_start_name]['action_end'].add(action_name)
             return j
     return 0
 
 
 def connectActionToOverAllPredicates(action, action_name, start_index, end_index, actions_par_child, predicates_par_child):
-    for predicate in action.getOverAllPredicates():
+    # for predicate in action.getOverAllPredicates():
+    #     for j in range(start_index, end_index):
+    #         pred_name = predicate + '%' + str(j)
+    #         actions_par_child[action_name]['parents'].add(pred_name)
+    #         predicates_par_child[pred_name]['children'].add(action_name)
+    
+    for predicate in action.getPositiveOverAllPredicates():
         for j in range(start_index, end_index):
             pred_name = predicate + '%' + str(j)
-            actions_par_child[action_name]['parents'].add(pred_name)
+            actions_par_child[action_name]['pos_parents'].add(pred_name)
+            predicates_par_child[pred_name]['children'].add(action_name)
+    
+    for predicate in action.getNegativeOverAllPredicates():
+        for j in range(start_index, end_index):
+            pred_name = predicate + '%' + str(j)
+            actions_par_child[action_name]['neg_parents'].add(pred_name)
             predicates_par_child[pred_name]['children'].add(action_name)
 
 
 def addActionEdges(action, action_name, predicates_par_child, actions_par_child, layer_number):
     actions_par_child[action_name] = dict()
-    actions_par_child[action_name]['parents'] = set()
-    actions_par_child[action_name]['children'] = set()
+    actions_par_child[action_name]['pos_parents'] = set()
+    actions_par_child[action_name]['neg_parents'] = set()
+    actions_par_child[action_name]['pos_children'] = set()
+    actions_par_child[action_name]['neg_children'] = set()
 
     connectActionToConditionPredicates(action, action_name, predicates_par_child, actions_par_child, layer_number)
     connectActionToEffectsPredicates(action, action_name, predicates_par_child, actions_par_child, layer_number)
@@ -1021,7 +1191,6 @@ def pruneNetwork(actions_par_child, predicates_par_child):
                     cpd = ConditionalProbabilityTable(cpd_elements, parents_cpd_list)
                     cpds_map_[node] = cpd
                 
-
 
 ######### BUILD NETWORK IN MODEL #########
 def buildNetworkInModel(model, actions_par_child, predicates_par_child):
