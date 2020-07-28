@@ -736,7 +736,7 @@ double CSPExecGenerator::getCurrentPlanProbabilityAndFillExpectedFacts(){
 
     if(pModule){
         // ROS_INFO("Calling calculateProbability");
-        CPyObject pFuncCalcProb = PyObject_GetAttrString(pModule, "calculateProbability");
+        CPyObject pFuncCalcProb = PyObject_GetAttrString(pModule, "calculatePlanProbability");
         if(pFuncCalcProb && PyCallable_Check(pFuncCalcProb)){
             // ROS_INFO("calculateProbability is callable");
             

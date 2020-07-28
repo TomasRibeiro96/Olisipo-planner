@@ -58,8 +58,8 @@ NODES AND CPDs:
     "class" :"Distribution",
     "parameters" :[
         {
-            "T" :1,
-            "F" :0
+            "T" :0,
+            "F" :1
         }
     ],
     "name" :"DiscreteDistribution"

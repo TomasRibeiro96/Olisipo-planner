@@ -1294,9 +1294,16 @@ def setupEverything():
     createActions(operators)
 
 
+def calculateSuccessProbability(actions_par_child, predicates_par_child, layer_number):
+    for goal_fact in goal_:
+        fact = goal_fact + '%' + str(layer_number)
+        print('Keys: ' + str(cpds_map_[fact].keys()))
+        # print('Log_probability: ' + str(cpds_map_[fact].parents))
+        print('Table: ' + str(cpds_map_[fact].table))
+
 ######### MAIN FUNCTION #########
 ## Builds, prunes and writes network to file
-def calculateProbability(original_plan):
+def calculatePlanProbability(original_plan):
     # rospy.loginfo("Received plan: " + str(original_plan))
     global all_nodes_
 
@@ -1347,6 +1354,8 @@ def calculateProbability(original_plan):
 
         layer_number = layer_number + 1
 
+    last_layer = layer_number -1
+
     # rospy.loginfo('Predicates parents')
     # rospy.loginfo(getPredicateParentsAsString(predicates_par_child))
 
@@ -1357,6 +1366,8 @@ def calculateProbability(original_plan):
 
     # print('>>> All nodes: \n' + str(all_nodes_))
     pruneNetwork(actions_par_child, predicates_par_child)
+
+    calculateSuccessProbability(actions_par_child, predicates_par_child, last_layer)
 
     # model = BayesianNetwork()
     # buildNetworkInModel(model, actions_par_child, predicates_par_child)
@@ -1408,4 +1419,4 @@ def calculateProbability(original_plan):
 
 if __name__ == "__main__":
     plan = ['navigate_start#mbot#wp1#wp2#door1#door2', 'navigate_end#mbot#wp1#wp2#door1#door2', 'open_door_start#mbot#wp2#door2', 'open_door_end#mbot#wp2#door2', 'navigate_start#mbot#wp2#wp3#door2#door3', 'navigate_end#mbot#wp2#wp3#door2#door3']
-    calculateProbability(plan)
+    calculatePlanProbability(plan)

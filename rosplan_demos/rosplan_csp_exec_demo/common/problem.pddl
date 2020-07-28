@@ -6,7 +6,7 @@
     wp1 wp2 wp3 - waypoint
 )
 (:init
-    (robot_at mbot wp1)
+    (robot_at mbot wp2)
 
     (connected wp1 wp2)
     (connected wp2 wp3)
@@ -19,6 +19,3 @@
 
 )
 (:goal (and
-    (robot_at mbot wp3)
-))
-)
