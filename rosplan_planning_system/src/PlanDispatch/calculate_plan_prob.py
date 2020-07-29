@@ -13,6 +13,7 @@ from pomegranate import *
 import collections
 import time
 import itertools
+import BayesNet
 
 # pred_probabilities_map_[predicate] = [spont_false_true, spont_true_false]
 pred_probabilities_map_ = dict()
@@ -23,6 +24,7 @@ cpds_map_ = dict()
 all_nodes_ = list()
 goal_ = set()
 initial_state_ = set()
+nodes_already_calculated_ = set()
 
 rospy.init_node('bayesian_network_calculator')
 
@@ -903,7 +905,6 @@ def removeNode(node, actions_par_child, predicates_par_child, is_predicate):
         actions_par_child.pop(node)
 
     all_nodes_.remove(node)
-    # cpds_map_.pop(node)
 
     for pred in predicates_par_child.keys():
         if node in predicates_par_child[pred]['parents']:
@@ -1056,12 +1057,14 @@ def buildCPDs(actions_par_child, predicates_par_child):
             if int(node.split('%')[1]) == 0:
                 # If it is in initial state then node is true
                 if node.split('%')[0] in initial_state_:
-                    cpd = DiscreteDistribution({'T': 1, 'F': 0})
-                    cpds_map_[node] = cpd
+                    # cpd = DiscreteDistribution({'T': 1, 'F': 0})
+                    # cpds_map_[node] = cpd
+                    cpds_map_[node] = 1
                     continue
                 # Else it is false
-                cpd = DiscreteDistribution({'T': 0, 'F': 1})
-                cpds_map_[node] = cpd
+                # cpd = DiscreteDistribution({'T': 0, 'F': 1})
+                # cpds_map_[node] = cpd
+                cpds_map_[node] = 0
                 continue
 
             # If predicate only has one parent, which can only be
@@ -1069,53 +1072,78 @@ def buildCPDs(actions_par_child, predicates_par_child):
             if len(predicates_par_child[node]['parents']) == 1:
                 spont_false_true = pred_probabilities_map_[node_without_time][0]
                 spont_true_false = pred_probabilities_map_[node_without_time][1]
-                parent = list(predicates_par_child[node]['parents'])[0]
-                parent_cpd = cpds_map_[parent]
-                cpd = ConditionalProbabilityTable(
-                        [['T', 'T', 1-spont_true_false],
-                        ['T', 'F', spont_true_false],
-                        ['F', 'T', spont_false_true],
-                        ['F', 'F', 1-spont_false_true]], [parent_cpd])
+                # parent = list(predicates_par_child[node]['parents'])[0]
+                # parent_cpd = cpds_map_[parent]
+                # cpd = ConditionalProbabilityTable(
+                #         [['T', 'T', 1-spont_true_false],
+                #         ['T', 'F', spont_true_false],
+                #         ['F', 'T', spont_false_true],
+                #         ['F', 'F', 1-spont_false_true]], [parent_cpd])
+                # cpds_map_[node] = cpd
+                cpd = dict()
+                # CPD's Key is the value of parent and its Value is the probability for True
+                cpd[tuple(True)] = 1-spont_true_false
+                cpd[tuple(False)] = spont_false_true
                 cpds_map_[node] = cpd
                 continue
 
             # If predicate has more than one parent, then it has two:
             # the predicate in the previous layer and an action
             else:
+                # for parent in predicates_par_child[node]['parents']:
+                #     if isPredicate(parent):
+                #         parent_predicate = parent
+                #     else:
+                #         parent_action = parent
+
+                # try:
+                #     parent_predicate
+                # except NameError:
+                #     rospy.logerr('Predicate has no predicate as parent')
+                # try:
+                #     parent_action
+                # except NameError:
+                #     rospy.logerr('Predicate has no action as parent')
+
+                # parent_predicate_cpd = cpds_map_[parent_predicate]
+                # parent_action_cpd = cpds_map_[parent_action]
+
+                # spont_false_true = pred_probabilities_map_[node_without_time][0]
+                # spont_true_false = pred_probabilities_map_[node_without_time][1]
+
+                # action_name_without_time = removeStartEndFromName(parent_action).split('$')[0]
+                # predicate_without_parameters = node.split('#')[0]
+                # effects_success = action_probabilities_map_[action_name_without_time][1][predicate_without_parameters]
+
+                # cpd = ConditionalProbabilityTable(
+                #             [['F', 'F', 'T', spont_false_true],
+                #             ['F', 'F', 'F', 1-spont_false_true],
+                #             ['F', 'T', 'T', 1-spont_true_false],
+                #             ['F', 'T', 'F', spont_true_false],
+                #             ['T', 'F', 'T', effects_success],
+                #             ['T', 'F', 'F', 1-effects_success],
+                #             ['T', 'T', 'T', effects_success],
+                #             ['T', 'T', 'F', 1-effects_success]], [parent_action_cpd, parent_predicate_cpd])
+                # cpds_map_[node] = cpd
+
+                action_index = 0
                 for parent in predicates_par_child[node]['parents']:
-                    if isPredicate(parent):
-                        parent_predicate = parent
-                    else:
-                        parent_action = parent
+                    if not isPredicate(parent):
+                        break
+                    action_index = action_index + 1
 
-                try:
-                    parent_predicate
-                except NameError:
-                    rospy.logerr('Predicate has no predicate as parent')
-                try:
-                    parent_action
-                except NameError:
-                    rospy.logerr('Predicate has no action as parent')
+                cpd = dict()
+                if action_index == 0:
+                    cpd[tuple(False, False)] = spont_false_true
+                    cpd[tuple(False, True)] = 1-spont_true_false
+                    cpd[tuple(True, False)] = effects_success
+                    cpd[tuple(True, True)] = effects_success
+                else:
+                    cpd[tuple(False, False)] = spont_false_true
+                    cpd[tuple(False, True)] = effects_success
+                    cpd[tuple(True, False)] = 1-spont_true_false
+                    cpd[tuple(True, True)] = effects_success
 
-                parent_predicate_cpd = cpds_map_[parent_predicate]
-                parent_action_cpd = cpds_map_[parent_action]
-
-                spont_false_true = pred_probabilities_map_[node_without_time][0]
-                spont_true_false = pred_probabilities_map_[node_without_time][1]
-
-                action_name_without_time = removeStartEndFromName(parent_action).split('$')[0]
-                predicate_without_parameters = node.split('#')[0]
-                effects_success = action_probabilities_map_[action_name_without_time][1][predicate_without_parameters]
-
-                cpd = ConditionalProbabilityTable(
-                            [['F', 'F', 'T', spont_false_true],
-                            ['F', 'F', 'F', 1-spont_false_true],
-                            ['F', 'T', 'T', 1-spont_true_false],
-                            ['F', 'T', 'F', spont_true_false],
-                            ['T', 'F', 'T', effects_success],
-                            ['T', 'F', 'F', 1-effects_success],
-                            ['T', 'T', 'T', effects_success],
-                            ['T', 'T', 'F', 1-effects_success]], [parent_action_cpd, parent_predicate_cpd])
                 cpds_map_[node] = cpd
         
 
@@ -1138,60 +1166,48 @@ def buildCPDs(actions_par_child, predicates_par_child):
                 is_at_end_action = False
 
             if is_at_end_action:
-                parents_cpd_list = list()
-                for predicate in parents_predicates:
-                    parents_cpd_list.append(cpds_map_[predicate])
-                parents_cpd_list.append(cpds_map_[parent_action])
 
-                # Added 1 to account for the node itself, if it's true or false
-                cpd_lines = list(itertools.product(['F', 'T'], repeat=len(parents_cpd_list)+1))
+                cpd = dict()
+
+                cpd_lines = tuple(itertools.product([False, True], repeat=len(parents_cpd_list)))
 
                 action_cpd_elements = list()
                 for i in range(len(cpd_lines)):
-                    lst = list(cpd_lines[i])
-                    if all([elem == 'T' for elem in lst]):
-                        lst.append(1)
-                    elif all([elem == 'T' for elem in lst[:-1]]):
-                        lst.append(0)
-                    elif lst[-1] == 'T':
-                        lst.append(0)
+                    lst = cpd_lines[i]
+                    if all([elem == True for elem in lst]):
+                        cpd[lst] = 1
                     else:
-                        lst.append(1)
-                    action_cpd_elements.append(lst)
+                        cpd[lst] = 0
+                #     action_cpd_elements.append(lst)
 
-                cpd = ConditionalProbabilityTable(action_cpd_elements, parents_cpd_list)
+                # cpd = ConditionalProbabilityTable(action_cpd_elements, parents_cpd_list)
 
                 cpds_map_[node] = cpd
 
             else:
-                parents_cpd_list = list()
-                for predicate in parents_predicates:
-                    parents_cpd_list.append(cpds_map_[predicate])
+                # parents_cpd_list = list()
+                # for predicate in parents_predicates:
+                #     parents_cpd_list.append(cpds_map_[predicate])
 
-                # Added 1 to account for the node itself, if it's true or false
-                cpd_lines = list(itertools.product(['F', 'T'], repeat=len(parents_cpd_list)+1))
+                cpd = dict()
+
+                cpd_lines = tuple(itertools.product(['F', 'T'], repeat=len(parents_cpd_list)))
 
                 action_name_without_time = removeStartEndFromName(node).split('$')[0]
                 success_prob = action_probabilities_map_[action_name_without_time][0]
 
                 action_cpd_elements = list()
                 for line in cpd_lines:
-                    lst = list(line)
-                    # If all the preconditions are true and the action is successful
+                    lst = tuple(line)
+                    # If all the preconditions are true
                     if all([elem == 'T' for elem in lst]):
-                        lst.append(success_prob)
-                    # If all the preconditions are true and the action fails
-                    elif all([elem == 'T' for elem in lst[:-1]]):
-                        lst.append(1-success_prob)
-                    # If not all the preconditions are true and the action is successful
-                    elif lst[-1] == 'T':
-                        lst.append(0)
-                    # If not all the preconditions are true and the action fails
+                        cpd[lst] = success_prob
+                    # If not all the preconditions are true
                     else:
-                        lst.append(1)
-                    action_cpd_elements.append(lst)
+                        cpd[lst] = 0
+                    # action_cpd_elements.append(lst)
 
-                cpd = ConditionalProbabilityTable(action_cpd_elements, parents_cpd_list)
+                # cpd = ConditionalProbabilityTable(action_cpd_elements, parents_cpd_list)
 
                 cpds_map_[node] = cpd
 
@@ -1294,12 +1310,119 @@ def setupEverything():
     createActions(operators)
 
 
-def calculateSuccessProbability(actions_par_child, predicates_par_child, layer_number):
+def marginaliseNode(node):
+
+    for node_parent in predicates_par_child[node]['parents']:
+        if node_parent not in nodes_already_calculated_:
+            marginaliseNode(node)
+
+
+def nodeIsPreconditionOfAction(node, predicates_par_child):
+    for child in predicates_par_child[node]['children']:
+        if not isPredicate(child):
+            return True
+    return False
+
+
+def nodeHasParentToBeMarginalised(node, nodes_to_be_marginalised, predicates_par_child):
+    for parent in predicates_par_child[node]['parents']:
+        if parent in nodes_to_be_marginalised:
+            return True
+    return False
+
+
+def calculateSuccessProbability(actions_par_child, predicates_par_child, max_layer_number):
     for goal_fact in goal_:
-        fact = goal_fact + '%' + str(layer_number)
-        print('Keys: ' + str(cpds_map_[fact].keys()))
-        # print('Log_probability: ' + str(cpds_map_[fact].parents))
-        print('Table: ' + str(cpds_map_[fact].table))
+        fact = goal_fact + '%' + str(max_layer_number)
+
+    ### Choose nodes to be marginalised ###
+    # If node is a predicate, if it's not in the first or last_last layer and
+    # is not a precondition of action, then the node has to be marginalised
+    nodes_to_be_marginalised = set()
+    for node in all_nodes_:
+        if isPredicate(node):
+            layer_number = int(node.split('%')[1])
+            if not layer_number == 0 and not layer_number == max_layer_number:
+                if not nodeIsPreconditionOfAction(node, predicates_par_child):
+                    nodes_to_be_marginalised.add(node)
+                    continue
+                if nodeHasParentToBeMarginalised(node, nodes_to_be_marginalised, predicates_par_child):
+                    nodes_to_be_marginalised.add(node)
+
+    # Calculate probability
+    probability = 1.0
+    nodes_already_calculated_ = set()
+    for node in all_nodes:
+
+        # Let's first multiply all the nodes that don't need to be marginalised
+        # or that are don't
+        if node not in nodes_to_be_marginalised:
+
+            ## If node is a predicate and it does not need to be marginalised
+            if isPredicate(node):
+                node_without_time = node.split('%')[0]
+                layer_number = int(node.split('%')[1])
+                predicate_without_params = node.split('#')[0]
+
+                # If node is in the initial state
+                if node_without_time in initial_state_:
+                    probability = probability*cpds_map_[node]['true']
+                    nodes_already_calculated_.add(node)
+                    continue
+
+                # If node is not in initial_state_ but is in first layer
+                elif layer_number == 0:
+                    probability = probability*cpds_map_[node]['false']
+                    nodes_already_calculated_.add(node)
+                    continue
+
+
+                for parent in predicates_par_child[node]['parents']:
+
+                    # If node is children of an action
+                    if not isPredicate(parent):
+                        effect_success = action_probabilities_map_[parent][1][predicate_without_params]
+                        probability = probability*effect_success
+                        nodes_already_calculated_.add(node)
+                        break
+                    
+                    # If is precondition of an action
+
+                    # If node is children of a node to be marginalised
+                    elif parent in nodes_to_be_marginalised:
+                        # When node to be marginalised is true
+                        marginaliseNode(node, parent, nodes_already_calculated_, True)
+
+                        # When node to be marginalised is false
+                
+                # If node is part of the goal
+                
+
+            ## If node is an action
+            else:
+                action_success = action_probabilities_map_[node][0]
+                probability = probability*action_success
+                nodes_already_calculated_.add(node)
+                continue
+
+                # # If node is precondition of action
+                # child_actions = set()
+                # for child in predicates_par_child[node]['children']:
+                #     if not isPredicate(child):
+                #         child_actions.add(child)
+
+                # for child in child_actions:
+                #     if node in actions_par_child[child]['pos_parents']:
+                #         probability = probability*cpds_map_[node]['true']
+                #         continue
+                #     elif node in actions_par_child[child]['neg_parents']:
+                #         probability = probability*cpds_map_[node]['false']
+                #         continue
+
+
+def createNetwork(actions_par_child, predicates_par_child):
+
+
 
 ######### MAIN FUNCTION #########
 ## Builds, prunes and writes network to file
@@ -1366,6 +1489,8 @@ def calculatePlanProbability(original_plan):
 
     # print('>>> All nodes: \n' + str(all_nodes_))
     pruneNetwork(actions_par_child, predicates_par_child)
+
+    createNetwork(actions_par_child, predicates_par_child)
 
     calculateSuccessProbability(actions_par_child, predicates_par_child, last_layer)
 
