@@ -979,18 +979,6 @@ def connectActionToConditionPredicates(action, action_name, predicates_par_child
 def connectActionToEffectsPredicates(action, action_name, predicates_par_child, actions_par_child, layer_number):
     global all_nodes_
     
-    # for predicate in action.getEffectsPredicates():
-    #     # Add predicate to model
-    #     pred_name = predicate + '%' + str(layer_number)
-    #     addPredicate(predicate, predicates_par_child, layer_number)
-    #     # Connect predicate to predicate in previous layer
-    #     prev_pred_name = predicate + '%' + str(layer_number-1)
-    #     predicates_par_child[pred_name]['parents'].add(action_name)
-    #     predicates_par_child[pred_name]['parents'].add(prev_pred_name)
-    #     predicates_par_child[prev_pred_name]['children'].add(pred_name)
-    #     # Connect predicate to action
-    #     actions_par_child[action_name]['children'].add(pred_name)
-
     for predicate in action.getPositiveEffectsPredicates():
         pred_name = predicate + '%' + str(layer_number)
         prev_pred_name = predicate + '%' + str(layer_number-1)
@@ -1235,14 +1223,6 @@ def buildCPDs(actions_par_child, predicates_par_child):
             if len(predicates_par_child[node]['parents']) == 1:
                 spont_false_true = pred_probabilities_map_[node_without_time][0]
                 spont_true_false = pred_probabilities_map_[node_without_time][1]
-                # parent = list(predicates_par_child[node]['parents'])[0]
-                # parent_cpd = cpds_map_[parent]
-                # cpd = ConditionalProbabilityTable(
-                #         [['T', 'T', 1-spont_true_false],
-                #         ['T', 'F', spont_true_false],
-                #         ['F', 'T', spont_false_true],
-                #         ['F', 'F', 1-spont_false_true]], [parent_cpd])
-                # cpds_map_[node] = cpd
                 cpd = dict()
                 cpd['parents'] = predicates_par_child[node]['parents']
                 # CPD's Key is the value of parent and its Value is the probability for True
@@ -1273,17 +1253,6 @@ def buildCPDs(actions_par_child, predicates_par_child):
 
                 cpd = dict()
 
-                # cpd_entries = tuple(itertools.product([False, True], repeat=len(parents_cpd_list)))
-
-                # for entry in cpd_entries:
-                #     if entry[action_index] == True:
-                #         cpd[entry] = effects_success
-                #     elif entry[predicate_index] == True:
-                #         cpd[entry] = 1-spont_true_false
-                #     else:
-                #         cpd[entry] = spont_false_true
-
-
                 if action_index == 0:
                     cpd[(False, False)] = spont_false_true
                     cpd[(False, True)] = 1-spont_true_false
@@ -1308,46 +1277,29 @@ def buildCPDs(actions_par_child, predicates_par_child):
                 if not isPredicate(parent):
                     is_at_end_action = True
 
-
-            if is_at_end_action:
-
                 number_of_pos_precond = len(actions_par_child[node]['pos_parents'])
                 number_of_neg_precond = len(actions_par_child[node]['neg_parents'])
                 number_of_precond = number_of_pos_precond + number_of_neg_precond
 
                 cpd_lines = tuple(itertools.product([False, True], repeat=number_of_precond))
+
+                action_name_without_time = removeStartEndFromName(node).split('$')[0]
+                success_prob = action_probabilities_map_[action_name_without_time][0]
                 
                 cpd = dict()
                 for i in range(len(cpd_lines)):
                     lst = cpd_lines[i]
                     if all([elem == True for elem in lst[:number_of_pos_precond]]) and all([elem == False for elem in lst[-number_of_neg_precond:]]):
-                        cpd[lst] = 1
+                        if is_at_end_action:
+                            cpd[lst] = 1
+                        else:
+                            cpd[lst] = success_prob
                     else:
                         cpd[lst] = 0
 
-                cpds_map_[node] = cpd
-
-            else:
-
-                action_name_without_time = removeStartEndFromName(node).split('$')[0]
-                success_prob = action_probabilities_map_[action_name_without_time][0]
-
-                number_of_pos_precond = len(actions_par_child[node]['pos_parents'])
-                number_of_neg_precond = len(actions_par_child[node]['neg_parents'])
-                number_of_precond = number_of_pos_precond + number_of_neg_precond
-
-                cpd_lines = tuple(itertools.product([False, True], repeat=number_of_precond))
-
-                cpd = dict()
-                for i in range(len(cpd_lines)):
-                    lst = cpd_lines[i]
-                    if all([elem == True for elem in lst[:number_of_pos_precond]]) and all([elem == False for elem in lst[-number_of_neg_precond:]]):
-                        cpd[lst] = success_prob
-                    else:
-                        cpd[lst] = 0
+                cpd['parents'] = actions_par_child[node]['pos_parents'].union(actions_par_child[node]['neg_parents'])
 
                 cpds_map_[node] = cpd
-
 
 
 ######### PARSE PLAN #########
