@@ -1086,15 +1086,9 @@ def pruneNetwork(actions_par_child, predicates_par_child):
     for node in reversed(all_nodes_):
         is_predicate = isPredicate(node)
 
-        # print('>>> Node: ' + node)
-        # if isPredicate:
-        #     print('> Children: ' + str(predicates_par_child[node]['children']))
-        #     print('> Parents: ' + str(predicates_par_child[node]['parents']))
-        # else:
-        #     print('> Children: ' + str(actions_par_child[node]['children']))
-        #     print('> Parents: ' + str(actions_par_child[node]['parents']))
-
         if is_predicate:
+
+
             ##### Rule 1 #####
             # If predicate does not have children and is not the goal_, then remove it
             if not node in goal_with_time:
@@ -1103,82 +1097,80 @@ def pruneNetwork(actions_par_child, predicates_par_child):
                     # Skip to next node in for loop
                     continue
 
+
+            ##### Rule 3 #####
+            ### If predicate is children of action, then remove
+            ### edges from other parents and replace CPD
             has_action_as_parent = False
+            removed_parents = set()
             for parent in predicates_par_child[node]['parents']:
                 if not isPredicate(parent):
                     has_action_as_parent = True
                     parent_action = parent
-                    break
+                else:
+                    removed_parents.add(parent)
             
-            ##### Rule 3 #####
-            ### If predicate is children of action, then remove
-            ### edges from other parents and replace CPD
             if has_action_as_parent:
-                removed_parents = set()
-                for par in predicates_par_child[node]['parents']:
-                    # if parent is predicate, then remove edges
-                    if isPredicate(par):
-                        removed_parents.add(par)
-                # Had to remove it here and not inside the previous cycle because
-                # I can't change the size of a list while iterating over it
-                for par in removed_parents:
-                    predicates_par_child[par]['children'].remove(node)
-                    predicates_par_child[node]['parents'].remove(par)
+                for parent in removed_parents:
+                    predicates_par_child[parent]['children'].remove(node)
+                    predicates_par_child[node]['parents'].remove(parent)
                 
                 action_name_no_time = removeStartEndFromName(parent_action).split('$')[0]
                 predicate_no_parameters = node.split('#')[0]
                 effects_success = action_probabilities_map_[action_name_no_time][1][predicate_no_parameters]
-                action_cpd = cpds_map_[parent_action]
-                cpds_map_[node] = ConditionalProbabilityTable(
-                                        [['T', 'T', effects_success],
-                                        ['T', 'F', 1-effects_success],
-                                        ['F', 'T', 0],
-                                        ['F', 'F', 1]], [action_cpd])
+
+                cpd = dict()
+                cpd['parents'] = predicates_par_child[node]['parents']
+                cpd[(True,)] = effects_success
+                cpd[(False,)] = 0
+                cpds_map_[node] = cpd
 
 
             ##### Rule 2 #####
-            ### If predicate is precondition of action_name then change its CPD to true
-            # If node is parent of an action and has as parent a predicate, then change its CPD to true
-            # We check if it has a predicate as parent because the predicates in the first layer don't
-            # and the CPD would be different. We don't care about the predicates in the first layer
-            # because the fact they are the initial state already defines their CPD
-            if not node.split('%')[1] == str(0):
+            ### If predicate is precondition of action then change its CPD to true ###
+            # TODO: Think about how to implement this later
+            # Maybe implement it in the formula that's calculating the probability
 
-                has_action_as_child = False
-                for child in predicates_par_child[node]['children']:
-                    if not isPredicate(child):
-                        has_action_as_child = True
-                        child_action = child
-                        break
+            # We don't want to change the CPDs of predicates in the first layer
+            # if not node.split('%')[1] == str(0):
 
-                if has_action_as_child:
+            #     has_action_as_child = False
+            #     for child in predicates_par_child[node]['children']:
+            #         if not isPredicate(child):
+            #             has_action_as_child = True
+            #             child_action = child
+            #             break
 
-                    # Get all combinations of 'F' and 'T' has a list of len(actions_par_child[node]['parents'])+1 items
-                    # I add 1 because the last entry represents the node itself
-                    cpd_lines = list(itertools.product(['F', 'T'], repeat=len(predicates_par_child[node]['parents'])+1))
+            #     if has_action_as_child:
 
-                    cpd_elements = list()
+            #         # Get all combinations of 'F' and 'T' has a list of len(actions_par_child[node]['parents'])+1 items
+            #         # I add 1 because the last entry represents the node itself
+            #         cpd_lines = list(itertools.product(['F', 'T'], repeat=len(predicates_par_child[node]['parents'])))
 
-                    parents_cpd_list = list()
-                    for predicate in predicates_par_child[node]['parents']:
-                        parents_cpd_list.append(cpds_map_[predicate])
-                    parents_cpd_list.append(cpds_map_[parent_action])
+            #         cpd = dict()
+            #         cpd['parents'] = predicates_par_child[node]['parents']
+            #         cpd['value'] = 1
+            #         cpd_elements = list()
 
-                    for line in cpd_lines:
-                        lst = list(line)
-                        if all([elem == 'T' for elem in lst]):
-                            lst.append(1)
-                        elif all([elem == 'T' for elem in lst[:-1]]):
-                            lst.append(0)
-                        elif lst[-1] == 'T':
-                            lst.append(0)
-                        else:
-                            lst.append(1)
-                        cpd_elements.append(lst)      
+            #         parents_cpd_list = list()
+            #         for predicate in predicates_par_child[node]['parents']:
+            #             parents_cpd_list.append(cpds_map_[predicate])
+            #         parents_cpd_list.append(cpds_map_[parent_action])
+
+            #         for line in cpd_lines:
+            #             lst = list(line)
+            #             if all([elem == 'T' for elem in lst]):
+            #                 lst.append(1)
+            #             elif all([elem == 'T' for elem in lst[:-1]]):
+            #                 lst.append(0)
+            #             elif lst[-1] == 'T':
+            #                 lst.append(0)
+            #             else:
+            #                 lst.append(1)
+            #             cpd_elements.append(lst)      
                     
-                    cpd = ConditionalProbabilityTable(cpd_elements, parents_cpd_list)
-                    cpds_map_[node] = cpd
-                
+            #         cpds_map_[node] = cpd
+
 
 ######### BUILD NETWORK IN MODEL #########
 def buildNetworkInModel(model, actions_par_child, predicates_par_child):
@@ -1226,8 +1218,8 @@ def buildCPDs(actions_par_child, predicates_par_child):
                 cpd = dict()
                 cpd['parents'] = predicates_par_child[node]['parents']
                 # CPD's Key is the value of parent and its Value is the probability for True
-                cpd[tuple(True)] = 1-spont_true_false
-                cpd[tuple(False)] = spont_false_true
+                cpd[(True,)] = 1-spont_true_false
+                cpd[(False,)] = spont_false_true
                 cpds_map_[node] = cpd
                 continue
 
@@ -1272,34 +1264,35 @@ def buildCPDs(actions_par_child, predicates_par_child):
         else:
 
             is_at_end_action = False
+            # Each action can only have 1 action as parent, at most (in case is at_end action)
             for parent in actions_par_child[node]['pos_parents']:
-                # Each action can only have 1 action as parent, at most (in case is at_end action)
                 if not isPredicate(parent):
                     is_at_end_action = True
+                    break
 
-                number_of_pos_precond = len(actions_par_child[node]['pos_parents'])
-                number_of_neg_precond = len(actions_par_child[node]['neg_parents'])
-                number_of_precond = number_of_pos_precond + number_of_neg_precond
+            number_of_pos_precond = len(actions_par_child[node]['pos_parents'])
+            number_of_neg_precond = len(actions_par_child[node]['neg_parents'])
+            number_of_precond = number_of_pos_precond + number_of_neg_precond
 
-                cpd_lines = tuple(itertools.product([False, True], repeat=number_of_precond))
+            cpd_lines = tuple(itertools.product([False, True], repeat=number_of_precond))
 
-                action_name_without_time = removeStartEndFromName(node).split('$')[0]
-                success_prob = action_probabilities_map_[action_name_without_time][0]
-                
-                cpd = dict()
-                for i in range(len(cpd_lines)):
-                    lst = cpd_lines[i]
-                    if all([elem == True for elem in lst[:number_of_pos_precond]]) and all([elem == False for elem in lst[-number_of_neg_precond:]]):
-                        if is_at_end_action:
-                            cpd[lst] = 1
-                        else:
-                            cpd[lst] = success_prob
+            action_name_without_time = removeStartEndFromName(node).split('$')[0]
+            success_prob = action_probabilities_map_[action_name_without_time][0]
+            
+            cpd = dict()
+            for i in range(len(cpd_lines)):
+                lst = cpd_lines[i]
+                if all([elem == True for elem in lst[:number_of_pos_precond]]) and all([elem == False for elem in lst[-number_of_neg_precond:]]):
+                    if is_at_end_action:
+                        cpd[lst] = 1
                     else:
-                        cpd[lst] = 0
+                        cpd[lst] = success_prob
+                else:
+                    cpd[lst] = 0
 
-                cpd['parents'] = actions_par_child[node]['pos_parents'].union(actions_par_child[node]['neg_parents'])
+            cpd['parents'] = actions_par_child[node]['pos_parents'].union(actions_par_child[node]['neg_parents'])
 
-                cpds_map_[node] = cpd
+            cpds_map_[node] = cpd
 
 
 ######### PARSE PLAN #########
