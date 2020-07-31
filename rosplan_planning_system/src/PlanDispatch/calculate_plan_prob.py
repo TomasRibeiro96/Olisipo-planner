@@ -1420,10 +1420,6 @@ def calculateSuccessProbability(actions_par_child, predicates_par_child, max_lay
                 #         continue
 
 
-def createNetwork(actions_par_child, predicates_par_child):
-
-
-
 ######### MAIN FUNCTION #########
 ## Builds, prunes and writes network to file
 def calculatePlanProbability(original_plan):
