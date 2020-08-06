@@ -193,8 +193,11 @@ namespace KCL_rosplan {
                       ros::this_node::getName().c_str(), domain_file_path.c_str());
             ros::shutdown();
         } else {
+            ROS_INFO("!!! Closing file !!!");
             file_check.close();
+            ROS_INFO("!!! Parsing domain !!!");
             domain = domain_parser.parseDomain(domain_file_path);
+            ROS_INFO("!!! Domain parsed !!!");
             if(domain) {
                 addConstants();
             } else {

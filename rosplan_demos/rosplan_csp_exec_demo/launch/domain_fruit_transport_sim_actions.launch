@@ -1,0 +1,27 @@
+<?xml version="1.0"?>
+<launch>
+
+    <!-- sim actions for fruit_transport domain (domain_fruit_transport.pddl) -->
+
+    <include file="$(find rosplan_planning_system)/launch/includes/simulated_action.launch" >
+        <arg name="pddl_action_name" value="navigate" />
+        <arg name="action_duration" value="1" />
+    </include>
+
+    <include file="$(find rosplan_planning_system)/launch/includes/simulated_action.launch" >
+        <arg name="pddl_action_name" value="open_door" />
+        <arg name="action_duration" value="1" />
+    </include>
+
+    <include file="$(find rosplan_planning_system)/launch/includes/simulated_action.launch" >
+        <arg name="pddl_action_name" value="pick_up" />
+        <arg name="action_duration" value="1" />
+    </include>
+
+    <include file="$(find rosplan_planning_system)/launch/includes/simulated_action.launch" >
+        <arg name="pddl_action_name" value="put_down" />
+        <arg name="action_duration" value="1" />
+    </include>
+
+
+</launch>

@@ -48,13 +48,18 @@ namespace KCL_rosplan {
 			VAL1_2::yfl->switch_streams(&domainFile, &std::cout);
 			yyparse();
 
+			ROS_INFO("!!! 5 !!!");
 			// domain name
 			domain = VAL1_2::current_analysis->the_domain;
+			ROS_INFO("!!! 5.1 !!!");
 			domain_name = domain->name;
+			ROS_INFO("!!! 5.2 !!!");
 		}
+		ROS_INFO("!!! 6 !!!");
 		delete VAL1_2::yfl;
 		domainFile.close();
 
+		ROS_INFO("!!! 7 !!!");
 		return domain;
 
 	}

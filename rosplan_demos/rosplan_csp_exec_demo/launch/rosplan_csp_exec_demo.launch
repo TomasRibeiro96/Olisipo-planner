@@ -6,9 +6,10 @@
     <!-- set pddl domain, problem and category -->
     <!-- iros_problems_free, iros_problems_deadlines, skip_door -->
     
-    <arg name="category" default="skip_door" />
+    <!-- SKIP DOOR -->
+    <!-- <arg name="category" default="skip_door" />
     <arg name="domain" default="domain_skip_door" />
-    <arg name="problem" default="problem_r1_w3" />
+    <arg name="problem" default="problem_r1_w3" /> -->
     <!-- <arg name="problem" default="problem_r1_w4" /> -->
     <!-- <arg name="problem" default="problem_r1_w5" /> -->
     <!-- <arg name="problem" default="problem_r1_w6" /> -->
@@ -22,13 +23,20 @@
     <!-- <arg name="problem" default="problem_r1_w14" /> -->
     <!-- <arg name="problem" default="problem_r1_w15" /> -->
     <!-- <arg name="problem" default="problem_r2_w3" /> -->
+
+    <!-- FRUIT TRANSPORT -->
+    <arg name="category" default="fruit_transport" />
+    <arg name="domain" default="domain_fruit_transport" />
+    <arg name="problem" default="problem_f2_wp3" />
     
+    <!-- BLOCKSWORLD -->
     <!--
     <arg name="category" default="domain_blocksworld" />
     <arg name="domain" default="domain_blocksworld" />
     <arg name="problem" default="problem_blocksworld" />
     -->
     
+    <!-- ROBOT DELIVERY -->
     <!-- <arg name="domain" default="domain_robot_delivery" />
     <arg name="problem" default="problem_w4_m3_g2" />
     <arg name="category" default="iros_problems_free" /> -->
