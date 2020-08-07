@@ -291,6 +291,8 @@ class CSPExecGenerator
 
         void printExpectedFacts();
 
+        void reusePreviousPlan(int index_facts);
+
     private:
         // ros related variables
         ros::NodeHandle nh_;

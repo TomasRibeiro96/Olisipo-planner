@@ -1364,6 +1364,96 @@ def getNodesLayers():
     return nodes_layers
 
 
+def nodeHasParentToBeMarginalised(node, nodes_to_be_marginalised, predicates_par_child):
+    for parent in predicates_par_child[node]['parents']:
+        if parent in nodes_to_be_marginalised:
+            return True
+    return False
+
+
+def calculateSuccessProbability(actions_par_child, predicates_par_child, max_layer_number):
+    for goal_fact in goal_:
+        fact = goal_fact + '%' + str(max_layer_number)
+
+    ### Choose nodes to be marginalised ###
+    # A node does not need to be marginalised if:
+        # It's in the first or last layer
+        # Is a precondition of an action and its parents aren't variables to be marginalised
+
+
+    nodes_to_be_marginalised = set()
+    variables_to_marginalise = set()
+    for node in all_nodes_:
+        if isPredicate(node):
+            layer_number = int(node.split('%')[1])
+            if not layer_number == 0 and not layer_number == max_layer_number:
+                if not nodeIsPreconditionOfAction(node, predicates_par_child):
+                    nodes_to_be_marginalised.add(node)
+                    variables_to_marginalise.add(node)
+                    continue
+                elif nodeHasParentToBeMarginalised(node, nodes_to_be_marginalised, predicates_par_child) and isPredicate(node):
+                    nodes_to_be_marginalised.add(node)
+                else
+
+    # Set of nodes that can be directly calculated
+    direct_calc_nodes = all_nodes - nodes_to_be_marginalised
+
+    # Calculate probability
+    probability = 1.0
+    nodes_already_calculated_ = set()
+
+    for node in direct_calc_nodes:
+
+            if isPredicate(node):
+                node_without_time = node.split('%')[0]
+                layer_number = int(node.split('%')[1])
+                predicate_without_params = node.split('#')[0]
+
+                # If node is in the initial_state_
+                if node_without_time in initial_state_:
+                    probability = probability*cpds_map_[node]
+                    continue
+
+                # If node is not in initial_state_ but is in first layer
+                elif layer_number == 0:
+                    probability = probability*(1-cpds_map_[node]['false'])
+                    continue
+
+                    
+                # If is precondition of an action
+                positive_precond = False
+                for child in predicates_par_child[node]['children']:
+                    if not isPredicate(child):
+                        if node in actions_par_child[child]['pos_parents']:
+                            positive_precond = True
+                
+                if 
+
+                # When node to be marginalised is false
+                
+                # If node is part of the goal
+                
+
+            ## If node is an action
+            else:
+                probability = probability*cpds_map_[node]
+                continue
+
+                # # If node is precondition of action
+                # child_actions = set()
+                # for child in predicates_par_child[node]['children']:
+                #     if not isPredicate(child):
+                #         child_actions.add(child)
+
+                # for child in child_actions:
+                #     if node in actions_par_child[child]['pos_parents']:
+                #         probability = probability*cpds_map_[node]['true']
+                #         continue
+                #     elif node in actions_par_child[child]['neg_parents']:
+                #         probability = probability*cpds_map_[node]['false']
+                #         continue
+
+
 # Gets everything needed to start building the network
 def setupEverything():
     # print ("Waiting for service")
@@ -1456,6 +1546,8 @@ def calculateProbability(original_plan):
 
     # print('>>> All nodes: \n' + str(all_nodes_))
     pruneNetwork(actions_par_child, predicates_par_child)
+
+    calculateSuccessProbability(actions_par_child, predicates_par_child, max_layer_number)
 
     # model = BayesianNetwork()
     # buildNetworkInModel(model, actions_par_child, predicates_par_child)

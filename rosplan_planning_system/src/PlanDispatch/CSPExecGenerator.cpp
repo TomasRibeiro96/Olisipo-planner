@@ -1118,6 +1118,29 @@ int CSPExecGenerator::currentStateContainsExpectedFacts(){
     return -1;
 }
 
+void CSPExecGenerator::reusePreviousPlan(int index_facts){
+    // Create plan with only the necessary actions
+    std::vector<int> plan = best_plan_;
+    plan.erase(plan.begin(), plan.begin() + index_facts);
+
+    action_to_be_executed_ = plan.front();
+
+    // printNodes(">>> New plan: ", plan);
+    ROS_INFO("//// Total number of nodes expanded: %d ////", total_number_nodes_expanded);
+
+    // ROS_INFO(">>> Action to be executed 1: %s", getFullActionName(action_to_be_executed_).c_str());
+
+    // convert list of orderes nodes into esterel plan (reuses the originally received esterel plan)
+    rosplan_dispatch_msgs::EsterelPlan esterel_plan_msg = convertListToEsterel(plan);
+
+    // add new valid ordering to ordered plans (R)
+    exec_aternatives_msg_.esterel_plans.push_back(esterel_plan_msg);
+
+    // double plan_success_probability = computePlanProbability(best_plan_, action_prob_map_);
+    // TODO: Calculate prob
+    exec_aternatives_msg_.plan_success_prob.push_back(0.4);
+}
+
 bool CSPExecGenerator::generatePlans()
 {
     ROS_INFO("\n");
@@ -1142,7 +1165,6 @@ bool CSPExecGenerator::generatePlans()
         }
     }
 
-    // printNodes(">>> Open list", open_list);
 
     // Check if current state contains expected facts
     // It starts from the end of expected facts because the state might
@@ -1154,28 +1176,7 @@ bool CSPExecGenerator::generatePlans()
             // ROS_INFO(">>> Layer selected: %d", index_facts);
             if(index_facts >= 0){
                 ROS_INFO(">>> Reusing plan");
-
-                // Create plan with only the necessary actions
-                std::vector<int> plan = best_plan_;
-                plan.erase(plan.begin(), plan.begin() + index_facts);
-
-                action_to_be_executed_ = plan.front();
-
-                // printNodes(">>> New plan: ", plan);
-                ROS_INFO("//// Total number of nodes expanded: %d ////", total_number_nodes_expanded);
-
-                // ROS_INFO(">>> Action to be executed 1: %s", getFullActionName(action_to_be_executed_).c_str());
-
-                // convert list of orderes nodes into esterel plan (reuses the originally received esterel plan)
-                rosplan_dispatch_msgs::EsterelPlan esterel_plan_msg = convertListToEsterel(plan);
-
-                // add new valid ordering to ordered plans (R)
-                exec_aternatives_msg_.esterel_plans.push_back(esterel_plan_msg);
-
-                // double plan_success_probability = computePlanProbability(best_plan_, action_prob_map_);
-                // TODO: Calculate prob
-                exec_aternatives_msg_.plan_success_prob.push_back(0.4);
-
+                reusePreviousPlan(index_facts);
                 return true;
             }
         }
