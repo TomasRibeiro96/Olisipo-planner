@@ -27,7 +27,7 @@
     <!-- FRUIT TRANSPORT -->
     <arg name="category" default="fruit_transport" />
     <arg name="domain" default="domain_fruit_transport" />
-    <arg name="problem" default="problem_f2_wp3" />
+    <arg name="problem" default="problem_f2_w3" />
     
     <!-- BLOCKSWORLD -->
     <!--

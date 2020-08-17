@@ -26,7 +26,7 @@
     (fruit_on f1 wp1)
     (fruit_on f2 wp2)
 
-    (handempty)
+    (handempty mbot)
 )
 
 (:goal (and

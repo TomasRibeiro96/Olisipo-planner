@@ -1,6 +1,6 @@
 (define (domain fruit_transport)
 
-(:requirements :strips :typing :fluents :durative-actions :timed-initial-literals)
+(:requirements :strips :typing :fluents :durative-actions :timed-initial-literals :negative-preconditions)
 
 (:types
 	robot
@@ -17,7 +17,7 @@
 	(door_is_open ?d - door)
     (fruit_is_good ?f - fruit)
     (fruit_on ?f - fruit ?wp - waypoint)
-    (handempty)
+    (handempty ?r - robot)
     (holding ?f - fruit)
 )
 
@@ -64,7 +64,7 @@
 	:condition (and
                 (at start (fruit_on ?f ?wp))
                 (at start (fruit_is_good ?f))
-                (at start (handempty))
+                (at start (handempty ?r))
                 (at start (robot_at ?r ?wp))
 
                 (over all (fruit_is_good ?f))
@@ -72,8 +72,8 @@
 			   )
 	:effect (and
 				(at end (not (fruit_on ?f ?wp)))
-                (at_end (not (handempty)))
                 (at end (holding ?f))
+				(at end (not (handempty ?r)))
 		    )
 )
 
@@ -83,7 +83,7 @@
 	:condition (and
                 (at start (fruit_is_good ?f))
                 (at start (holding ?f))
-                (at start not (handempty))
+                (at start (not (handempty ?r)))
                 (at start (robot_at ?r ?wp))
 
                 (over all (fruit_is_good ?f))
@@ -91,8 +91,8 @@
 			   )
 	:effect (and
 				(at end (fruit_on ?f ?wp))
-                (at_end (handempty))
-                (at end not (holding ?f))
+				(at end (handempty ?r))
+                (at end (not (holding ?f)))
 		    )
 )
 
