@@ -23,6 +23,12 @@ cpds_map_ = dict()
 all_nodes_ = list()
 goal_ = set()
 initial_state_ = set()
+# predicates_par_child_ is a dictionary where the key is the predicate's name and the value
+## is another dictionary where the keys are 'parents' and 'children' and the values are sets
+predicates_par_child_ = dict()
+# same for actions_par_child_
+actions_par_child_ = dict()
+layer_number_ = 0
 
 rospy.init_node('bayesian_network_calculator')
 
@@ -479,7 +485,11 @@ class ActionStart:
 
     def getConditionPredicates(self):
         predicates_set = set()
-        for k, v in self.conditions.items():
+        for k, v in self.pos_conditions.items():
+            for predicate in v:
+                predicates_set.add('#'.join(predicate))
+        
+        for k, v in self.neg_conditions.items():
             for predicate in v:
                 predicates_set.add('#'.join(predicate))
         
@@ -531,12 +541,16 @@ class ActionStart:
         return predicates_set
 
 
-    def printAction(self):
-        print('>>>>>>>>>>>>>>>>>>>>>>>>')
-        print('ActionStart name: ' + self.name)
-        print('Conditions: ' + str(self.conditions))
-        print('Effects: ' + str(self.effects))
-        print('<<<<<<<<<<<<<<<<<<<<<<<<')
+    def getActionAsString(self):
+        s = '\n >>>>>>>>>>>>>>>>>>>>>>>>'
+        s = s + '\n >>> ActionStart name: ' + self.name
+        s = s + '\n >>> Positive Conditions: ' + str(self.pos_conditions)
+        s = s + '\n >>> Negative Conditions: ' + str(self.neg_conditions)
+        s = s + '\n >>> Positive Effects: ' + str(self.pos_effects)
+        s = s + '\n >>> Negative Effects: ' + str(self.neg_effects)
+        s = s + '\n <<<<<<<<<<<<<<<<<<<<<<<<'
+
+        return s
 
 
     @classmethod
@@ -626,19 +640,27 @@ class ActionEnd:
         return predicates_set
 
 
-    def printAction(self):
-        print('>>>>>>>>>>>>>>>>>>>>>>>>')
-        print('ActionEnd name: ' + self.name)
-        print('Conditions: ' + str(self.conditions))
-        print('Effects: ' + str(self.effects))
-        print('Over all conditions: ' + str(self.over_all_conditions))
-        print('Over all effects: ' + str(self.over_all_effects))
-        print('<<<<<<<<<<<<<<<<<<<<<<<<')
+    def getActionAsString(self):
+        s = '\n >>>>>>>>>>>>>>>>>>>>>>>>'
+        s = s + '\n >>> ActionStart name: ' + self.name
+        s = s + '\n >>> Positive Conditions: ' + str(self.pos_conditions)
+        s = s + '\n >>> Negative Conditions: ' + str(self.neg_conditions)
+        s = s + '\n >>> Positive Over All Conditions: ' + str(self.pos_over_all_conditions)
+        s = s + '\n >>> Negative Over All Conditions: ' + str(self.neg_over_all_conditions)
+        s = s + '\n >>> Positive Effects: ' + str(self.pos_effects)
+        s = s + '\n >>> Negative Effects: ' + str(self.neg_effects)
+        s = s + '\n <<<<<<<<<<<<<<<<<<<<<<<<'
+
+        return s
 
 
     def getConditionPredicates(self):
         predicates_set = set()
-        for k, v in self.conditions.items():
+        for k, v in self.pos_conditions.items():
+            for predicate in v:
+                predicates_set.add('#'.join(predicate))
+        
+        for k, v in self.neg_conditions.items():
             for predicate in v:
                 predicates_set.add('#'.join(predicate))
         
@@ -780,49 +802,49 @@ def writePredicatesToFile():
     file.close()
 
 
-def writePredicateParentsToFile(predicates_par_child):
+def writePredicateParentsToFile(predicates_par_child_):
     file = open('nodes_parents.txt', 'w')
     file.write('NODES AND PARENTS:\n')
     # For loop to print nodes in order
-    for i in range(0, len(predicates_par_child.keys())):
-        for predicate in predicates_par_child.keys():
+    for i in range(0, len(predicates_par_child_.keys())):
+        for predicate in predicates_par_child_.keys():
             node_index = predicate.split('%')[1]
             if node_index == str(i):
                 file.write('>>> Node: ' + predicate + '\n')
-                for par in predicates_par_child[predicate]['parents']:
+                for par in predicates_par_child_[predicate]['parents']:
                     file.write(par + '\n')
                 file.write('----------------------------\n')
     file.close()
 
 
-def getPredicateParentsAsString(predicates_par_child):
+def getPredicateParentsAsString(predicates_par_child_):
     string = 'NODES AND PARENTS:\n'
     # For loop to print nodes in order
-    for i in range(0, len(predicates_par_child.keys())):
-        for predicate in predicates_par_child.keys():
+    for i in range(0, len(predicates_par_child_.keys())):
+        for predicate in predicates_par_child_.keys():
             node_index = predicate.split('%')[1]
             if node_index == str(i):
                 string = string + '>>> Node: ' + predicate + '\n'
-                for par in predicates_par_child[predicate]['parents']:
+                for par in predicates_par_child_[predicate]['parents']:
                     string = string + par + '\n'
                 string = string + '----------------------------\n'
     return string
 
 
-def writeActionsToFile(actions_par_child):
-    file = open('actions_par_child.txt', 'w')
+def writeActionsToFile(actions_par_child_):
+    file = open('actions_par_child_.txt', 'w')
     file.write('ACTIONS WITH CHILDREN AND PARENTS:\n')
     # This bigger for cycle is to print the actions in order
-    for i in range(1, len(actions_par_child.keys())+1):
-        for action_name in actions_par_child.keys():
+    for i in range(1, len(actions_par_child_.keys())+1):
+        for action_name in actions_par_child_.keys():
             action_index = action_name.split('$')[1]
             if action_index == str(i):
                 file.write('>>> ACTION: ' + action_name + '\n')
                 file.write('> Parents:\n')
-                for par in actions_par_child[action_name]['parents']:
+                for par in actions_par_child_[action_name]['parents']:
                     file.write(par + '\n')
                 file.write('> Children:\n')
-                for child in actions_par_child[action_name]['children']:
+                for child in actions_par_child_[action_name]['children']:
                     file.write(child + '\n')
                 file.write('----------------------------\n')
     file.close()
@@ -895,6 +917,15 @@ def createGroundedActions(original_plan):
         GroundedAction(action, action_name.split('#')[1:])
 
 
+def createGroundedAction(action_name):
+    name = removeStartEndParamsFromName(action_name)
+    if not Action.getAction(name):
+        action = Action(name)
+    else:
+        action = Action.getAction(name)
+    return GroundedAction(action, action_name.split('#')[1:])
+
+
 def cyclesRecurse(children, nodes_list, node):
     if len(children[node]) == 0:
         del nodes_list[-1]
@@ -926,159 +957,165 @@ def checkCycles(children):
 
 
 ######### ADD PREDICATES #########
-def addPredicate(predicate, predicates_par_child, layer_number):
+def addPredicate(predicate, layer_numb):
     global all_nodes_
-    prev_pred_name = predicate + '%' + str(layer_number-1)
-    pred_name = predicate + '%' + str(layer_number)
+    pred_name = predicate + '%' + str(layer_numb)
     all_nodes_.append(pred_name)
-    predicates_par_child[pred_name] = dict()
-    predicates_par_child[pred_name]['parents'] = set()
-    predicates_par_child[pred_name]['children'] = set()
-    predicates_par_child[pred_name]['parents'].add(prev_pred_name)
-    predicates_par_child[prev_pred_name]['children'].add(pred_name)
+    predicates_par_child_[pred_name] = dict()
+    predicates_par_child_[pred_name]['parents'] = set()
+    predicates_par_child_[pred_name]['children'] = set()
+    if not layer_numb == 0:
+        prev_pred_name = predicate + '%' + str(layer_numb-1)
+        if prev_pred_name not in all_nodes_:
+            addPredicate(prev_pred_name, layer_numb-1)
+        predicates_par_child_[pred_name]['parents'].add(prev_pred_name)
+        predicates_par_child_[prev_pred_name]['children'].add(pred_name)
 
 
-def addPredicateLayer(predicates_set, layer_number, predicates_par_child):
+def addEffectPredicate(predicate):
+    global all_nodes_
+    global predicates_par_child_
+
+    all_nodes_.append(predicate)
+    predicates_par_child_[predicate] = dict()
+    predicates_par_child_[predicate]['parents'] = set()
+    predicates_par_child_[predicate]['children'] = set()
+
+
+def addPredicateLayer(predicates_set):
     for predicate in predicates_set:
-        predicate_name = predicate + '%' + str(layer_number)
+        predicate_name = predicate + '%' + str(layer_number_)
         if not predicate_name in all_nodes_:
-            addPredicate(predicate, predicates_par_child, layer_number)
+            addPredicate(predicate, layer_number_)
 
 
-def addFirstLayerPredicates(predicates_set, predicates_par_child):
+def addFirstLayerPredicates(predicates_set, predicates_par_child_):
     global all_nodes_
     for predicate in predicates_set:
         pred_name = predicate + '%0'
         all_nodes_.append(pred_name)
-        predicates_par_child[pred_name] = dict()
-        predicates_par_child[pred_name]['parents'] = set()
-        predicates_par_child[pred_name]['children'] = set()
-
+        predicates_par_child_[pred_name] = dict()
+        predicates_par_child_[pred_name]['parents'] = set()
+        predicates_par_child_[pred_name]['children'] = set()
 
 
 ######### CONNECT PREDICATES #########
-def connectActionToConditionPredicates(action, action_name, predicates_par_child, actions_par_child, layer_number):
-    # for predicate in action.getConditionPredicates():
-    #     pred_name = predicate + '%' + str(layer_number-1)
-    #     # node_predicate = get_node(all_nodes_, predicate + '%' + str(layer_number-1))
-    #     # model.add_edge(node_predicate, action_node)
-    #     predicates_par_child[pred_name]['children'].add(action_name)
-    #     actions_par_child[action_name]['parents'].add(pred_name)
+def connectActionToConditionPredicates(action, action_name):
+    global predicates_par_child_
+    global actions_par_child_
 
     for predicate in action.getPositiveConditionPredicates():
-        pred_name = predicate + '%' + str(layer_number-1)
-        predicates_par_child[pred_name]['children'].add(action_name)
-        actions_par_child[action_name]['pos_parents'].add(pred_name)
+        pred_name = predicate + '%' + str(layer_number_)
+        predicates_par_child_[pred_name]['children'].add(action_name)
+        actions_par_child_[action_name]['pos_parents'].add(pred_name)
     
     for predicate in action.getNegativeConditionPredicates():
-        pred_name = predicate + '%' + str(layer_number-1)
-        predicates_par_child[pred_name]['children'].add(action_name)
-        actions_par_child[action_name]['neg_parents'].add(pred_name)
+        pred_name = predicate + '%' + str(layer_number_)
+        predicates_par_child_[pred_name]['children'].add(action_name)
+        actions_par_child_[action_name]['neg_parents'].add(pred_name)
 
 
-def connectActionToEffectsPredicates(action, action_name, predicates_par_child, actions_par_child, layer_number):
+def connectActionToEffectsPredicates(action, action_name):
     global all_nodes_
+    global predicates_par_child_
+    global actions_par_child_
     
+    rospy.loginfo(action.getActionAsString())
     for predicate in action.getPositiveEffectsPredicates():
-        pred_name = predicate + '%' + str(layer_number)
-        prev_pred_name = predicate + '%' + str(layer_number-1)
-        addPredicate(predicate, predicates_par_child, layer_number)
-        # Connect predicate to predicate in previous layer
-        predicates_par_child[pred_name]['parents'].add(prev_pred_name)
-        predicates_par_child[prev_pred_name]['children'].add(pred_name)
+        pred_name = predicate + '%' + str(layer_number_+1)
+        addEffectPredicate(pred_name)
         # Connect predicate to action
-        predicates_par_child[pred_name]['parents'].add(action_name)
-        actions_par_child[action_name]['pos_children'].add(pred_name)
+        predicates_par_child_[pred_name]['parents'].add(action_name)
+        actions_par_child_[action_name]['pos_children'].add(pred_name)
 
     for predicate in action.getNegativeEffectsPredicates():
-        pred_name = predicate + '%' + str(layer_number)
-        prev_pred_name = predicate + '%' + str(layer_number-1)
-        addPredicate(predicate, predicates_par_child, layer_number)
-        # Connect predicate to predicate in previous layer
-        predicates_par_child[pred_name]['parents'].add(prev_pred_name)
-        predicates_par_child[prev_pred_name]['children'].add(pred_name)
+        pred_name = predicate + '%' + str(layer_number_+1)
+        addEffectPredicate(pred_name)
         # Connect predicate to action
-        predicates_par_child[pred_name]['parents'].add(action_name)
-        actions_par_child[action_name]['neg_children'].add(pred_name)
-        
+        predicates_par_child_[pred_name]['parents'].add(action_name)
+        actions_par_child_[action_name]['neg_children'].add(pred_name)
 
-def connectActionEndToActionStart(action, action_name, end_index, actions_par_child):
+
+def connectActionEndToActionStart(action, action_name):
+    global actions_par_child_
+
     action_start = action.getActionStart()
     # Search for the layer where actionStart is
-    for j in range(1, end_index+1):
+    for j in range(1, layer_number_+1):
         action_start_name = action_start.name + '$' + str(j)
         if action_start_name in all_nodes_:
             # Connecting ActionEnd to ActionStart
-            actions_par_child[action_name]['pos_parents'].add(action_start_name)
-            actions_par_child[action_start_name]['pos_children'].add(action_name)
+            actions_par_child_[action_name]['pos_parents'].add(action_start_name)
+            actions_par_child_[action_start_name]['pos_children'].add(action_name)
             return j
     return 0
 
 
-def connectActionToOverAllPredicates(action, action_name, start_index, end_index, actions_par_child, predicates_par_child):
-    # for predicate in action.getOverAllPredicates():
-    #     for j in range(start_index, end_index):
-    #         pred_name = predicate + '%' + str(j)
-    #         actions_par_child[action_name]['parents'].add(pred_name)
-    #         predicates_par_child[pred_name]['children'].add(action_name)
-    
-    for predicate in action.getPositiveOverAllPredicates():
-        for j in range(start_index, end_index):
+def connectActionToOverAllPredicates(action, action_name, start_index):
+    global actions_par_child_
+    global predicates_par_child_
+
+    positive_over_all_predicates = action.getPositiveOverAllPredicates()
+    negative_over_all_predicates = action.getNegativeOverAllPredicates()
+
+    for j in range(start_index, layer_number_+1):
+
+        for predicate in positive_over_all_predicates:
             pred_name = predicate + '%' + str(j)
-            actions_par_child[action_name]['pos_parents'].add(pred_name)
-            predicates_par_child[pred_name]['children'].add(action_name)
-    
-    for predicate in action.getNegativeOverAllPredicates():
-        for j in range(start_index, end_index):
+            actions_par_child_[action_name]['pos_parents'].add(pred_name)
+            predicates_par_child_[pred_name]['children'].add(action_name)
+
+        for predicate in negative_over_all_predicates:  
             pred_name = predicate + '%' + str(j)
-            actions_par_child[action_name]['neg_parents'].add(pred_name)
-            predicates_par_child[pred_name]['children'].add(action_name)
+            actions_par_child_[action_name]['neg_parents'].add(pred_name)
+            predicates_par_child_[pred_name]['children'].add(action_name)
 
 
-def addActionEdges(action, action_name, predicates_par_child, actions_par_child, layer_number):
-    actions_par_child[action_name] = dict()
-    actions_par_child[action_name]['pos_parents'] = set()
-    actions_par_child[action_name]['neg_parents'] = set()
-    actions_par_child[action_name]['pos_children'] = set()
-    actions_par_child[action_name]['neg_children'] = set()
+def addActionEdges(action, action_name):
+    global actions_par_child_
 
-    connectActionToConditionPredicates(action, action_name, predicates_par_child, actions_par_child, layer_number)
-    connectActionToEffectsPredicates(action, action_name, predicates_par_child, actions_par_child, layer_number)
+    actions_par_child_[action_name] = dict()
+    actions_par_child_[action_name]['pos_parents'] = set()
+    actions_par_child_[action_name]['neg_parents'] = set()
+    actions_par_child_[action_name]['pos_children'] = set()
+    actions_par_child_[action_name]['neg_children'] = set()
+
+    connectActionToConditionPredicates(action, action_name)
+    connectActionToEffectsPredicates(action, action_name)
 
     if isinstance(action, ActionEnd):
-        end_index = layer_number
-        start_index = connectActionEndToActionStart(action, action_name, end_index, actions_par_child)
+        start_index = connectActionEndToActionStart(action, action_name)
         # If action has no action_start then do not connect to over all predicates
-        connectActionToOverAllPredicates(action, action_name, start_index, end_index, actions_par_child, predicates_par_child)
+        connectActionToOverAllPredicates(action, action_name, start_index)
 
 
 ######### REMOVE NODE #########
-def removeNode(node, actions_par_child, predicates_par_child, is_predicate):    
+def removeNode(node, actions_par_child_, predicates_par_child_, is_predicate):    
     global all_nodes_
     if is_predicate:
-        predicates_par_child.pop(node)
+        predicates_par_child_.pop(node)
     else:
-        actions_par_child.pop(node)
+        actions_par_child_.pop(node)
 
     all_nodes_.remove(node)
     # cpds_map_.pop(node)
 
-    for pred in predicates_par_child.keys():
-        if node in predicates_par_child[pred]['parents']:
-            predicates_par_child[pred]['parents'].remove(node)
-        if node in predicates_par_child[pred]['children']:
-            predicates_par_child[pred]['children'].remove(node)
+    for pred in predicates_par_child_.keys():
+        if node in predicates_par_child_[pred]['parents']:
+            predicates_par_child_[pred]['parents'].remove(node)
+        if node in predicates_par_child_[pred]['children']:
+            predicates_par_child_[pred]['children'].remove(node)
 
-    for action in actions_par_child.keys():
-            if node in actions_par_child[action]['parents']:
-                actions_par_child[action]['parents'].remove(node)
-            if node in actions_par_child[action]['children']:
-                actions_par_child[action]['children'].remove(node)
+    for action in actions_par_child_.keys():
+            if node in actions_par_child_[action]['parents']:
+                actions_par_child_[action]['parents'].remove(node)
+            if node in actions_par_child_[action]['children']:
+                actions_par_child_[action]['children'].remove(node)
 
 
 ######### PRUNE NETWORK #########
-def pruneNetwork(actions_par_child, predicates_par_child):
-    size = len(actions_par_child)
+def pruneNetwork(actions_par_child_, predicates_par_child_):
+    size = len(actions_par_child_)
     goal_with_time = set()
     for item in goal_:
         goal_with_time.add(item + '%' + str(size))
@@ -1092,8 +1129,8 @@ def pruneNetwork(actions_par_child, predicates_par_child):
             ##### Rule 1 #####
             # If predicate does not have children and is not the goal_, then remove it
             if not node in goal_with_time:
-                if not predicates_par_child[node]['children']:
-                    removeNode(node, actions_par_child, predicates_par_child, is_predicate)
+                if not predicates_par_child_[node]['children']:
+                    removeNode(node, actions_par_child_, predicates_par_child_, is_predicate)
                     # Skip to next node in for loop
                     continue
 
@@ -1103,7 +1140,7 @@ def pruneNetwork(actions_par_child, predicates_par_child):
             ### edges from other parents and replace CPD
             has_action_as_parent = False
             removed_parents = set()
-            for parent in predicates_par_child[node]['parents']:
+            for parent in predicates_par_child_[node]['parents']:
                 if not isPredicate(parent):
                     has_action_as_parent = True
                     parent_action = parent
@@ -1112,15 +1149,15 @@ def pruneNetwork(actions_par_child, predicates_par_child):
             
             if has_action_as_parent:
                 for parent in removed_parents:
-                    predicates_par_child[parent]['children'].remove(node)
-                    predicates_par_child[node]['parents'].remove(parent)
+                    predicates_par_child_[parent]['children'].remove(node)
+                    predicates_par_child_[node]['parents'].remove(parent)
                 
                 action_name_no_time = removeStartEndFromName(parent_action).split('$')[0]
                 predicate_no_parameters = node.split('#')[0]
                 effects_success = action_probabilities_map_[action_name_no_time][1][predicate_no_parameters]
 
                 cpd = dict()
-                cpd['parents'] = predicates_par_child[node]['parents']
+                cpd['parents'] = predicates_par_child_[node]['parents']
                 cpd[(True,)] = effects_success
                 cpd[(False,)] = 0
                 cpds_map_[node] = cpd
@@ -1135,7 +1172,7 @@ def pruneNetwork(actions_par_child, predicates_par_child):
             # if not node.split('%')[1] == str(0):
 
             #     has_action_as_child = False
-            #     for child in predicates_par_child[node]['children']:
+            #     for child in predicates_par_child_[node]['children']:
             #         if not isPredicate(child):
             #             has_action_as_child = True
             #             child_action = child
@@ -1143,17 +1180,17 @@ def pruneNetwork(actions_par_child, predicates_par_child):
 
             #     if has_action_as_child:
 
-            #         # Get all combinations of 'F' and 'T' has a list of len(actions_par_child[node]['parents'])+1 items
+            #         # Get all combinations of 'F' and 'T' has a list of len(actions_par_child_[node]['parents'])+1 items
             #         # I add 1 because the last entry represents the node itself
-            #         cpd_lines = list(itertools.product(['F', 'T'], repeat=len(predicates_par_child[node]['parents'])))
+            #         cpd_lines = list(itertools.product(['F', 'T'], repeat=len(predicates_par_child_[node]['parents'])))
 
             #         cpd = dict()
-            #         cpd['parents'] = predicates_par_child[node]['parents']
+            #         cpd['parents'] = predicates_par_child_[node]['parents']
             #         cpd['value'] = 1
             #         cpd_elements = list()
 
             #         parents_cpd_list = list()
-            #         for predicate in predicates_par_child[node]['parents']:
+            #         for predicate in predicates_par_child_[node]['parents']:
             #             parents_cpd_list.append(cpds_map_[predicate])
             #         parents_cpd_list.append(cpds_map_[parent_action])
 
@@ -1173,7 +1210,7 @@ def pruneNetwork(actions_par_child, predicates_par_child):
 
 
 ######### BUILD NETWORK IN MODEL #########
-def buildNetworkInModel(model, actions_par_child, predicates_par_child):
+def buildNetworkInModel(model, actions_par_child_, predicates_par_child_):
     nodes_dict = dict()
     for node_name in all_nodes_:        
         cpd = cpds_map_[node_name]
@@ -1182,9 +1219,9 @@ def buildNetworkInModel(model, actions_par_child, predicates_par_child):
         model.add_node(node)
 
         if isPredicate(node_name):
-            parents_dict = predicates_par_child
+            parents_dict = predicates_par_child_
         else:
-            parents_dict = actions_par_child
+            parents_dict = actions_par_child_
       
         for parent in parents_dict[node_name]['parents']:
             parent_node = nodes_dict[parent]
@@ -1192,9 +1229,11 @@ def buildNetworkInModel(model, actions_par_child, predicates_par_child):
 
 
 ######### BUILD CPDs #########
-def buildCPDs(actions_par_child, predicates_par_child):
+def buildCPDs():
 
-    for node in all_nodes_:
+    nodes_without_cpds = set(all_nodes_) - set(cpds_map_.keys())
+
+    for node in nodes_without_cpds:
 
         if isPredicate(node):
 
@@ -1212,17 +1251,18 @@ def buildCPDs(actions_par_child, predicates_par_child):
 
             # If predicate only has one parent, which can only be
             # the same predicate in the previous layer
-            if len(predicates_par_child[node]['parents']) == 1:
+            if len(predicates_par_child_[node]['parents']) == 1:
                 spont_false_true = pred_probabilities_map_[node_without_time][0]
                 spont_true_false = pred_probabilities_map_[node_without_time][1]
                 cpd = dict()
-                cpd['parents'] = predicates_par_child[node]['parents']
+                cpd['parents'] = predicates_par_child_[node]['parents']
                 # CPD's Key is the value of parent and its Value is the probability for True
                 cpd[(True,)] = 1-spont_true_false
                 cpd[(False,)] = spont_false_true
                 cpds_map_[node] = cpd
                 continue
 
+            '''
             # If predicate has more than one parent, then it has two:
             # the predicate in the previous layer and an action
             else:
@@ -1236,7 +1276,7 @@ def buildCPDs(actions_par_child, predicates_par_child):
 
                 i = 0
                 action_index = 0
-                for parent in predicates_par_child[node]['parents']:
+                for parent in predicates_par_child_[node]['parents']:
                     if not isPredicate(parent):
                         action_index = i
                     else:
@@ -1256,22 +1296,19 @@ def buildCPDs(actions_par_child, predicates_par_child):
                     cpd[(True, False)] = 1-spont_true_false
                     cpd[(True, True)] = effects_success
 
-                cpd['parents'] = predicates_par_child[node]['parents']
+                cpd['parents'] = predicates_par_child_[node]['parents']
                 cpds_map_[node] = cpd
-        
+            '''
 
         # If node is an action
         else:
 
             is_at_end_action = False
-            # Each action can only have 1 action as parent, at most (in case is at_end action)
-            for parent in actions_par_child[node]['pos_parents']:
-                if not isPredicate(parent):
-                    is_at_end_action = True
-                    break
+            if node.split('#')[0][-3:] == 'end':
+                is_at_end_action = True
 
-            number_of_pos_precond = len(actions_par_child[node]['pos_parents'])
-            number_of_neg_precond = len(actions_par_child[node]['neg_parents'])
+            number_of_pos_precond = len(actions_par_child_[node]['pos_parents'])
+            number_of_neg_precond = len(actions_par_child_[node]['neg_parents'])
             number_of_precond = number_of_pos_precond + number_of_neg_precond
 
             cpd_lines = tuple(itertools.product([False, True], repeat=number_of_precond))
@@ -1282,15 +1319,35 @@ def buildCPDs(actions_par_child, predicates_par_child):
             cpd = dict()
             for i in range(len(cpd_lines)):
                 lst = cpd_lines[i]
-                if all([elem == True for elem in lst[:number_of_pos_precond]]) and all([elem == False for elem in lst[-number_of_neg_precond:]]):
-                    if is_at_end_action:
-                        cpd[lst] = 1
+                # If action has both positive and negative preconditions
+                if not number_of_neg_precond == 0 and not number_of_pos_precond == 0:
+                    if all([elem == True for elem in lst[:number_of_pos_precond]]) and all([elem == False for elem in lst[-number_of_neg_precond:]]):
+                        if is_at_end_action:
+                            cpd[lst] = 1
+                        else:
+                            cpd[lst] = success_prob
                     else:
-                        cpd[lst] = success_prob
+                        cpd[lst] = 0
+                # If action only has positive preconditions
+                elif number_of_neg_precond == 0:
+                    if all([elem == True for elem in lst]):
+                        if is_at_end_action:
+                            cpd[lst] = 1
+                        else:
+                            cpd[lst] = success_prob
+                    else:
+                        cpd[lst] = 0
+                # If action only has negative preconditions
                 else:
-                    cpd[lst] = 0
+                    if all([elem == False for elem in lst]):
+                        if is_at_end_action:
+                            cpd[lst] = 1
+                        else:
+                            cpd[lst] = success_prob
+                    else:
+                        cpd[lst] = 0
 
-            cpd['parents'] = actions_par_child[node]['pos_parents'].union(actions_par_child[node]['neg_parents'])
+            cpd['parents'] = actions_par_child_[node]['pos_parents'].union(actions_par_child_[node]['neg_parents'])
 
             cpds_map_[node] = cpd
 
@@ -1310,6 +1367,20 @@ def convertPlanToActionStart_End(original_plan):
     return plan
 
 
+def convertActionToActionStart_End(received_action):
+    name = removeStartEndFromName(received_action)
+    grounded_action = GroundedAction.getGroundedAction(name)
+
+    if received_action.split('#')[0][-5:] == 'start':
+        action = ActionStart(grounded_action)
+    elif received_action.split('#')[0][-3:] == 'end':
+        action = ActionEnd(grounded_action)
+    else:
+        rospy.logerr('ERROR: NULL WHEN CONVERTING ACTION TO ACTION START/END -> ' + received_action)
+    
+    return action
+
+
 ######### GET STUFF #########
 def getProbabilities():
     global pred_probabilities_map_
@@ -1318,7 +1389,7 @@ def getProbabilities():
     file = open('/home/tomas/ros_ws/src/ROSPlan/src/rosplan/probabilities.txt', 'r')
     line = file.readline()
     predicates = True
-    actions_par_child = False
+    actions_par_child_ = False
     while line:
         if line == '-\n':
             predicates = False
@@ -1364,14 +1435,15 @@ def getNodesLayers():
     return nodes_layers
 
 
-def nodeHasParentToBeMarginalised(node, nodes_to_be_marginalised, predicates_par_child):
-    for parent in predicates_par_child[node]['parents']:
+'''
+def nodeHasParentToBeMarginalised(node, nodes_to_be_marginalised, predicates_par_child_):
+    for parent in predicates_par_child_[node]['parents']:
         if parent in nodes_to_be_marginalised:
             return True
     return False
 
 
-def calculateSuccessProbability(actions_par_child, predicates_par_child, max_layer_number):
+def calculateSuccessProbability(actions_par_child_, predicates_par_child_, max_layer_number):
     for goal_fact in goal_:
         fact = goal_fact + '%' + str(max_layer_number)
 
@@ -1385,13 +1457,13 @@ def calculateSuccessProbability(actions_par_child, predicates_par_child, max_lay
     variables_to_marginalise = set()
     for node in all_nodes_:
         if isPredicate(node):
-            layer_number = int(node.split('%')[1])
-            if not layer_number == 0 and not layer_number == max_layer_number:
-                if not nodeIsPreconditionOfAction(node, predicates_par_child):
+            layer_number_ = int(node.split('%')[1])
+            if not layer_number_ == 0 and not layer_number_ == max_layer_number:
+                if not nodeIsPreconditionOfAction(node, predicates_par_child_):
                     nodes_to_be_marginalised.add(node)
                     variables_to_marginalise.add(node)
                     continue
-                elif nodeHasParentToBeMarginalised(node, nodes_to_be_marginalised, predicates_par_child) and isPredicate(node):
+                elif nodeHasParentToBeMarginalised(node, nodes_to_be_marginalised, predicates_par_child_) and isPredicate(node):
                     nodes_to_be_marginalised.add(node)
                 else
 
@@ -1406,7 +1478,7 @@ def calculateSuccessProbability(actions_par_child, predicates_par_child, max_lay
 
             if isPredicate(node):
                 node_without_time = node.split('%')[0]
-                layer_number = int(node.split('%')[1])
+                layer_number_ = int(node.split('%')[1])
                 predicate_without_params = node.split('#')[0]
 
                 # If node is in the initial_state_
@@ -1415,16 +1487,16 @@ def calculateSuccessProbability(actions_par_child, predicates_par_child, max_lay
                     continue
 
                 # If node is not in initial_state_ but is in first layer
-                elif layer_number == 0:
+                elif layer_number_ == 0:
                     probability = probability*(1-cpds_map_[node]['false'])
                     continue
 
                     
                 # If is precondition of an action
                 positive_precond = False
-                for child in predicates_par_child[node]['children']:
+                for child in predicates_par_child_[node]['children']:
                     if not isPredicate(child):
-                        if node in actions_par_child[child]['pos_parents']:
+                        if node in actions_par_child_[child]['pos_parents']:
                             positive_precond = True
                 
                 if 
@@ -1441,17 +1513,18 @@ def calculateSuccessProbability(actions_par_child, predicates_par_child, max_lay
 
                 # # If node is precondition of action
                 # child_actions = set()
-                # for child in predicates_par_child[node]['children']:
+                # for child in predicates_par_child_[node]['children']:
                 #     if not isPredicate(child):
                 #         child_actions.add(child)
 
                 # for child in child_actions:
-                #     if node in actions_par_child[child]['pos_parents']:
+                #     if node in actions_par_child_[child]['pos_parents']:
                 #         probability = probability*cpds_map_[node]['true']
                 #         continue
-                #     elif node in actions_par_child[child]['neg_parents']:
+                #     elif node in actions_par_child_[child]['neg_parents']:
                 #         probability = probability*cpds_map_[node]['false']
                 #         continue
+'''
 
 
 # Gets everything needed to start building the network
@@ -1502,28 +1575,21 @@ def calculateProbability(original_plan):
     # Get plan as a list of ActionStart and ActionEnd's instances
     plan = convertPlanToActionStart_End(original_plan)
 
-    predicates_set = set()
-    # predicates_par_child is a dictionary where the key is the predicate's name and the value
-    ## is another dictionary where the keys are 'parents' and 'children' and the values are sets
-    predicates_par_child = dict()
-    # same for actions_par_child
-    actions_par_child = dict()
-
     for grounded_action in GroundedAction.actionsList:
         # Adds the predicates in the set grounded_action.getPredicates() to predicates_set
         # Meaning, it adds all needed predicates to predicates_set
         predicates_set |= grounded_action.getPredicates()
 
-    addFirstLayerPredicates(predicates_set, predicates_par_child)
+    addFirstLayerPredicates(predicates_set, predicates_par_child_)
 
-    layer_number = 1
+    layer_number_ = 1
     # Cycle which creates the entire Bayes Network until the end
     for action in plan:
 
-        action_name = action.name + '$' + str(layer_number)
+        action_name = action.name + '$' + str(layer_number_)
 
         all_nodes_.append(action_name)
-        addActionEdges(action, action_name, predicates_par_child, actions_par_child, layer_number)
+        addActionEdges(action, action_name, predicates_par_child_, actions_par_child_, layer_number_)
         
         # if isinstance(action, ActionStart):
         #     cpd = DiscreteDistribution({'T': success_prob, 'F': 1-success_prob})
@@ -1532,25 +1598,25 @@ def calculateProbability(original_plan):
         # cpds_map_[action_name] = cpd
 
         
-        addPredicateLayer(predicates_set, layer_number, predicates_par_child)
+        addPredicateLayer(predicates_set, layer_number_, predicates_par_child_)
 
-        layer_number = layer_number + 1
+        layer_number_ = layer_number_ + 1
 
     # rospy.loginfo('Predicates parents')
-    # rospy.loginfo(getPredicateParentsAsString(predicates_par_child))
+    # rospy.loginfo(getPredicateParentsAsString(predicates_par_child_))
 
-    buildCPDs(actions_par_child, predicates_par_child)
+    buildCPDs(actions_par_child_, predicates_par_child_)
 
     # rospy.loginfo('PRE-PRUNNING')
-    # rospy.loginfo(getPredicateParentsAsString(predicates_par_child))
+    # rospy.loginfo(getPredicateParentsAsString(predicates_par_child_))
 
     # print('>>> All nodes: \n' + str(all_nodes_))
-    pruneNetwork(actions_par_child, predicates_par_child)
+    pruneNetwork(actions_par_child_, predicates_par_child_)
 
-    calculateSuccessProbability(actions_par_child, predicates_par_child, max_layer_number)
+    # calculateSuccessProbability(actions_par_child_, predicates_par_child_, max_layer_number)
 
     # model = BayesianNetwork()
-    # buildNetworkInModel(model, actions_par_child, predicates_par_child)
+    # buildNetworkInModel(model, actions_par_child_, predicates_par_child_)
     # model.bake()
     # model.plot()
     # plt.show()
@@ -1569,9 +1635,9 @@ def calculateProbability(original_plan):
     # print('Writing predicates to file')
     writePredicatesToFile()
     # print('Writing parents to file')
-    writePredicateParentsToFile(predicates_par_child)
-    # print('Writing actions_par_child to file')
-    writeActionsToFile(actions_par_child)
+    writePredicateParentsToFile(predicates_par_child_)
+    # print('Writing actions_par_child_ to file')
+    writeActionsToFile(actions_par_child_)
     # print('Writing nodes and CPDs to file')
     writeNodesAndCPDsToFile()
     
@@ -1597,6 +1663,130 @@ def calculateProbability(original_plan):
     # TODO: It's just returning a number, it's not calculating the probability yet
     return 0.001
 
+
+def getTopPredicateParent(node):
+    # This is just so it passes the first check of isPredicate
+    # TODO: Check this try
+    parent = node
+    while isPredicate(parent):
+        previous_parent = parent
+        parents_set = predicates_par_child_[parent]['parents']
+        if len(parents_set) > 0:
+            parent = parents_set.pop()
+        else:
+            return previous_parent
+
+
+def getPredicateChild(node):
+    for child in predicates_par_child_[node]['children']:
+            if isPredicate(child):
+                return child
+
+
+def calculateColumn(bottom_node, true_value):
+    rospy.loginfo('>>> Inside calculateColumn <<<')
+    top_parent = getTopPredicateParent(bottom_node)
+    rospy.loginfo('Top parent: ' + top_parent)
+
+    if len(predicates_par_child_[top_parent]['parents']) == 0:
+        prob = cpds_map_[top_parent]
+    else:
+        prob = cpds_map_[top_parent][(True,)]
+
+    node = top_parent
+
+    while not node == bottom_node:
+        node = getPredicateChild(node)
+        spont_true_false = cpds_map_[node][(True,)]
+        spont_false_true = cpds_map_[node][(False,)]
+        
+        prob = prob*(1-spont_true_false) + (1-prob)*spont_false_true
+
+    if true_value:
+        returned_prob = prob
+    else:
+        returned_prob = 1-prob
+    
+    rospy.loginfo('>>> Exiting calculateColumn with prob: ' + str(returned_prob) + ' <<<')
+    return returned_prob
+
+
+def calculateActionsProbability(prob, action_name):
+
+    rospy.loginfo('*** Inside calculateActionsProbability ***')
+
+    number_parents_action = len(cpds_map_[action_name]['parents'])
+    rospy.loginfo('Number of parents of action: ' + str(number_parents_action))
+    all_true = (True,)*number_parents_action
+    rospy.loginfo('All true: ' + str(all_true))
+    action_success_prob = cpds_map_[action_name][all_true]
+    rospy.loginfo('Action success probability: ' + str(action_success_prob))
+    # rospy.loginfo('Action CPD: ' + str(cpds_map_[action_name]))
+    prob = prob*action_success_prob
+    rospy.loginfo('Probability after action: ' + str(prob))
+
+    rospy.loginfo('Checking positive parents')
+    for parent in actions_par_child_[action_name]['pos_parents']:
+        rospy.loginfo('Parent: ' + parent)
+        if isPredicate(parent):
+            rospy.loginfo('Calculating column of positive parent')
+            prob = prob*calculateColumn(parent, True)
+            rospy.loginfo('Probability after: ' + str(prob))
+    
+    rospy.loginfo('Checking negative parents')
+    for parent in actions_par_child_[action_name]['neg_parents']:
+        rospy.loginfo('Parent: ' + parent)
+        if isPredicate(parent):
+            rospy.loginfo('Calculating column of negative parent')
+            prob = prob*calculateColumn(parent, False)
+            rospy.loginfo('Probability after: ' + str(prob))
+    
+    rospy.loginfo('*** Exiting calculateActionsProbability with probability ' + str(prob) + ' ***')
+    return prob
+
+
+def func(received_action_name, prob):
+    global layer_number_
+
+    rospy.loginfo('Setting up')
+    setupEverything()
+
+    rospy.loginfo('Creating grounded action')
+    grounded_action = createGroundedAction(received_action_name)
+    rospy.loginfo('Converting grounded action to action start/end')
+    action = convertActionToActionStart_End(received_action_name)
+
+    rospy.loginfo('Getting condition predicates')
+    predicates_set = action.getConditionPredicates()
+    rospy.loginfo('>>> Predicates set: ' + str(predicates_set))
+
+    rospy.loginfo('Adding predicate layer')
+    addPredicateLayer(predicates_set)
+
+    action_name = action.name + '$' + str(layer_number_+1)
+
+    all_nodes_.append(action_name)
+
+    rospy.loginfo('>>> Adding action edges')
+    addActionEdges(action, action_name)
+
+    rospy.loginfo('Building CPDs')
+    buildCPDs()
+
+    rospy.loginfo('Calculating probability')
+    prob = calculateActionsProbability(prob, action_name)
+
+    layer_number_ = layer_number_ + 1
+
+    rospy.loginfo('Returning probability: ' + str(prob))
+    return prob
+
+
 if __name__ == "__main__":
     plan = ['navigate_start#mbot#wp1#wp2#door1#door2', 'navigate_end#mbot#wp1#wp2#door1#door2', 'open_door_start#mbot#wp2#door2', 'open_door_end#mbot#wp2#door2', 'navigate_start#mbot#wp2#wp3#door2#door3', 'navigate_end#mbot#wp2#wp3#door2#door3']
-    calculateProbability(plan)
+    # calculateProbability(plan)
+    setupEverything()
+    prob = 1
+    for action in plan:
+        prob = prob*func(action, prob)
+        print('>>> Probability: ' + str(prob))
