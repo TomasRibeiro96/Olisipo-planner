@@ -20,6 +20,7 @@ pred_probabilities_map_ = dict()
 # effects_success[predicate_without_parameters] = probability
 action_probabilities_map_ = dict()
 cpds_map_ = dict()
+cpds_pomegranate_ = dict()
 all_nodes_ = list()
 goal_ = set()
 initial_state_ = set()
@@ -485,16 +486,11 @@ class ActionStart:
 
     def getConditionPredicates(self):
         predicates_set = set()
-        for k, v in self.pos_conditions.items():
-            for predicate in v:
-                predicates_set.add('#'.join(predicate))
-        
-        for k, v in self.neg_conditions.items():
-            for predicate in v:
-                predicates_set.add('#'.join(predicate))
+
+        predicates_set |= self.getPositiveConditionPredicates()
+        predicates_set |= self.getNegativeConditionPredicates()
         
         return predicates_set
-
 
     def getPositiveConditionPredicates(self):
         predicates_set = set()
@@ -516,9 +512,9 @@ class ActionStart:
 
     def getEffectsPredicates(self):
         predicates_set = set()
-        for k, v in self.effects.items():
-            for predicate in v:
-                predicates_set.add('#'.join(predicate))
+
+        predicates_set |= self.getPositiveEffectsPredicates()
+        predicates_set |= self.getNegativeEffectsPredicates()
         
         return predicates_set
 
@@ -656,13 +652,11 @@ class ActionEnd:
 
     def getConditionPredicates(self):
         predicates_set = set()
-        for k, v in self.pos_conditions.items():
-            for predicate in v:
-                predicates_set.add('#'.join(predicate))
-        
-        for k, v in self.neg_conditions.items():
-            for predicate in v:
-                predicates_set.add('#'.join(predicate))
+
+        predicates_set |= self.getPositiveConditionPredicates()
+        predicates_set |= self.getNegativeConditionPredicates()
+        predicates_set |= self.getPositiveOverAllPredicates()
+        predicates_set |= self.getNegativeOverAllPredicates()
         
         return predicates_set
 
@@ -705,9 +699,9 @@ class ActionEnd:
 
     def getEffectsPredicates(self):
         predicates_set = set()
-        for k, v in self.effects.items():
-            for predicate in v:
-                predicates_set.add('#'.join(predicate))
+
+        predicates_set |= self.getPositiveEffectsPredicates()
+        predicates_set |= self.getNegativeEffectsPredicates()
         
         return predicates_set
 
@@ -763,7 +757,7 @@ def removeStartEndFromName(name):
     return name3
 
 
-def removeStartEndParamsFromName(name):
+def removeStartEndAndParamsFromName(name):
     name1 = removeStartEndFromName(name)
     return name1.split('#')[0]
 
@@ -802,18 +796,28 @@ def writePredicatesToFile():
     file.close()
 
 
-def writePredicateParentsToFile(predicates_par_child_):
+def writePredicateParentsToFile():
     file = open('nodes_parents.txt', 'w')
     file.write('NODES AND PARENTS:\n')
     # For loop to print nodes in order
-    for i in range(0, len(predicates_par_child_.keys())):
-        for predicate in predicates_par_child_.keys():
-            node_index = predicate.split('%')[1]
-            if node_index == str(i):
-                file.write('>>> Node: ' + predicate + '\n')
-                for par in predicates_par_child_[predicate]['parents']:
-                    file.write(par + '\n')
-                file.write('----------------------------\n')
+    # for i in range(0, len(predicates_par_child_.keys())):
+    #     for predicate in predicates_par_child_.keys():
+    #         node_index = predicate.split('%')[1]
+    #         if node_index == str(i):
+    #             file.write('>>> Node: ' + predicate + '\n')
+    #             for par in predicates_par_child_[predicate]['parents']:
+    #                 file.write(par + '\n')
+    #             file.write('----------------------------\n')
+
+    for layer_index in range(layer_number_):
+        for node in all_nodes_:
+            if isPredicate(node):
+                node_index = int(node.split('%')[1])
+                if layer_index == node_index:
+                    file.write('>>> Node: ' + node + '\n')
+                    for parent in predicates_par_child_[node]['parents']:
+                        file.write(parent + '\n')
+                    file.write('----------------------------\n')
     file.close()
 
 
@@ -909,7 +913,7 @@ def createActions(operators):
 
 def createGroundedActions(original_plan):
     for action_name in original_plan:
-        name = removeStartEndParamsFromName(action_name)
+        name = removeStartEndAndParamsFromName(action_name)
         if not Action.getAction(name):
             action = Action(name)
         else:
@@ -918,7 +922,7 @@ def createGroundedActions(original_plan):
 
 
 def createGroundedAction(action_name):
-    name = removeStartEndParamsFromName(action_name)
+    name = removeStartEndAndParamsFromName(action_name)
     if not Action.getAction(name):
         action = Action(name)
     else:
@@ -959,20 +963,45 @@ def checkCycles(children):
 ######### ADD PREDICATES #########
 def addPredicate(predicate, layer_numb):
     global all_nodes_
+
     pred_name = predicate + '%' + str(layer_numb)
     all_nodes_.append(pred_name)
     predicates_par_child_[pred_name] = dict()
     predicates_par_child_[pred_name]['parents'] = set()
     predicates_par_child_[pred_name]['children'] = set()
+
+    rospy.loginfo('Adding predicate: ' + pred_name)
+    rospy.loginfo('Layer number: ' + str(layer_numb))
+
+    # Add predicate in previous layers
+
+    # layer_numb = layer_numb - 1
+    # while layer_numb >= 0:
+    #     prev_pred_name = predicate + '%' + str(layer_numb)
+    #     if prev_pred_name not in all_nodes_:
+    #         addPredicate(prev_pred_name, layer_numb)
+        
+    #     predicates_par_child_[pred_name]['parents'].add(prev_pred_name)
+    #     predicates_par_child_[prev_pred_name]['children'].add(pred_name)
+
+    #     pred_name = prev_pred_name
+    #     layer_numb = layer_numb-1
+
     if not layer_numb == 0:
         prev_pred_name = predicate + '%' + str(layer_numb-1)
+        rospy.loginfo('Previous predicate: ' + str(prev_pred_name))
         if prev_pred_name not in all_nodes_:
-            addPredicate(prev_pred_name, layer_numb-1)
+            rospy.loginfo('Adding previous predicate to all_nodes_')
+            addPredicate(predicate, layer_numb-1)
+        
+        rospy.loginfo('Connecting to previous predicate')
         predicates_par_child_[pred_name]['parents'].add(prev_pred_name)
         predicates_par_child_[prev_pred_name]['children'].add(pred_name)
 
 
 def addEffectPredicate(predicate):
+    # Here we don't add the predicate in previous layers because
+    # its CPD will only depend on the action that it's its parent
     global all_nodes_
     global predicates_par_child_
 
@@ -1020,7 +1049,6 @@ def connectActionToEffectsPredicates(action, action_name):
     global predicates_par_child_
     global actions_par_child_
     
-    rospy.loginfo(action.getActionAsString())
     for predicate in action.getPositiveEffectsPredicates():
         pred_name = predicate + '%' + str(layer_number_+1)
         addEffectPredicate(pred_name)
@@ -1114,7 +1142,7 @@ def removeNode(node, actions_par_child_, predicates_par_child_, is_predicate):
 
 
 ######### PRUNE NETWORK #########
-def pruneNetwork(actions_par_child_, predicates_par_child_):
+def pruneNetwork():
     size = len(actions_par_child_)
     goal_with_time = set()
     for item in goal_:
@@ -1210,7 +1238,7 @@ def pruneNetwork(actions_par_child_, predicates_par_child_):
 
 
 ######### BUILD NETWORK IN MODEL #########
-def buildNetworkInModel(model, actions_par_child_, predicates_par_child_):
+def buildNetworkInModel(model):
     nodes_dict = dict()
     for node_name in all_nodes_:        
         cpd = cpds_map_[node_name]
@@ -1222,7 +1250,7 @@ def buildNetworkInModel(model, actions_par_child_, predicates_par_child_):
             parents_dict = predicates_par_child_
         else:
             parents_dict = actions_par_child_
-      
+
         for parent in parents_dict[node_name]['parents']:
             parent_node = nodes_dict[parent]
             model.add_edge(parent_node, node)
@@ -1249,18 +1277,31 @@ def buildCPDs():
                 cpds_map_[node] = 0
                 continue
 
-            # If predicate only has one parent, which can only be
-            # the same predicate in the previous layer
-            if len(predicates_par_child_[node]['parents']) == 1:
-                spont_false_true = pred_probabilities_map_[node_without_time][0]
-                spont_true_false = pred_probabilities_map_[node_without_time][1]
-                cpd = dict()
-                cpd['parents'] = predicates_par_child_[node]['parents']
-                # CPD's Key is the value of parent and its Value is the probability for True
-                cpd[(True,)] = 1-spont_true_false
-                cpd[(False,)] = spont_false_true
-                cpds_map_[node] = cpd
-                continue
+            # Each node should only have one or zero parents, this elif is just a safety measure
+            elif len(predicates_par_child_[node]['parents']) == 1:
+
+                parent = next(iter(predicates_par_child_[node]['parents']))
+                # If predicate has another predicate as parent
+                if isPredicate(parent):
+                    spont_false_true = pred_probabilities_map_[node_without_time][0]
+                    spont_true_false = pred_probabilities_map_[node_without_time][1]
+                    cpd = dict()
+                    cpd['parents'] = predicates_par_child_[node]['parents']
+                    # CPD's Key is the value of parent and its Value is the probability for True
+                    cpd[(True,)] = 1-spont_true_false
+                    cpd[(False,)] = spont_false_true
+                    cpds_map_[node] = cpd
+                    continue
+                
+                # If predicate has an action has parent
+                else:
+                    cpd = dict()
+                    action_without_time = removeStartEndFromName(parent).split('$')[0]
+                    predicate_without_time_and_params = node.split('%')[0].split('#')[0]
+                    rospy.loginfo('>>> Actions probabilities map: \n' + str(action_probabilities_map_))
+                    cpd[(True,)] = action_probabilities_map_[action_without_time][1][predicate_without_time_and_params]
+                    cpd['parents'] = set(parent)
+                    cpds_map_[node] = cpd
 
             '''
             # If predicate has more than one parent, then it has two:
@@ -1556,15 +1597,20 @@ def setupEverything():
     createActions(operators)
 
 
+def buildCPDsForPomegranate():
+
+
+
+
 ######### MAIN FUNCTION #########
 ## Builds, prunes and writes network to file
 def calculateProbability(original_plan):
     # rospy.loginfo("Received plan: " + str(original_plan))
     global all_nodes_
 
-    setupEverything()
+    # setupEverything()
 
-    createGroundedActions(original_plan)
+    # createGroundedActions(original_plan)
 
     # print("Initial state: " + str(initial_state_))
     # print("goal_: " + str(goal_))
@@ -1575,6 +1621,7 @@ def calculateProbability(original_plan):
     # Get plan as a list of ActionStart and ActionEnd's instances
     plan = convertPlanToActionStart_End(original_plan)
 
+    predicates_set = set()
     for grounded_action in GroundedAction.actionsList:
         # Adds the predicates in the set grounded_action.getPredicates() to predicates_set
         # Meaning, it adds all needed predicates to predicates_set
@@ -1589,7 +1636,7 @@ def calculateProbability(original_plan):
         action_name = action.name + '$' + str(layer_number_)
 
         all_nodes_.append(action_name)
-        addActionEdges(action, action_name, predicates_par_child_, actions_par_child_, layer_number_)
+        addActionEdges(action, action_name)
         
         # if isinstance(action, ActionStart):
         #     cpd = DiscreteDistribution({'T': success_prob, 'F': 1-success_prob})
@@ -1605,19 +1652,19 @@ def calculateProbability(original_plan):
     # rospy.loginfo('Predicates parents')
     # rospy.loginfo(getPredicateParentsAsString(predicates_par_child_))
 
-    buildCPDs(actions_par_child_, predicates_par_child_)
+    buildCPDsForPomegranate()
 
     # rospy.loginfo('PRE-PRUNNING')
     # rospy.loginfo(getPredicateParentsAsString(predicates_par_child_))
 
     # print('>>> All nodes: \n' + str(all_nodes_))
-    pruneNetwork(actions_par_child_, predicates_par_child_)
+    pruneNetwork()
 
     # calculateSuccessProbability(actions_par_child_, predicates_par_child_, max_layer_number)
 
     # model = BayesianNetwork()
-    # buildNetworkInModel(model, actions_par_child_, predicates_par_child_)
-    # model.bake()
+    buildNetworkInModel(model)
+    model.bake()
     # model.plot()
     # plt.show()
 
@@ -1633,13 +1680,13 @@ def calculateProbability(original_plan):
     # # else:
     # #     print('!!! Network has cycles !!! ')
     # print('Writing predicates to file')
-    writePredicatesToFile()
+    # writePredicatesToFile()
     # print('Writing parents to file')
-    writePredicateParentsToFile(predicates_par_child_)
+    # writePredicateParentsToFile(predicates_par_child_)
     # print('Writing actions_par_child_ to file')
-    writeActionsToFile(actions_par_child_)
+    # writeActionsToFile(actions_par_child_)
     # print('Writing nodes and CPDs to file')
-    writeNodesAndCPDsToFile()
+    # writeNodesAndCPDsToFile()
     
     # size = len(plan)
     # distr_dict = dict()
@@ -1661,19 +1708,28 @@ def calculateProbability(original_plan):
     # print('\n\n>>> goal_ distribution: ')
     # print(goal_distr)
     # TODO: It's just returning a number, it's not calculating the probability yet
-    return 0.001
+    # return 0.001
 
 
 def getTopPredicateParent(node):
-    # This is just so it passes the first check of isPredicate
-    # TODO: Check this try
+    # rospy.loginfo('\t\t\t\t\t*** Inside getTopPredicateParent ***')
     parent = node
+
+    return_previous_parent = False
     while isPredicate(parent):
         previous_parent = parent
         parents_set = predicates_par_child_[parent]['parents']
+        # rospy.loginfo('\t\t\t\t\t Parent: ' + parent)
+        # rospy.loginfo('\t\t\t\t\t Parents set: ' + str(parents_set))
         if len(parents_set) > 0:
-            parent = parents_set.pop()
+            parent = next(iter(parents_set))
+            if not isPredicate(parent):
+                return_previous_parent = True
         else:
+            return_previous_parent = True
+
+        if return_previous_parent:
+            # rospy.loginfo('\t\t\t\t\t*** Exiting getTopPredicateParent: ' + previous_parent + ' ***')
             return previous_parent
 
 
@@ -1683,73 +1739,105 @@ def getPredicateChild(node):
                 return child
 
 
-def calculateColumn(bottom_node, true_value):
-    rospy.loginfo('>>> Inside calculateColumn <<<')
-    top_parent = getTopPredicateParent(bottom_node)
-    rospy.loginfo('Top parent: ' + top_parent)
+def predicateHasActionAsChild(node):
+    for child in predicates_par_child_[node]['children']:
+        if not isPredicate(child):
+            return True
+    return False
 
-    if len(predicates_par_child_[top_parent]['parents']) == 0:
-        prob = cpds_map_[top_parent]
-    else:
-        prob = cpds_map_[top_parent][(True,)]
+
+def calculateColumn(bottom_node, true_value):
+    rospy.loginfo('\t\t\t\t>>> Inside calculateColumn <<<')
+    rospy.loginfo('\t\t\t\tBottom Node: ' + bottom_node)
+    rospy.loginfo('\t\t\t\tNode value: ' + str(true_value))
+
+    top_parent = getTopPredicateParent(bottom_node)
+
+    prob = cpds_map_[top_parent]
+    if isinstance(prob, dict):
+        prob = prob[(True,)]
+
+    rospy.loginfo('\t\t\t\tTop parent: ' + top_parent)
+    rospy.loginfo('\t\t\t\tTop Parent Probability: ' + str(prob))
 
     node = top_parent
 
+    rospy.loginfo('\t\t\t\tStarting to calculate from top node to bottom node')
+
+    previous_parent_is_true = False
+
     while not node == bottom_node:
         node = getPredicateChild(node)
-        spont_true_false = cpds_map_[node][(True,)]
+        spont_true_false = 1-cpds_map_[node][(True,)]
         spont_false_true = cpds_map_[node][(False,)]
-        
-        prob = prob*(1-spont_true_false) + (1-prob)*spont_false_true
+
+        rospy.loginfo('\t\t\t\t\tNode: ' + node)
+        rospy.loginfo('\t\t\t\t\tSpont_true_false: ' + str(spont_true_false))
+        rospy.loginfo('\t\t\t\t\tSpont_false_true: ' + str(spont_false_true))
+        rospy.loginfo('\t\t\t\t\tNode CPD: ' + str(cpds_map_[node]))
+
+        if previous_parent_is_true:
+            rospy.loginfo('\t\t\t\t\tFactor Probability: ' + str(prob*(1-spont_true_false)))
+            prob = prob*(1-spont_true_false)
+        else:
+            rospy.loginfo('\t\t\t\t\tFactor Probability: ' + str(prob*(1-spont_true_false) + (1-prob)*spont_false_true))
+            prob = prob*(1-spont_true_false) + (1-prob)*spont_false_true
+
+        rospy.loginfo('\t\t\t\t\tAccumulated Probability: ' + str(prob*(1-spont_true_false) + (1-prob)*spont_false_true))
+
+        if predicateHasActionAsChild(node):
+            previous_parent_is_true = True
+        else:
+            previous_parent_is_true = False
+
 
     if true_value:
         returned_prob = prob
     else:
         returned_prob = 1-prob
-    
-    rospy.loginfo('>>> Exiting calculateColumn with prob: ' + str(returned_prob) + ' <<<')
+
+    rospy.loginfo('\t\t\t\t>>> Exiting calculateColumn with prob: ' + str(returned_prob) + ' <<<')
     return returned_prob
 
 
 def calculateActionsProbability(prob, action_name):
 
-    rospy.loginfo('*** Inside calculateActionsProbability ***')
+    rospy.loginfo('\t*** Inside calculateActionsProbability ***')
 
     number_parents_action = len(cpds_map_[action_name]['parents'])
-    rospy.loginfo('Number of parents of action: ' + str(number_parents_action))
+    rospy.loginfo('\tNumber of parents of action: ' + str(number_parents_action))
     all_true = (True,)*number_parents_action
-    rospy.loginfo('All true: ' + str(all_true))
+    rospy.loginfo('\tAll true: ' + str(all_true))
     action_success_prob = cpds_map_[action_name][all_true]
-    rospy.loginfo('Action success probability: ' + str(action_success_prob))
+    rospy.loginfo('\tAction success probability: ' + str(action_success_prob))
     # rospy.loginfo('Action CPD: ' + str(cpds_map_[action_name]))
     prob = prob*action_success_prob
-    rospy.loginfo('Probability after action: ' + str(prob))
+    rospy.loginfo('\tProbability after action: ' + str(prob))
 
-    rospy.loginfo('Checking positive parents')
+    rospy.loginfo('\tChecking positive parents')
     for parent in actions_par_child_[action_name]['pos_parents']:
-        rospy.loginfo('Parent: ' + parent)
+        rospy.loginfo('\t\tParent: ' + parent)
         if isPredicate(parent):
-            rospy.loginfo('Calculating column of positive parent')
+            rospy.loginfo('\t\t\tCalculating column of positive parent')
             prob = prob*calculateColumn(parent, True)
-            rospy.loginfo('Probability after: ' + str(prob))
+            rospy.loginfo('\t\t\tProbability after: ' + str(prob))
     
-    rospy.loginfo('Checking negative parents')
+    rospy.loginfo('\tChecking negative parents')
     for parent in actions_par_child_[action_name]['neg_parents']:
-        rospy.loginfo('Parent: ' + parent)
+        rospy.loginfo('\t\tParent: ' + parent)
         if isPredicate(parent):
-            rospy.loginfo('Calculating column of negative parent')
+            rospy.loginfo('\t\t\tCalculating column of negative parent')
             prob = prob*calculateColumn(parent, False)
-            rospy.loginfo('Probability after: ' + str(prob))
+            rospy.loginfo('\t\t\tProbability after: ' + str(prob))
     
-    rospy.loginfo('*** Exiting calculateActionsProbability with probability ' + str(prob) + ' ***')
+    rospy.loginfo('\t*** Exiting calculateActionsProbability with probability ' + str(prob) + ' ***')
     return prob
 
 
 def func(received_action_name, prob):
     global layer_number_
 
-    rospy.loginfo('Setting up')
-    setupEverything()
+    rospy.loginfo('Action: ' + received_action_name)
 
     rospy.loginfo('Creating grounded action')
     grounded_action = createGroundedAction(received_action_name)
@@ -1770,23 +1858,36 @@ def func(received_action_name, prob):
     rospy.loginfo('>>> Adding action edges')
     addActionEdges(action, action_name)
 
+    # rospy.loginfo('All nodes: \n' + str(all_nodes_) + '\n')
+
     rospy.loginfo('Building CPDs')
     buildCPDs()
+    buildCPDsForPomegranate()
 
     rospy.loginfo('Calculating probability')
     prob = calculateActionsProbability(prob, action_name)
 
     layer_number_ = layer_number_ + 1
 
-    rospy.loginfo('Returning probability: ' + str(prob))
+    rospy.loginfo('@@@ Returning probability: ' + str(prob) + ' @@@\n')
     return prob
 
 
 if __name__ == "__main__":
-    plan = ['navigate_start#mbot#wp1#wp2#door1#door2', 'navigate_end#mbot#wp1#wp2#door1#door2', 'open_door_start#mbot#wp2#door2', 'open_door_end#mbot#wp2#door2', 'navigate_start#mbot#wp2#wp3#door2#door3', 'navigate_end#mbot#wp2#wp3#door2#door3']
-    # calculateProbability(plan)
+    # plan = ['navigate_start#mbot#wp1#wp2#door1#door2', 'navigate_end#mbot#wp1#wp2#door1#door2', 'open_door_start#mbot#wp2#door2']
+    # plan = ['navigate_start#mbot#wp1#wp2#door1#door2', 'navigate_end#mbot#wp1#wp2#door1#door2', 'open_door_start#mbot#wp2#door2', 'open_door_end#mbot#wp2#door2']
+    plan = ['navigate_start#mbot#wp1#wp2#door1#door2', 'navigate_end#mbot#wp1#wp2#door1#door2', 'open_door_start#mbot#wp2#door2', 'open_door_end#mbot#wp2#door2', 'navigate_start#mbot#wp2#wp3#door2#door3', 'navigate_end#mbot#wp2#wp3#door2#door3']    
+    rospy.loginfo('Setting up')
     setupEverything()
     prob = 1
     for action in plan:
-        prob = prob*func(action, prob)
-        print('>>> Probability: ' + str(prob))
+        prob = func(action, prob)
+
+    predicates_set = set()
+    predicates_par_child_=dict()
+    actions_par_child_= dict()
+    all_nodes_ = list()
+    calculateProbability(plan)
+
+    writePredicatesToFile()
+    writePredicateParentsToFile()

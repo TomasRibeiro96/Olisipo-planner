@@ -8,6 +8,7 @@
     
     <arg name="category" default="skip_door" />
     <arg name="domain" default="domain_skip_door" />
+    <!-- <arg name="problem" default="problem_r1_w2" /> -->
     <arg name="problem" default="problem_r1_w3" />
     <!-- <arg name="problem" default="problem_r1_w4" /> -->
     <!-- <arg name="problem" default="problem_r1_w5" /> -->
