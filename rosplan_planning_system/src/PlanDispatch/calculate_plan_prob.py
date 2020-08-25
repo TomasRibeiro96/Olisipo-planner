@@ -30,11 +30,11 @@ predicates_par_child_ = dict()
 # same for actions_par_child_
 actions_par_child_ = dict()
 layer_number_ = 0
+nodes_model_ = dict()
+# Dictionary that connects the node to the true probability of its column above
+prob_node_column_ = dict()
 
 rospy.init_node('bayesian_network_calculator')
-
-# TODO: Prunning could be done at the same time as CPDs are defined
-#       Didn't do it so the code is clearer
 
 
 class Action:
@@ -448,7 +448,6 @@ class ActionStart:
         #     if k[:8] == 'at_start':
         #         self.effects[k[9:]] = grounded_action.effects[k]
 
-        rospy.loginfo(grounded_action.conditions)
 
         self.pos_conditions = dict()
         self.neg_conditions = dict()
@@ -744,6 +743,13 @@ def isPredicate(node_name):
     return len(node_name.split('%')) > 1
 
 
+def isActionEnd(node):
+    if node.split('#')[0][-3:] == 'end':
+        return True
+    else:
+        return False
+
+
 ######### SIMPLIFY NAMES #########
 def removeStartEndFromName(name):
     ''' Removes time from action name, works with or without parameters in name '''
@@ -859,7 +865,42 @@ def writeNodesAndCPDsToFile():
     file.write('NODES AND CPDs:\n')
     for node in all_nodes_:
         file.write('>>> Node: ' + node + '\n')
-        file.write(str(cpds_map_[node]) + '\n')
+        if isinstance(cpds_map_[node], int):
+            file.write(str(cpds_map_[node]))
+        else:
+            for k, v in cpds_map_[node].items():
+                file.write(str(k) + ': ' + str(v) + '\n')
+        file.write('\n')
+    file.close()
+
+
+def writeNodesAndCPDsToFileForBayesnet():
+    file = open('bayesnetinference/nodes_cpds.bn', 'w')
+    # file.write('NODES AND CPDs:\n')
+    for node in all_nodes_:
+        if isinstance(cpds_map_[node], int):
+            file.write('P(' + node + ') = ' + str(float(cpds_map_[node])) + '\n\n')
+        else:
+            if isinstance(cpds_map_[node]['parents'], set):
+                for parent in cpds_map_[node]['parents']:
+                    file.write(parent + ' ')
+            else:
+                file.write(cpds_map_[node]['parents'] + ' ')
+            file.write('| ' + node + '\n')
+            number_parents = len(cpds_map_[node]['parents'])
+            separation_line = '--'*number_parents + '|-----\n'
+            file.write(separation_line)
+            for line in cpds_map_[node].keys():
+                if isinstance(line, tuple):
+                    for elem in line:
+                        if elem == True:
+                            file.write('t ')
+                        else:
+                            file.write('f ')
+                    file.write('| ' + str(float(cpds_map_[node][line])) + '\n')
+            file.write('\n')
+        # file.write('>>> Node: ' + node + '\n')
+        # file.write(str(cpds_map_[node]) + '\n')
     file.close()
 
 
@@ -970,8 +1011,8 @@ def addPredicate(predicate, layer_numb):
     predicates_par_child_[pred_name]['parents'] = set()
     predicates_par_child_[pred_name]['children'] = set()
 
-    rospy.loginfo('Adding predicate: ' + pred_name)
-    rospy.loginfo('Layer number: ' + str(layer_numb))
+    # rospy.loginfo('Adding predicate: ' + pred_name)
+    # rospy.loginfo('Layer number: ' + str(layer_numb))
 
     # Add predicate in previous layers
 
@@ -989,12 +1030,12 @@ def addPredicate(predicate, layer_numb):
 
     if not layer_numb == 0:
         prev_pred_name = predicate + '%' + str(layer_numb-1)
-        rospy.loginfo('Previous predicate: ' + str(prev_pred_name))
+        # rospy.loginfo('Previous predicate: ' + str(prev_pred_name))
         if prev_pred_name not in all_nodes_:
-            rospy.loginfo('Adding previous predicate to all_nodes_')
+            # rospy.loginfo('Adding previous predicate to all_nodes_')
             addPredicate(predicate, layer_numb-1)
         
-        rospy.loginfo('Connecting to previous predicate')
+        # rospy.loginfo('Connecting to previous predicate')
         predicates_par_child_[pred_name]['parents'].add(prev_pred_name)
         predicates_par_child_[prev_pred_name]['children'].add(pred_name)
 
@@ -1239,21 +1280,22 @@ def pruneNetwork():
 
 ######### BUILD NETWORK IN MODEL #########
 def buildNetworkInModel(model):
+    global nodes_model_
     nodes_dict = dict()
     for node_name in all_nodes_:        
-        cpd = cpds_map_[node_name]
+        cpd = cpds_pomegranate_[node_name]
         node = Node(cpd, name=node_name)
-        nodes_dict[node_name] = node
         model.add_node(node)
+        nodes_model_[node_name] = node
 
         if isPredicate(node_name):
-            parents_dict = predicates_par_child_
+            for parent in predicates_par_child_[node_name]['parents']:
+                model.add_edge(nodes_model_[parent], node)
         else:
-            parents_dict = actions_par_child_
-
-        for parent in parents_dict[node_name]['parents']:
-            parent_node = nodes_dict[parent]
-            model.add_edge(parent_node, node)
+            for parent in actions_par_child_[node_name]['pos_parents']:
+                model.add_edge(nodes_model_[parent], node)
+            for parent in actions_par_child_[node_name]['neg_parents']:
+                model.add_edge(nodes_model_[parent], node)
 
 
 ######### BUILD CPDs #########
@@ -1298,9 +1340,10 @@ def buildCPDs():
                     cpd = dict()
                     action_without_time = removeStartEndFromName(parent).split('$')[0]
                     predicate_without_time_and_params = node.split('%')[0].split('#')[0]
-                    rospy.loginfo('>>> Actions probabilities map: \n' + str(action_probabilities_map_))
                     cpd[(True,)] = action_probabilities_map_[action_without_time][1][predicate_without_time_and_params]
-                    cpd['parents'] = set(parent)
+                    # TODO: This False is maybe not necessary, just added it so BayesNet calculates prob
+                    cpd[(False,)] = 0
+                    cpd['parents'] = parent
                     cpds_map_[node] = cpd
 
             '''
@@ -1344,9 +1387,7 @@ def buildCPDs():
         # If node is an action
         else:
 
-            is_at_end_action = False
-            if node.split('#')[0][-3:] == 'end':
-                is_at_end_action = True
+            is_at_end_action = isActionEnd(node)
 
             number_of_pos_precond = len(actions_par_child_[node]['pos_parents'])
             number_of_neg_precond = len(actions_par_child_[node]['neg_parents'])
@@ -1391,6 +1432,143 @@ def buildCPDs():
             cpd['parents'] = actions_par_child_[node]['pos_parents'].union(actions_par_child_[node]['neg_parents'])
 
             cpds_map_[node] = cpd
+
+
+def buildCPDsForPomegranate():
+
+    for node in all_nodes_:
+
+        if isPredicate(node):
+
+            node_without_time = node.split('%')[0]
+
+            # If node is in first layer
+            if int(node.split('%')[1]) == 0:
+                # If it is in initial state then node is true
+                if node.split('%')[0] in initial_state_:
+                    cpds_pomegranate_[node] = DiscreteDistribution({'T': 1, 'F': 0})
+                    continue
+                # Else it is false
+                cpds_pomegranate_[node] = DiscreteDistribution({'T': 0, 'F': 1})
+                continue
+
+            # Each node should only have one or zero parents, this elif is just a safety measure
+            elif len(predicates_par_child_[node]['parents']) == 1:
+
+                parent = next(iter(predicates_par_child_[node]['parents']))
+                # If predicate has another predicate as parent
+                if isPredicate(parent):
+                    spont_false_true = pred_probabilities_map_[node_without_time][0]
+                    spont_true_false = pred_probabilities_map_[node_without_time][1]
+                    cpds_pomegranate_[node] = ConditionalProbabilityTable(
+                        [['T', 'T', 1-spont_true_false],
+                         ['T', 'F', spont_true_false],
+                         ['F', 'T', spont_false_true],
+                         ['F', 'F', 1-spont_false_true]], [cpds_pomegranate_[parent]])
+                    continue
+                
+                # If predicate has an action has parent
+                else:
+                    cpd = dict()
+                    parent = next(iter(predicates_par_child_[node]['parents']))
+                    action_without_time = removeStartEndFromName(parent).split('$')[0]
+                    predicate_without_time_and_params = node.split('%')[0].split('#')[0]
+                    effect_success = action_probabilities_map_[action_without_time][1][predicate_without_time_and_params]
+                    cpd['parents'] = set(parent)
+                    cpds_map_[node] = cpd
+                    cpds_pomegranate_[node] = ConditionalProbabilityTable(
+                        [['T', 'T', effect_success],
+                         ['T', 'F', 1-effect_success],
+                         ['F', 'T', 0],
+                         ['F', 'F', 1]], [cpds_pomegranate_[parent]])
+
+        # If node is an action
+        else:
+
+            is_at_end_action = False
+            if node.split('#')[0][-3:] == 'end':
+                is_at_end_action = True
+
+            number_of_pos_precond = len(actions_par_child_[node]['pos_parents'])
+            number_of_neg_precond = len(actions_par_child_[node]['neg_parents'])
+            number_of_precond = number_of_pos_precond + number_of_neg_precond
+
+            cpd_lines = list(itertools.product(['F', 'T'], repeat=number_of_precond+1))
+
+            action_name_without_time = removeStartEndFromName(node).split('$')[0]
+            success_prob = action_probabilities_map_[action_name_without_time][0]
+
+            for i in range(len(cpd_lines)):
+                line = list(cpd_lines[i])
+                # If action has both positive and negative preconditions
+                if not number_of_neg_precond == 0 and not number_of_pos_precond == 0:
+                    if all([elem == 'T' for elem in line[:number_of_pos_precond]]) and all([elem == 'F' for elem in line[number_of_pos_precond:-1]]):
+                        if is_at_end_action:
+                            if line[-1] == 'T':
+                                line.append(1)
+                            else:
+                                line.append(0)
+                        else:
+                            if line[-1] == 'T':
+                                line.append(success_prob)
+                            else:
+                                line.append(1-success_prob)
+                    else:
+                        if line[-1] == 'T':
+                            line.append(0)
+                        else:
+                            line.append(1)
+                    cpd_lines[i] = line
+
+                # If action only has positive preconditions
+                elif number_of_neg_precond == 0:
+                    if all([elem == 'T' for elem in line[:-1]]):
+                        if is_at_end_action:
+                            if line[-1] == 'T':
+                                line.append(1)
+                            else:
+                                line.append(0)
+                        else:
+                            if line[-1] == 'T':
+                                line.append(success_prob)
+                            else:
+                                line.append(1-success_prob)
+                    else:
+                        if line[-1] == 'T':
+                            line.append(0)
+                        else:
+                            line.append(1)
+                    
+                    cpd_lines[i] = line
+
+                # If action only has negative preconditions
+                else:
+                    if all([elem == 'F' for elem in line[:-1]]):
+                        if is_at_end_action:
+                            if line[-1] == 'T':
+                                line.append(1)
+                            else:
+                                line.append(0)
+                        else:
+                            if line[-1] == 'T':
+                                line.append(success_prob)
+                            else:
+                                line.append(1-success_prob)
+                    else:
+                        if line[-1] == 'T':
+                            line.append(0)
+                        else:
+                            line.append(1)
+
+                    cpd_lines[i] = line
+
+            parents = actions_par_child_[node]['pos_parents'].union(actions_par_child_[node]['neg_parents'])
+            parents_cpds = list()
+
+            for parent in parents:
+                parents_cpds.append(cpds_pomegranate_[parent])
+
+            cpds_pomegranate_[node] = ConditionalProbabilityTable(cpd_lines, parents_cpds)
 
 
 ######### PARSE PLAN #########
@@ -1597,11 +1775,6 @@ def setupEverything():
     createActions(operators)
 
 
-def buildCPDsForPomegranate():
-
-
-
-
 ######### MAIN FUNCTION #########
 ## Builds, prunes and writes network to file
 def calculateProbability(original_plan):
@@ -1716,11 +1889,12 @@ def getTopPredicateParent(node):
     parent = node
 
     return_previous_parent = False
-    while isPredicate(parent):
+    while True:
+        if parent in prob_node_column_.keys():
+            return parent
         previous_parent = parent
         parents_set = predicates_par_child_[parent]['parents']
-        # rospy.loginfo('\t\t\t\t\t Parent: ' + parent)
-        # rospy.loginfo('\t\t\t\t\t Parents set: ' + str(parents_set))
+        # If node has parents then keep searching up, unless the parent is an action
         if len(parents_set) > 0:
             parent = next(iter(parents_set))
             if not isPredicate(parent):
@@ -1747,15 +1921,21 @@ def predicateHasActionAsChild(node):
 
 
 def calculateColumn(bottom_node, true_value):
+    global prob_node_column_
+
     rospy.loginfo('\t\t\t\t>>> Inside calculateColumn <<<')
     rospy.loginfo('\t\t\t\tBottom Node: ' + bottom_node)
     rospy.loginfo('\t\t\t\tNode value: ' + str(true_value))
 
     top_parent = getTopPredicateParent(bottom_node)
 
-    prob = cpds_map_[top_parent]
-    if isinstance(prob, dict):
-        prob = prob[(True,)]
+    if top_parent in prob_node_column_.keys():
+        prob = prob_node_column_[top_parent]
+    else:
+        prob = cpds_map_[top_parent]
+        if isinstance(prob, dict):
+            prob = prob[(True,)]
+            prob_node_column_[top_parent] = prob
 
     rospy.loginfo('\t\t\t\tTop parent: ' + top_parent)
     rospy.loginfo('\t\t\t\tTop Parent Probability: ' + str(prob))
@@ -1768,6 +1948,12 @@ def calculateColumn(bottom_node, true_value):
 
     while not node == bottom_node:
         node = getPredicateChild(node)
+
+        if predicateHasActionAsChild(node):
+            action_as_child = True
+        else:
+            action_as_child = False
+
         spont_true_false = 1-cpds_map_[node][(True,)]
         spont_false_true = cpds_map_[node][(False,)]
 
@@ -1776,19 +1962,16 @@ def calculateColumn(bottom_node, true_value):
         rospy.loginfo('\t\t\t\t\tSpont_false_true: ' + str(spont_false_true))
         rospy.loginfo('\t\t\t\t\tNode CPD: ' + str(cpds_map_[node]))
 
-        if previous_parent_is_true:
-            rospy.loginfo('\t\t\t\t\tFactor Probability: ' + str(prob*(1-spont_true_false)))
+        if action_as_child:
+            rospy.loginfo('\t\t\t\t\tFactor Probability (only true): ' + str(prob*(1-spont_true_false)))
             prob = prob*(1-spont_true_false)
         else:
-            rospy.loginfo('\t\t\t\t\tFactor Probability: ' + str(prob*(1-spont_true_false) + (1-prob)*spont_false_true))
+            rospy.loginfo('\t\t\t\t\tFactor Probability (true and false): ' + str(prob*(1-spont_true_false) + (1-prob)*spont_false_true))
             prob = prob*(1-spont_true_false) + (1-prob)*spont_false_true
 
-        rospy.loginfo('\t\t\t\t\tAccumulated Probability: ' + str(prob*(1-spont_true_false) + (1-prob)*spont_false_true))
+        rospy.loginfo('\t\t\t\t\tAccumulated Probability: ' + str(prob*(1-spont_true_false) + (1-prob)*spont_false_true))        
 
-        if predicateHasActionAsChild(node):
-            previous_parent_is_true = True
-        else:
-            previous_parent_is_true = False
+        prob_node_column_[node] = prob
 
 
     if true_value:
@@ -1796,6 +1979,7 @@ def calculateColumn(bottom_node, true_value):
     else:
         returned_prob = 1-prob
 
+    prob_node_column_[bottom_node] = prob
     rospy.loginfo('\t\t\t\t>>> Exiting calculateColumn with prob: ' + str(returned_prob) + ' <<<')
     return returned_prob
 
@@ -1807,7 +1991,7 @@ def calculateActionsProbability(prob, action_name):
     number_parents_action = len(cpds_map_[action_name]['parents'])
     rospy.loginfo('\tNumber of parents of action: ' + str(number_parents_action))
     all_true = (True,)*number_parents_action
-    rospy.loginfo('\tAll true: ' + str(all_true))
+    # rospy.loginfo('\tAll true: ' + str(all_true))
     action_success_prob = cpds_map_[action_name][all_true]
     rospy.loginfo('\tAction success probability: ' + str(action_success_prob))
     # rospy.loginfo('Action CPD: ' + str(cpds_map_[action_name]))
@@ -1834,6 +2018,24 @@ def calculateActionsProbability(prob, action_name):
     return prob
 
 
+def orderAllNodes(plan):
+    global all_nodes_
+    ordered_nodes = list()
+
+    number_actions = len(plan)
+
+    for i in range(number_actions+1):
+        for node in all_nodes_:
+            if len(node.split('%')) > 1:
+                if int(node.split('%')[1]) == i:
+                    ordered_nodes.append(node)
+            elif len(node.split('$')) > 1:
+                if int(node.split('$')[1]) == i:
+                    ordered_nodes.append(node)
+
+    all_nodes_ = ordered_nodes
+
+
 def func(received_action_name, prob):
     global layer_number_
 
@@ -1846,7 +2048,6 @@ def func(received_action_name, prob):
 
     rospy.loginfo('Getting condition predicates')
     predicates_set = action.getConditionPredicates()
-    rospy.loginfo('>>> Predicates set: ' + str(predicates_set))
 
     rospy.loginfo('Adding predicate layer')
     addPredicateLayer(predicates_set)
@@ -1855,14 +2056,11 @@ def func(received_action_name, prob):
 
     all_nodes_.append(action_name)
 
-    rospy.loginfo('>>> Adding action edges')
+    rospy.loginfo('Adding action edges')
     addActionEdges(action, action_name)
-
-    # rospy.loginfo('All nodes: \n' + str(all_nodes_) + '\n')
 
     rospy.loginfo('Building CPDs')
     buildCPDs()
-    buildCPDsForPomegranate()
 
     rospy.loginfo('Calculating probability')
     prob = calculateActionsProbability(prob, action_name)
@@ -1874,20 +2072,39 @@ def func(received_action_name, prob):
 
 
 if __name__ == "__main__":
-    # plan = ['navigate_start#mbot#wp1#wp2#door1#door2', 'navigate_end#mbot#wp1#wp2#door1#door2', 'open_door_start#mbot#wp2#door2']
-    # plan = ['navigate_start#mbot#wp1#wp2#door1#door2', 'navigate_end#mbot#wp1#wp2#door1#door2', 'open_door_start#mbot#wp2#door2', 'open_door_end#mbot#wp2#door2']
     plan = ['navigate_start#mbot#wp1#wp2#door1#door2', 'navigate_end#mbot#wp1#wp2#door1#door2', 'open_door_start#mbot#wp2#door2', 'open_door_end#mbot#wp2#door2', 'navigate_start#mbot#wp2#wp3#door2#door3', 'navigate_end#mbot#wp2#wp3#door2#door3']    
     rospy.loginfo('Setting up')
     setupEverything()
     prob = 1
+    returned_prob = list()
     for action in plan:
         prob = func(action, prob)
+        returned_prob.append(prob)
 
-    predicates_set = set()
-    predicates_par_child_=dict()
-    actions_par_child_= dict()
-    all_nodes_ = list()
-    calculateProbability(plan)
+    orderAllNodes(plan)
+    writeNodesAndCPDsToFile()
+
+    model = BayesianNetwork()
+    buildCPDsForPomegranate()
+    buildNetworkInModel(model)
+
+    model.bake()
+
+    marginal = model.marginal()
+
+    expected_prob = [0.8, 0.6434856, 0.400717, 0.322319]
+
+    for i in range(len(plan)):
+        action = plan[i]+'$'+str(i+1)
+        index_action = all_nodes_.index(action)
+
+        rospy.loginfo('>>> Action: ' + action)
+        rospy.loginfo('Code probability:        ' + str(round(returned_prob[i], 6)))
+        pomegranate_prob = marginal[index_action].parameters[0]['T']
+        rospy.loginfo('Pomegranate probability: ' + str(round(pomegranate_prob, 6)))
+        if i < len(expected_prob):
+            rospy.loginfo('Expected probability:    ' + str(round(expected_prob[i], 6)))
+        print(' ')
 
     writePredicatesToFile()
     writePredicateParentsToFile()
