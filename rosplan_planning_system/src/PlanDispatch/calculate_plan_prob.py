@@ -1442,30 +1442,6 @@ def orderAllNodes(plan):
     all_nodes_ = ordered_nodes
 
 
-def buildBayesNetAIMA():
-    bayes_net_list = list()
-    for node in all_nodes_:
-        tup = tuple()
-        tup = tup + (node,)
-        parents_str = ''
-        if isPredicate(node):
-            for parent in predicates_par_child_[node]['parents']:
-                parents_str = parents_str + parent + ' '
-        else:
-            for parent in actions_par_child_[node]['pos_parents']:
-                parents_str = parents_str + parent + ' '
-            for parent in actions_par_child_[node]['neg_parents']:
-                parents_str = parents_str + parent + ' '
-        tup = tup + (parents_str,)
-        cpd = cpds_map_[node]
-        if isinstance(cpd, dict):
-            cpd.pop('parents')
-        tup = tup + (cpd,)
-        bayes_net_list.append(tup)
-
-    return probability.BayesNet(bayes_net_list)
-
-
 def writeBayesNetAIMAToFile():
     file = open('bayesNetAIMA.txt', 'w')
     for node in all_nodes_:
