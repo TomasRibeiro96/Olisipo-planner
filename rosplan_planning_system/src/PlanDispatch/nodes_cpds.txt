@@ -1,488 +1,257 @@
 NODES AND CPDs:
->>> Node: door_is_open#door1%0
-{
-    "frozen" :false,
-    "dtype" :"str",
-    "class" :"Distribution",
-    "parameters" :[
-        {
-            "T" :1,
-            "F" :0
-        }
-    ],
-    "name" :"DiscreteDistribution"
-}
->>> Node: door_at#door3#wp3%0
-{
-    "frozen" :false,
-    "dtype" :"str",
-    "class" :"Distribution",
-    "parameters" :[
-        {
-            "T" :1,
-            "F" :0
-        }
-    ],
-    "name" :"DiscreteDistribution"
-}
->>> Node: door_at#door1#wp1%0
-{
-    "frozen" :false,
-    "dtype" :"str",
-    "class" :"Distribution",
-    "parameters" :[
-        {
-            "T" :1,
-            "F" :0
-        }
-    ],
-    "name" :"DiscreteDistribution"
-}
->>> Node: connected#wp1#wp2%0
-{
-    "frozen" :false,
-    "dtype" :"str",
-    "class" :"Distribution",
-    "parameters" :[
-        {
-            "T" :1,
-            "F" :0
-        }
-    ],
-    "name" :"DiscreteDistribution"
-}
 >>> Node: robot_at#mbot#wp1%0
-{
-    "frozen" :false,
-    "dtype" :"str",
-    "class" :"Distribution",
-    "parameters" :[
-        {
-            "T" :1,
-            "F" :0
-        }
-    ],
-    "name" :"DiscreteDistribution"
-}
->>> Node: connected#wp2#wp3%0
-{
-    "frozen" :false,
-    "dtype" :"str",
-    "class" :"Distribution",
-    "parameters" :[
-        {
-            "T" :1,
-            "F" :0
-        }
-    ],
-    "name" :"DiscreteDistribution"
-}
+1
+>>> Node: door_at#door1#wp1%0
+1
+>>> Node: connected#wp1#wp2%0
+1
+>>> Node: door_is_open#door1%0
+1
 >>> Node: door_at#door2#wp2%0
-{
-    "frozen" :false,
-    "dtype" :"str",
-    "class" :"Distribution",
-    "parameters" :[
-        {
-            "T" :1,
-            "F" :0
-        }
-    ],
-    "name" :"DiscreteDistribution"
-}
+1
+>>> Node: connected#wp2#wp3%0
+1
+>>> Node: door_at#door3#wp3%0
+1
 >>> Node: navigate_start#mbot#wp1#wp2#door1#door2$1
-F	F	F	F	F	F	1.0
-F	F	F	F	F	T	0.0
-F	F	F	F	T	F	1.0
-F	F	F	F	T	T	0.0
-F	F	F	T	F	F	1.0
-F	F	F	T	F	T	0.0
-F	F	F	T	T	F	1.0
-F	F	F	T	T	T	0.0
-F	F	T	F	F	F	1.0
-F	F	T	F	F	T	0.0
-F	F	T	F	T	F	1.0
-F	F	T	F	T	T	0.0
-F	F	T	T	F	F	1.0
-F	F	T	T	F	T	0.0
-F	F	T	T	T	F	1.0
-F	F	T	T	T	T	0.0
-F	T	F	F	F	F	1.0
-F	T	F	F	F	T	0.0
-F	T	F	F	T	F	1.0
-F	T	F	F	T	T	0.0
-F	T	F	T	F	F	1.0
-F	T	F	T	F	T	0.0
-F	T	F	T	T	F	1.0
-F	T	F	T	T	T	0.0
-F	T	T	F	F	F	1.0
-F	T	T	F	F	T	0.0
-F	T	T	F	T	F	1.0
-F	T	T	F	T	T	0.0
-F	T	T	T	F	F	1.0
-F	T	T	T	F	T	0.0
-F	T	T	T	T	F	1.0
-F	T	T	T	T	T	0.0
-T	F	F	F	F	F	1.0
-T	F	F	F	F	T	0.0
-T	F	F	F	T	F	1.0
-T	F	F	F	T	T	0.0
-T	F	F	T	F	F	1.0
-T	F	F	T	F	T	0.0
-T	F	F	T	T	F	1.0
-T	F	F	T	T	T	0.0
-T	F	T	F	F	F	1.0
-T	F	T	F	F	T	0.0
-T	F	T	F	T	F	1.0
-T	F	T	F	T	T	0.0
-T	F	T	T	F	F	1.0
-T	F	T	T	F	T	0.0
-T	F	T	T	T	F	1.0
-T	F	T	T	T	T	0.0
-T	T	F	F	F	F	1.0
-T	T	F	F	F	T	0.0
-T	T	F	F	T	F	1.0
-T	T	F	F	T	T	0.0
-T	T	F	T	F	F	1.0
-T	T	F	T	F	T	0.0
-T	T	F	T	T	F	1.0
-T	T	F	T	T	T	0.0
-T	T	T	F	F	F	1.0
-T	T	T	F	F	T	0.0
-T	T	T	F	T	F	1.0
-T	T	T	F	T	T	0.0
-T	T	T	T	F	F	1.0
-T	T	T	T	F	T	0.0
-T	T	T	T	T	F	0.2
-T	T	T	T	T	T	0.8
->>> Node: door_is_open#door1%1
-F	F	1.0
-F	T	0.0
-T	F	0.0
-T	T	1.0
->>> Node: door_at#door3#wp3%1
-T	T	0.93
-T	F	0.07
-F	T	0.05
-F	F	0.95
+(True, True, True, False, False): 0
+(True, False, True, True, False): 0
+(True, True, False, True, True): 0
+(True, False, False, False, False): 0
+(False, False, False, False, True): 0
+(True, False, True, False, False): 0
+(False, False, True, True, True): 0
+(True, True, True, True, False): 0
+(False, True, False, True, True): 0
+(True, False, False, True, False): 0
+(False, False, True, False, True): 0
+(False, True, True, True, False): 0
+(False, False, True, False, False): 0
+(True, True, True, False, True): 0
+(False, True, False, False, False): 0
+(True, False, True, True, True): 0
+(True, True, False, True, False): 0
+(True, True, False, False, False): 0
+parents: set(['door_is_open#door1%0', 'connected#wp1#wp2%0', 'door_at#door2#wp2%0', 'robot_at#mbot#wp1%0', 'door_at#door1#wp1%0'])
+(True, False, True, False, True): 0
+(False, False, True, True, False): 0
+(False, True, True, False, False): 0
+(False, False, False, True, False): 0
+(True, False, False, False, True): 0
+(False, False, False, False, False): 0
+(True, True, True, True, True): 0.8
+(False, False, False, True, True): 0
+(True, False, False, True, True): 0
+(False, True, False, False, True): 0
+(False, True, True, False, True): 0
+(False, True, False, True, False): 0
+(True, True, False, False, True): 0
+(False, True, True, True, True): 0
+
+>>> Node: robot_at#mbot#wp1%1
+(False,): 0
+parents: navigate_start#mbot#wp1#wp2#door1#door2$1
+(True,): 0.9
+
 >>> Node: door_at#door1#wp1%1
-F	F	1.0
-F	T	0.0
-T	F	0.0
-T	T	1.0
->>> Node: connected#wp2#wp3%1
-T	T	0.93
-T	F	0.07
-F	T	0.05
-F	F	0.95
+(False,): 0.05
+parents: set(['door_at#door1#wp1%0'])
+(True,): 0.93
+
+>>> Node: door_is_open#door1%1
+(False,): 0.05
+parents: set(['door_is_open#door1%0'])
+(True,): 0.93
+
 >>> Node: door_at#door2#wp2%1
-F	F	1.0
-F	T	0.0
-T	F	0.0
-T	T	1.0
+(False,): 0.05
+parents: set(['door_at#door2#wp2%0'])
+(True,): 0.93
+
+>>> Node: connected#wp2#wp3%1
+(False,): 0.05
+parents: set(['connected#wp2#wp3%0'])
+(True,): 0.93
+
+>>> Node: door_at#door3#wp3%1
+(False,): 0.05
+parents: set(['door_at#door3#wp3%0'])
+(True,): 0.93
+
 >>> Node: navigate_end#mbot#wp1#wp2#door1#door2$2
-F	F	F	F	F	1.0
-F	F	F	F	T	0.0
-F	F	F	T	F	1.0
-F	F	F	T	T	0.0
-F	F	T	F	F	1.0
-F	F	T	F	T	0.0
-F	F	T	T	F	1.0
-F	F	T	T	T	0.0
-F	T	F	F	F	1.0
-F	T	F	F	T	0.0
-F	T	F	T	F	1.0
-F	T	F	T	T	0.0
-F	T	T	F	F	1.0
-F	T	T	F	T	0.0
-F	T	T	T	F	1.0
-F	T	T	T	T	0.0
-T	F	F	F	F	1.0
-T	F	F	F	T	0.0
-T	F	F	T	F	1.0
-T	F	F	T	T	0.0
-T	F	T	F	F	1.0
-T	F	T	F	T	0.0
-T	F	T	T	F	1.0
-T	F	T	T	T	0.0
-T	T	F	F	F	1.0
-T	T	F	F	T	0.0
-T	T	F	T	F	1.0
-T	T	F	T	T	0.0
-T	T	T	F	F	1.0
-T	T	T	F	T	0.0
-T	T	T	T	F	0.0
-T	T	T	T	T	1.0
+(True, False, True, True): 0
+(True, True, False, True): 0
+(True, False, False, False): 0
+(False, True, True, False): 0
+(True, False, True, False): 0
+(False, False, False, True): 0
+(False, False, True, True): 0
+(True, False, False, True): 0
+(False, True, False, False): 0
+(True, True, True, True): 1
+(False, False, False, False): 0
+parents: set(['door_is_open#door1%1', 'door_at#door2#wp2%1', 'navigate_start#mbot#wp1#wp2#door1#door2$1', 'door_at#door1#wp1%1'])
+(False, False, True, False): 0
+(False, True, False, True): 0
+(True, True, True, False): 0
+(False, True, True, True): 0
+(True, True, False, False): 0
+
 >>> Node: robot_at#mbot#wp2%2
-F	F	1.0
-F	T	0.0
-T	F	0.0
-T	T	1.0
->>> Node: door_at#door3#wp3%2
-T	T	0.93
-T	F	0.07
-F	T	0.05
-F	F	0.95
->>> Node: connected#wp2#wp3%2
-T	T	0.93
-T	F	0.07
-F	T	0.05
-F	F	0.95
+(False,): 0
+parents: navigate_end#mbot#wp1#wp2#door1#door2$2
+(True,): 0.9
+
 >>> Node: door_at#door2#wp2%2
-F	F	1.0
-F	T	0.0
-T	F	0.0
-T	T	1.0
+(False,): 0.05
+parents: set(['door_at#door2#wp2%1'])
+(True,): 0.93
+
+>>> Node: connected#wp2#wp3%2
+(False,): 0.05
+parents: set(['connected#wp2#wp3%1'])
+(True,): 0.93
+
+>>> Node: door_at#door3#wp3%2
+(False,): 0.05
+parents: set(['door_at#door3#wp3%1'])
+(True,): 0.93
+
 >>> Node: open_door_start#mbot#wp2#door2$3
-F	F	F	F	1.0
-F	F	F	T	0.0
-F	F	T	F	1.0
-F	F	T	T	0.0
-F	T	F	F	1.0
-F	T	F	T	0.0
-F	T	T	F	1.0
-F	T	T	T	0.0
-T	F	F	F	1.0
-T	F	F	T	0.0
-T	F	T	F	1.0
-T	F	T	T	0.0
-T	T	F	F	1.0
-T	T	F	T	0.0
-T	T	T	F	0.0
-T	T	T	T	1.0
->>> Node: door_at#door3#wp3%3
-T	T	0.93
-T	F	0.07
-F	T	0.05
-F	F	0.95
->>> Node: robot_at#mbot#wp2%3
-T	T	0.93
-T	F	0.07
-F	T	0.05
-F	F	0.95
->>> Node: connected#wp2#wp3%3
-T	T	0.93
-T	F	0.07
-F	T	0.05
-F	F	0.95
+(False, True): 0
+(True, False): 0
+(False, False): 0
+parents: set(['door_at#door2#wp2%2', 'robot_at#mbot#wp2%2'])
+(True, True): 0.8
+
 >>> Node: door_at#door2#wp2%3
-F	F	1.0
-F	T	0.0
-T	F	0.0
-T	T	1.0
+(False,): 0.05
+parents: set(['door_at#door2#wp2%2'])
+(True,): 0.93
+
+>>> Node: robot_at#mbot#wp2%3
+(False,): 0.05
+parents: set(['robot_at#mbot#wp2%2'])
+(True,): 0.93
+
+>>> Node: connected#wp2#wp3%3
+(False,): 0.05
+parents: set(['connected#wp2#wp3%2'])
+(True,): 0.93
+
+>>> Node: door_at#door3#wp3%3
+(False,): 0.05
+parents: set(['door_at#door3#wp3%2'])
+(True,): 0.93
+
 >>> Node: open_door_end#mbot#wp2#door2$4
-F	F	F	1.0
-F	F	T	0.0
-F	T	F	1.0
-F	T	T	0.0
-T	F	F	1.0
-T	F	T	0.0
-T	T	F	0.0
-T	T	T	1.0
+(False, True): 0
+(True, False): 0
+(False, False): 0
+parents: set(['door_at#door2#wp2%3', 'open_door_start#mbot#wp2#door2$3'])
+(True, True): 1
+
 >>> Node: door_is_open#door2%4
-F	F	1.0
-F	T	0.0
-T	F	0.0
-T	T	1.0
->>> Node: door_at#door3#wp3%4
-F	F	1.0
-F	T	0.0
-T	F	0.0
-T	T	1.0
+(False,): 0
+parents: open_door_end#mbot#wp2#door2$4
+(True,): 0.9
+
 >>> Node: robot_at#mbot#wp2%4
-F	F	1.0
-F	T	0.0
-T	F	0.0
-T	T	1.0
->>> Node: connected#wp2#wp3%4
-F	F	1.0
-F	T	0.0
-T	F	0.0
-T	T	1.0
+(False,): 0.05
+parents: set(['robot_at#mbot#wp2%3'])
+(True,): 0.93
+
 >>> Node: door_at#door2#wp2%4
-F	F	1.0
-F	T	0.0
-T	F	0.0
-T	T	1.0
+(False,): 0.05
+parents: set(['door_at#door2#wp2%3'])
+(True,): 0.93
+
+>>> Node: connected#wp2#wp3%4
+(False,): 0.05
+parents: set(['connected#wp2#wp3%3'])
+(True,): 0.93
+
+>>> Node: door_at#door3#wp3%4
+(False,): 0.05
+parents: set(['door_at#door3#wp3%3'])
+(True,): 0.93
+
 >>> Node: navigate_start#mbot#wp2#wp3#door2#door3$5
-F	F	F	F	F	F	F	1.0
-F	F	F	F	F	F	T	0.0
-F	F	F	F	F	T	F	1.0
-F	F	F	F	F	T	T	0.0
-F	F	F	F	T	F	F	1.0
-F	F	F	F	T	F	T	0.0
-F	F	F	F	T	T	F	1.0
-F	F	F	F	T	T	T	0.0
-F	F	F	T	F	F	F	1.0
-F	F	F	T	F	F	T	0.0
-F	F	F	T	F	T	F	1.0
-F	F	F	T	F	T	T	0.0
-F	F	F	T	T	F	F	1.0
-F	F	F	T	T	F	T	0.0
-F	F	F	T	T	T	F	1.0
-F	F	F	T	T	T	T	0.0
-F	F	T	F	F	F	F	1.0
-F	F	T	F	F	F	T	0.0
-F	F	T	F	F	T	F	1.0
-F	F	T	F	F	T	T	0.0
-F	F	T	F	T	F	F	1.0
-F	F	T	F	T	F	T	0.0
-F	F	T	F	T	T	F	1.0
-F	F	T	F	T	T	T	0.0
-F	F	T	T	F	F	F	1.0
-F	F	T	T	F	F	T	0.0
-F	F	T	T	F	T	F	1.0
-F	F	T	T	F	T	T	0.0
-F	F	T	T	T	F	F	1.0
-F	F	T	T	T	F	T	0.0
-F	F	T	T	T	T	F	1.0
-F	F	T	T	T	T	T	0.0
-F	T	F	F	F	F	F	1.0
-F	T	F	F	F	F	T	0.0
-F	T	F	F	F	T	F	1.0
-F	T	F	F	F	T	T	0.0
-F	T	F	F	T	F	F	1.0
-F	T	F	F	T	F	T	0.0
-F	T	F	F	T	T	F	1.0
-F	T	F	F	T	T	T	0.0
-F	T	F	T	F	F	F	1.0
-F	T	F	T	F	F	T	0.0
-F	T	F	T	F	T	F	1.0
-F	T	F	T	F	T	T	0.0
-F	T	F	T	T	F	F	1.0
-F	T	F	T	T	F	T	0.0
-F	T	F	T	T	T	F	1.0
-F	T	F	T	T	T	T	0.0
-F	T	T	F	F	F	F	1.0
-F	T	T	F	F	F	T	0.0
-F	T	T	F	F	T	F	1.0
-F	T	T	F	F	T	T	0.0
-F	T	T	F	T	F	F	1.0
-F	T	T	F	T	F	T	0.0
-F	T	T	F	T	T	F	1.0
-F	T	T	F	T	T	T	0.0
-F	T	T	T	F	F	F	1.0
-F	T	T	T	F	F	T	0.0
-F	T	T	T	F	T	F	1.0
-F	T	T	T	F	T	T	0.0
-F	T	T	T	T	F	F	1.0
-F	T	T	T	T	F	T	0.0
-F	T	T	T	T	T	F	1.0
-F	T	T	T	T	T	T	0.0
-T	F	F	F	F	F	F	1.0
-T	F	F	F	F	F	T	0.0
-T	F	F	F	F	T	F	1.0
-T	F	F	F	F	T	T	0.0
-T	F	F	F	T	F	F	1.0
-T	F	F	F	T	F	T	0.0
-T	F	F	F	T	T	F	1.0
-T	F	F	F	T	T	T	0.0
-T	F	F	T	F	F	F	1.0
-T	F	F	T	F	F	T	0.0
-T	F	F	T	F	T	F	1.0
-T	F	F	T	F	T	T	0.0
-T	F	F	T	T	F	F	1.0
-T	F	F	T	T	F	T	0.0
-T	F	F	T	T	T	F	1.0
-T	F	F	T	T	T	T	0.0
-T	F	T	F	F	F	F	1.0
-T	F	T	F	F	F	T	0.0
-T	F	T	F	F	T	F	1.0
-T	F	T	F	F	T	T	0.0
-T	F	T	F	T	F	F	1.0
-T	F	T	F	T	F	T	0.0
-T	F	T	F	T	T	F	1.0
-T	F	T	F	T	T	T	0.0
-T	F	T	T	F	F	F	1.0
-T	F	T	T	F	F	T	0.0
-T	F	T	T	F	T	F	1.0
-T	F	T	T	F	T	T	0.0
-T	F	T	T	T	F	F	1.0
-T	F	T	T	T	F	T	0.0
-T	F	T	T	T	T	F	1.0
-T	F	T	T	T	T	T	0.0
-T	T	F	F	F	F	F	1.0
-T	T	F	F	F	F	T	0.0
-T	T	F	F	F	T	F	1.0
-T	T	F	F	F	T	T	0.0
-T	T	F	F	T	F	F	1.0
-T	T	F	F	T	F	T	0.0
-T	T	F	F	T	T	F	1.0
-T	T	F	F	T	T	T	0.0
-T	T	F	T	F	F	F	1.0
-T	T	F	T	F	F	T	0.0
-T	T	F	T	F	T	F	1.0
-T	T	F	T	F	T	T	0.0
-T	T	F	T	T	F	F	1.0
-T	T	F	T	T	F	T	0.0
-T	T	F	T	T	T	F	1.0
-T	T	F	T	T	T	T	0.0
-T	T	T	F	F	F	F	1.0
-T	T	T	F	F	F	T	0.0
-T	T	T	F	F	T	F	1.0
-T	T	T	F	F	T	T	0.0
-T	T	T	F	T	F	F	1.0
-T	T	T	F	T	F	T	0.0
-T	T	T	F	T	T	F	1.0
-T	T	T	F	T	T	T	0.0
-T	T	T	T	F	F	F	1.0
-T	T	T	T	F	F	T	0.0
-T	T	T	T	F	T	F	1.0
-T	T	T	T	F	T	T	0.0
-T	T	T	T	T	F	F	1.0
-T	T	T	T	T	F	T	0.0
-T	T	T	T	T	T	F	0.0
-T	T	T	T	T	T	T	1.0
->>> Node: door_at#door3#wp3%5
-F	F	1.0
-F	T	0.0
-T	F	0.0
-T	T	1.0
->>> Node: door_is_open#door2%5
-F	F	1.0
-F	T	0.0
-T	F	0.0
-T	T	1.0
+(True, True, True, False, False): 0
+(True, False, True, True, False): 0
+(True, True, False, True, True): 0
+(True, False, False, False, False): 0
+(False, False, False, False, True): 0
+(True, False, True, False, False): 0
+(False, False, True, True, True): 0
+(True, True, True, True, False): 0
+(False, True, False, True, True): 0
+(True, False, False, True, False): 0
+(False, False, True, False, True): 0
+(False, True, True, True, False): 0
+(False, False, True, False, False): 0
+(True, True, True, False, True): 0
+(False, True, False, False, False): 0
+(True, False, True, True, True): 0
+(True, True, False, True, False): 0
+(True, True, False, False, False): 0
+parents: set(['robot_at#mbot#wp2%4', 'connected#wp2#wp3%4', 'door_at#door3#wp3%4', 'door_is_open#door2%4', 'door_at#door2#wp2%4'])
+(True, False, True, False, True): 0
+(False, False, True, True, False): 0
+(False, True, True, False, False): 0
+(False, False, False, True, False): 0
+(True, False, False, False, True): 0
+(False, False, False, False, False): 0
+(True, True, True, True, True): 0.8
+(False, False, False, True, True): 0
+(True, False, False, True, True): 0
+(False, True, False, False, True): 0
+(False, True, True, False, True): 0
+(False, True, False, True, False): 0
+(True, True, False, False, True): 0
+(False, True, True, True, True): 0
+
+>>> Node: robot_at#mbot#wp2%5
+(False,): 0
+parents: navigate_start#mbot#wp2#wp3#door2#door3$5
+(True,): 0.9
+
 >>> Node: door_at#door2#wp2%5
-F	F	1.0
-F	T	0.0
-T	F	0.0
-T	T	1.0
+(False,): 0.05
+parents: set(['door_at#door2#wp2%4'])
+(True,): 0.93
+
+>>> Node: door_at#door3#wp3%5
+(False,): 0.05
+parents: set(['door_at#door3#wp3%4'])
+(True,): 0.93
+
+>>> Node: door_is_open#door2%5
+(False,): 0.05
+parents: set(['door_is_open#door2%4'])
+(True,): 0.93
+
 >>> Node: navigate_end#mbot#wp2#wp3#door2#door3$6
-F	F	F	F	F	1.0
-F	F	F	F	T	0.0
-F	F	F	T	F	1.0
-F	F	F	T	T	0.0
-F	F	T	F	F	1.0
-F	F	T	F	T	0.0
-F	F	T	T	F	1.0
-F	F	T	T	T	0.0
-F	T	F	F	F	1.0
-F	T	F	F	T	0.0
-F	T	F	T	F	1.0
-F	T	F	T	T	0.0
-F	T	T	F	F	1.0
-F	T	T	F	T	0.0
-F	T	T	T	F	1.0
-F	T	T	T	T	0.0
-T	F	F	F	F	1.0
-T	F	F	F	T	0.0
-T	F	F	T	F	1.0
-T	F	F	T	T	0.0
-T	F	T	F	F	1.0
-T	F	T	F	T	0.0
-T	F	T	T	F	1.0
-T	F	T	T	T	0.0
-T	T	F	F	F	1.0
-T	T	F	F	T	0.0
-T	T	F	T	F	1.0
-T	T	F	T	T	0.0
-T	T	T	F	F	1.0
-T	T	T	F	T	0.0
-T	T	T	T	F	0.0
-T	T	T	T	T	1.0
+(True, False, True, True): 0
+(True, True, False, True): 0
+(True, False, False, False): 0
+(False, True, True, False): 0
+(True, False, True, False): 0
+(False, False, False, True): 0
+(False, False, True, True): 0
+(True, False, False, True): 0
+(False, True, False, False): 0
+(True, True, True, True): 1
+(False, False, False, False): 0
+parents: set(['navigate_start#mbot#wp2#wp3#door2#door3$5', 'door_at#door3#wp3%5', 'door_at#door2#wp2%5', 'door_is_open#door2%5'])
+(False, False, True, False): 0
+(False, True, False, True): 0
+(True, True, True, False): 0
+(False, True, True, True): 0
+(True, True, False, False): 0
+
 >>> Node: robot_at#mbot#wp3%6
-T	T	0.9
-T	F	0.1
-F	T	0.0
-F	F	1.0
+(False,): 0
+parents: navigate_end#mbot#wp2#wp3#door2#door3$6
+(True,): 0.9
+
