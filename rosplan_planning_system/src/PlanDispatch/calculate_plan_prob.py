@@ -7,6 +7,7 @@ from rosplan_knowledge_msgs.msg import *
 from rosplan_dispatch_msgs.msg import EsterelPlanArray
 from std_msgs.msg import String
 import collections
+import itertools
 
 # pred_probabilities_map_[predicate] = [spont_false_true, spont_true_false]
 pred_probabilities_map_ = dict()
@@ -1139,43 +1140,6 @@ def buildCPDs():
                     # rospy.loginfo('>>>> CPT: ' + str(cpd))
                     cpds_map_[node] = cpd
 
-            '''
-            # If predicate has more than one parent, then it has two:
-            # the predicate in the previous layer and an action
-            else:
-
-                spont_false_true = pred_probabilities_map_[node_without_time][0]
-                spont_true_false = pred_probabilities_map_[node_without_time][1]
-
-                action_name_without_time = removeStartEndFromName(parent_action).split('$')[0]
-                predicate_without_parameters = node.split('#')[0]
-                effects_success = action_probabilities_map_[action_name_without_time][1][predicate_without_parameters]
-
-                i = 0
-                action_index = 0
-                for parent in predicates_par_child_[node]['parents']:
-                    if not isPredicate(parent):
-                        action_index = i
-                    else:
-                        predicate_index = i
-                    i = i + 1
-
-                cpd = dict()
-
-                if action_index == 0:
-                    cpd[(False, False)] = spont_false_true
-                    cpd[(False, True)] = 1-spont_true_false
-                    cpd[(True, False)] = effects_success
-                    cpd[(True, True)] = effects_success
-                else:
-                    cpd[(False, False)] = spont_false_true
-                    cpd[(False, True)] = effects_success
-                    cpd[(True, False)] = 1-spont_true_false
-                    cpd[(True, True)] = effects_success
-
-                cpd['parents'] = predicates_par_child_[node]['parents']
-                cpds_map_[node] = cpd
-            '''
 
         # If node is an action
         else:
@@ -1455,8 +1419,6 @@ def calculateActionsJointProbability(action_name):
             rospy.loginfo('\t\t\tProbability after: ' + str(prob))
     
     prob_node_column_[action_name] = prob
-
-    blocks_already_calculated_[action_name]['probability'] = prob
     
     rospy.loginfo('\t*** Exiting calculateActionsProbability with probability ' + str(prob) + ' ***')
     return prob
@@ -1587,7 +1549,6 @@ if __name__ == "__main__":
     writeBayesNetAIMAToFile()
     bayes_net_AIMA = getProbFromBayesNetAIMA()
 
-
     expected_prob = [0.8, 0.6434856, 0.430878, 0.400717]
 
     for i in range(len(plan)):
@@ -1596,8 +1557,6 @@ if __name__ == "__main__":
 
         rospy.loginfo('>>> Action: ' + action)
         rospy.loginfo('Code probability:           ' + str(round(returned_prob[i], 6)))
-        pomegranate_prob = marginal[index_action].parameters[0]['T']
-        rospy.loginfo('Pomegranate probability:    ' + str(round(pomegranate_prob, 6)))
         rospy.loginfo('Bayes net AIMA probability: ' + str(round(bayes_net_AIMA[i], 6)))
         if i < len(expected_prob):
             rospy.loginfo('Expected probability:       ' + str(round(expected_prob[i], 6)))
