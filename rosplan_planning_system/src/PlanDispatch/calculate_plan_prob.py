@@ -35,6 +35,8 @@ layer_number_ = 0
 # Dictionary that connects the node to the true probability of its column above
 prob_node_column_ = dict()
 
+joint_actions_prob_ = 1
+
 rospy.init_node('bayesian_network_calculator')
 
 
@@ -972,8 +974,9 @@ def addPredicate(predicate, layer_numb):
 
 
 def addEffectPredicate(predicate):
-    # Here we don't add the predicate in previous layers because
-    # its CPD will only depend on the action that it's its parent
+    ''' Here we don't add the predicate in previous layers because
+        its CPD will only depend on the action that it's its parent
+    '''
     global all_nodes_
     global predicates_par_child_
 
@@ -1278,25 +1281,25 @@ def setupEverything():
 
 def getTopPredicateParent(node):
     # rospy.loginfo('\t\t\t\t\t*** Inside getTopPredicateParent ***')
-    parent = node
 
     return_previous_parent = False
     while True:
-        if parent in prob_node_column_.keys():
-            return parent
-        previous_parent = parent
-        parents_set = predicates_par_child_[parent]['parents']
+        if node in prob_node_column_.keys():
+            return node
+        previous_node = node
+        parents_set = predicates_par_child_[node]['parents']
         # If node has parents then keep searching up, unless the parent is an action
+        return_previous_node = False
         if len(parents_set) > 0:
-            parent = next(iter(parents_set))
-            if not isPredicate(parent):
-                return_previous_parent = True
+            node = next(iter(parents_set))
+            if not isPredicate(node):
+                return_previous_node = True
         else:
-            return_previous_parent = True
+            return_previous_node = True
 
-        if return_previous_parent:
+        if return_previous_node:
             # rospy.loginfo('\t\t\t\t\t*** Exiting getTopPredicateParent: ' + previous_parent + ' ***')
-            return previous_parent
+            return previous_node
 
 
 def getPredicateChild(node):
@@ -1319,6 +1322,12 @@ def predicateHasActionAsParent(node):
     return None
 
 
+def parentHasActionAsChild(node):
+    parent = next(iter(predicates_par_child_[node]['parents']))
+
+    return predicateHasActionAsChild(parent)
+
+
 def calculateColumn(bottom_node, true_value):
     global prob_node_column_
 
@@ -1328,16 +1337,18 @@ def calculateColumn(bottom_node, true_value):
 
     top_parent = getTopPredicateParent(bottom_node)
 
+    # If top_parent is inside already calculated block,
+    # then don't account for it
     if top_parent in prob_node_column_.keys():
-        prob = prob_node_column_[top_parent]
+        prob = 1
     else:
         prob = cpds_map_[top_parent]
+        # If prob has not been calculated and it's a
+        # dictionary, then it has an action as parent
         if isinstance(prob, dict):
             prob = prob[(True,)]
             action_parent = predicateHasActionAsParent(top_parent)
-            if action_parent:
-                prob = prob*prob_node_column_[action_parent]
-            prob_node_column_[top_parent] = prob
+            prob_node_column_[top_parent] = prob*prob_node_column_[action_parent]
 
     rospy.loginfo('\t\t\t\tTop parent: ' + top_parent)
     rospy.loginfo('\t\t\t\tTop Parent Probability: ' + str(prob))
@@ -1358,7 +1369,7 @@ def calculateColumn(bottom_node, true_value):
         rospy.loginfo('\t\t\t\t\tSpont_false_true: ' + str(spont_false_true))
         rospy.loginfo('\t\t\t\t\tNode CPD: ' + str(cpds_map_[node]))
 
-        if predicateHasActionAsChild(node):
+        if parentHasActionAsChild(node):
             rospy.loginfo('\t\t\t\t\tFactor Probability (only true): ' + str(prob*(1-spont_true_false)))
             prob = prob*(1-spont_true_false)
         else:
@@ -1379,6 +1390,7 @@ def calculateColumn(bottom_node, true_value):
 
 
 def calculateActionsJointProbability(action_name):
+    global joint_actions_prob_
 
     rospy.loginfo('\t*** Inside calculateActionsProbability ***')
 
@@ -1401,10 +1413,10 @@ def calculateActionsJointProbability(action_name):
             rospy.loginfo('\t\t\tCalculating column of positive parent')
             prob = prob*calculateColumn(parent, True)
             rospy.loginfo('\t\t\tProbability after: ' + str(prob))
-        else:
-            prob = prob*prob_node_column_[parent]
-            rospy.loginfo('\t\t\tProbability of node: ' + str(prob_node_column_[parent]))
-            rospy.loginfo('\t\t\tProbability after: ' + str(prob))
+        # else:
+        #     prob = prob*prob_node_column_[parent]
+        #     rospy.loginfo('\t\t\tProbability of node: ' + str(prob_node_column_[parent]))
+        #     rospy.loginfo('\t\t\tProbability after: ' + str(prob))
     
     rospy.loginfo('\tChecking negative parents')
     for parent in actions_par_child_[action_name]['neg_parents']:
@@ -1420,8 +1432,9 @@ def calculateActionsJointProbability(action_name):
     
     prob_node_column_[action_name] = prob
     
-    rospy.loginfo('\t*** Exiting calculateActionsProbability with probability ' + str(prob) + ' ***')
-    return prob
+    joint_actions_prob_ = joint_actions_prob_*prob
+    rospy.loginfo('\t*** Exiting calculateActionsProbability with probability ' + str(joint_actions_prob_) + ' ***')
+    # return prob
 
 
 def orderAllNodes(plan):
@@ -1487,12 +1500,11 @@ def func(received_action_name):
     buildCPDs()
 
     rospy.loginfo('Calculating probability')
-    prob = calculateActionsJointProbability(action_name)
+    calculateActionsJointProbability(action_name)
 
     layer_number_ = layer_number_ + 1
 
-    rospy.loginfo('@@@ Returning probability: ' + str(prob) + ' @@@\n')
-    return prob
+    rospy.loginfo('@@@ Returning probability: ' + str(joint_actions_prob_) + ' @@@\n')
 
 
 def getProbFromBayesNetAIMA():
@@ -1515,8 +1527,10 @@ if __name__ == "__main__":
     setupEverything()
     returned_prob = list()
     for action in plan:
-        prob = func(action)
-        returned_prob.append(prob)
+        # prob = func(action)
+        # returned_prob.append(prob)
+        func(action)
+        returned_prob.append(joint_actions_prob_)
 
     orderAllNodes(plan)
     writeNodesAndCPDsToFile()
