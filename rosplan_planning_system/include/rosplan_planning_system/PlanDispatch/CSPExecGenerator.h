@@ -203,7 +203,7 @@ class CSPExecGenerator
          * @return true if at least one valid execution was found, false otherwise
          */
         bool orderNodes(std::vector<int> open_list, int &number_expanded_nodes, double plan_prob,
-                        std::vector<std::vector<rosplan_knowledge_msgs::KnowledgeItem>> states);
+                        std::vector<std::vector<rosplan_knowledge_msgs::KnowledgeItem>> states, CPyObject pModule);
 
         /**
          * @brief backtrack: popf, remove last element from f, store in variable and revert that action
@@ -285,7 +285,7 @@ class CSPExecGenerator
 
         std::vector<std::string> convertCPyObjectToVector(CPyObject pList);
 
-        double getCurrentPlanProbabilityAndFillExpectedFacts();
+        double getCurrentPlanProbabilityAndFillExpectedFacts(CPyObject pModule);
 
         void printVectorOfStrings(std::string msg, std::vector<std::string> vec);
 

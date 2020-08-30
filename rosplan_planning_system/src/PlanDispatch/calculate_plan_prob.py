@@ -1250,8 +1250,21 @@ def getElementsFromStateList(elements_list):
     return elements_set
 
 
+def getNodesLayers():
+    orderAllNodes()
+    nodes_layers = list()
+
+    for node in all_nodes_:
+        if isPredicate(node):
+            nodes_layers.append(node)
+    
+    # rospy.loginfo("Returning nodes layers: " + str(nodes_layers))
+
+    return nodes_layers
+
+
 # Gets everything needed to start building the network
-def setupEverything():
+def setup():
     # print ("Waiting for service")
     rospy.wait_for_service('/rosplan_knowledge_base/domain/operators')
     rospy.wait_for_service('/rosplan_knowledge_base/domain/operator_details')
@@ -1431,20 +1444,27 @@ def calculateActionsJointProbability(action_name):
     # rospy.loginfo('\t*** Exiting calculateActionsProbability with probability ' + str(joint_prob_) + ' ***')
 
 
-def orderAllNodes(plan):
+def orderAllNodes():
     global all_nodes_
     ordered_nodes = list()
 
-    number_actions = len(plan)
+    i = 0
+    index_has_predicates = True
 
-    for i in range(number_actions+1):
+    while index_has_predicates:
+        index_has_predicates = False
         for node in all_nodes_:
             if len(node.split('%')) > 1:
                 if int(node.split('%')[1]) == i:
                     ordered_nodes.append(node)
+                    index_has_predicates = True
             elif len(node.split('$')) > 1:
                 if int(node.split('$')[1]) == i:
                     ordered_nodes.append(node)
+                    index_has_predicates = True
+        i = i + 1
+        if not index_has_predicates:
+            break
 
     all_nodes_ = ordered_nodes
 
@@ -1467,7 +1487,7 @@ def writeBayesNetAIMAToFile():
     file.close()
 
 
-def func(received_action_name):
+def getActionsJointProbability(received_action_name):
     global layer_number_
     global added_nodes_
 
@@ -1475,17 +1495,17 @@ def func(received_action_name):
     if layer_number_ == len(added_nodes_):
         added_nodes_.append(set())
 
-    rospy.loginfo('Action: ' + received_action_name)
+    # rospy.loginfo('Action: ' + received_action_name)
 
-    rospy.loginfo('Creating grounded action')
+    # rospy.loginfo('Creating grounded action')
     grounded_action = createGroundedAction(received_action_name)
-    rospy.loginfo('Converting grounded action to action start/end')
+    # rospy.loginfo('Converting grounded action to action start/end')
     action = convertActionToActionStart_End(received_action_name)
 
-    rospy.loginfo('Getting condition predicates')
+    # rospy.loginfo('Getting condition predicates')
     predicates_set = action.getConditionPredicates()
 
-    rospy.loginfo('Adding predicate layer')
+    # rospy.loginfo('Adding predicate layer')
     addPredicateLayer(predicates_set)
 
     action_name = action.name + '$' + str(layer_number_+1)
@@ -1493,20 +1513,22 @@ def func(received_action_name):
     all_nodes_.append(action_name)
     added_nodes_[layer_number_].add(action_name)
 
-    rospy.loginfo('Adding action edges')
+    # rospy.loginfo('Adding action edges')
     addActionEdges(action, action_name)
 
-    rospy.loginfo('Building CPDs')
+    # rospy.loginfo('Building CPDs')
     buildCPDs()
 
-    rospy.loginfo('Calculating probability')
+    # rospy.loginfo('Calculating probability')
     calculateActionsJointProbability(action_name)
 
     layer_number_ = layer_number_ + 1
 
     list_probabilities_.append(joint_prob_)
 
-    rospy.loginfo('@@@ Returning probability: ' + str(joint_prob_) + ' @@@\n')
+    # rospy.loginfo(' Returning probability: ' + str(joint_prob_))
+
+    return joint_prob_
 
 
 def getProbFromBayesNetAIMA():
@@ -1539,7 +1561,11 @@ def calculateFullJointProbability():
 
         list_probabilities_.append(joint_prob_)
 
+    # rospy.loginfo('Returning probability: ' + str(joint_prob_))
+    return joint_prob_
 
+
+''' This is only for testing with the 'skip_door' domain and 'problem_r1_w3' '''
 if __name__ == "__main__":
     plan = ['navigate_start#mbot#wp1#wp2#door1#door2', 'navigate_end#mbot#wp1#wp2#door1#door2', 'open_door_start#mbot#wp2#door2', 'open_door_end#mbot#wp2#door2', 'navigate_start#mbot#wp2#wp3#door2#door3', 'navigate_end#mbot#wp2#wp3#door2#door3']    
     list_actions = ['navigate_start#mbot#wp1#wp2#door1#door2$1', 'navigate_end#mbot#wp1#wp2#door1#door2$2', 'open_door_start#mbot#wp2#door2$3', 'open_door_end#mbot#wp2#door2$4', 'navigate_start#mbot#wp2#wp3#door2#door3$5', 'navigate_end#mbot#wp2#wp3#door2#door3$6']
@@ -1548,9 +1574,9 @@ if __name__ == "__main__":
     list_actions_goal = list_actions + list_goal
 
     rospy.loginfo('Setting up')
-    setupEverything()
+    setup()
     for action in plan:
-        func(action)
+        getActionsJointProbability(action)
 
     calculateFullJointProbability()
 
