@@ -129,7 +129,7 @@ class CSPExecGenerator
          * @brief backtrack: popf, remove last element from f, store in variable and revert that action
          * @param reason_for_backtrack used for log information and feedback to user
          */
-        void backtrack(std::string reason_for_backtrack);
+        void backtrack(std::string reason_for_backtrack, bool backtrack_bayes_network);
 
         /**
          * @brief iterate over the plan, get the probability of each action, multiply them all together
@@ -203,7 +203,7 @@ class CSPExecGenerator
          * @return true if at least one valid execution was found, false otherwise
          */
         bool orderNodes(std::vector<int> open_list, int &number_expanded_nodes, double plan_prob,
-                        std::vector<std::vector<rosplan_knowledge_msgs::KnowledgeItem>> states, CPyObject pModule);
+                        std::vector<std::vector<rosplan_knowledge_msgs::KnowledgeItem>> states);
 
         /**
          * @brief backtrack: popf, remove last element from f, store in variable and revert that action
@@ -285,7 +285,7 @@ class CSPExecGenerator
 
         std::vector<std::string> convertCPyObjectToVector(CPyObject pList);
 
-        double getCurrentPlanProbabilityAndFillExpectedFacts(CPyObject pModule);
+        double getCurrentPlanProbabilityAndFillExpectedFacts();
 
         void printVectorOfStrings(std::string msg, std::vector<std::string> vec);
 
@@ -337,6 +337,8 @@ class CSPExecGenerator
         std::vector<int> actions_occurring_;
 
         int action_to_be_executed_;
+
+        CPyObject pModule_;
 
 };
 #endif  // CSP_EXEC_GENERATOR_NODE_H

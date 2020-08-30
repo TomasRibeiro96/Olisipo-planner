@@ -380,7 +380,7 @@ std::vector<int> CSPExecGenerator::findNodesBeforeA(int a, std::vector<int> &ope
     return nodes_before_a;
 }
 
-void CSPExecGenerator::backtrack(std::string reason_for_backtrack)
+void CSPExecGenerator::backtrack(std::string reason_for_backtrack, bool backtrack_bayes_network)
 {
     // backtrack: popf, remove last element from f, store in variable and revert that action
     ROS_DEBUG("backtrack because %s", reason_for_backtrack.c_str());
@@ -400,7 +400,14 @@ void CSPExecGenerator::backtrack(std::string reason_for_backtrack)
                 action_simulator_.revertActionStart(action_name, params);
             else
                 action_simulator_.revertActionEnd(action_name, params);
-
+            
+            if(backtrack_bayes_network){
+                // ROS_INFO("Calling backtrack");
+                CPyObject pFuncCalcProb = PyObject_GetAttrString(pModule_, "backtrack");
+                if(pFuncCalcProb && PyCallable_Check(pFuncCalcProb)){
+                    CPyObject pReturnedProbability = PyObject_CallObject(pFuncCalcProb, NULL);
+                }
+            }
             // action_simulator_.printInternalKBFacts();
         }
         else
@@ -567,8 +574,8 @@ std::vector<rosplan_knowledge_msgs::KnowledgeItem> CSPExecGenerator::getStateAft
 
     std::vector<rosplan_knowledge_msgs::KnowledgeItem> state_after_action = action_simulator_.getCurrentState();
 
-    backtrack("Got state after action 1");
-    backtrack("Got state after action 2");
+    backtrack("Got state after action 1", false);
+    backtrack("Got state after action 2", false);
 
     return state_after_action;
 }
@@ -695,13 +702,13 @@ std::vector<std::string> CSPExecGenerator::convertCPyObjectToVector(CPyObject pL
     return vec;
 }
 
-double CSPExecGenerator::getCurrentPlanProbabilityAndFillExpectedFacts(CPyObject pModule){
+double CSPExecGenerator::getCurrentPlanProbabilityAndFillExpectedFacts(){
 
     double plan_success_probability;
     std::vector<std::string> expected_predicates;
 
     ROS_INFO("Calling calculateFullJointProbability");
-    CPyObject pFuncCalcProb = PyObject_GetAttrString(pModule, "calculateFullJointProbability");
+    CPyObject pFuncCalcProb = PyObject_GetAttrString(pModule_, "calculateFullJointProbability");
     if(pFuncCalcProb && PyCallable_Check(pFuncCalcProb)){
         
         CPyObject pReturnedProbability = PyObject_CallObject(pFuncCalcProb, NULL);
@@ -715,7 +722,7 @@ double CSPExecGenerator::getCurrentPlanProbabilityAndFillExpectedFacts(CPyObject
         }
 
         // ROS_INFO("Calling getNodesLayers");
-        CPyObject pFuncGetLayers = PyObject_GetAttrString(pModule, "getNodesLayers");
+        CPyObject pFuncGetLayers = PyObject_GetAttrString(pModule_, "getNodesLayers");
         if(pFuncGetLayers && PyCallable_Check(pFuncGetLayers)){
             // ROS_INFO("Got answer from getNodesLayers");
             CPyObject pReturned = PyObject_CallObject(pFuncGetLayers, NULL);
@@ -739,7 +746,7 @@ double CSPExecGenerator::getCurrentPlanProbabilityAndFillExpectedFacts(CPyObject
 }
 
 bool CSPExecGenerator::orderNodes(std::vector<int> open_list, int &number_expanded_nodes, double plan_prob,
-                                    std::vector<std::vector<rosplan_knowledge_msgs::KnowledgeItem>> explored_states, CPyObject pModule)
+                                    std::vector<std::vector<rosplan_knowledge_msgs::KnowledgeItem>> explored_states)
 {
     // shift nodes from open list (O) to ordered plans (R)
     // offering all possible different execution alternatives via DFS (Depth first search)
@@ -752,7 +759,7 @@ bool CSPExecGenerator::orderNodes(std::vector<int> open_list, int &number_expand
 
     if(!checkTemporalConstraints(ordered_nodes_, set_of_constraints_)) {
         // ROS_INFO("$$$ Temporal constraints not satisfied $$$$");
-        backtrack("temporal constraints not satisfied");
+        backtrack("temporal constraints not satisfied", true);
         return false;
     }
 
@@ -777,7 +784,7 @@ bool CSPExecGenerator::orderNodes(std::vector<int> open_list, int &number_expand
         double plan_success_probability;
 
         if(new_algorithm){
-            plan_success_probability = getCurrentPlanProbabilityAndFillExpectedFacts(pModule);
+            plan_success_probability = getCurrentPlanProbabilityAndFillExpectedFacts();
             exec_aternatives_msg_.plan_success_prob.push_back(plan_success_probability);
         }
         else{
@@ -785,7 +792,7 @@ bool CSPExecGenerator::orderNodes(std::vector<int> open_list, int &number_expand
         }
 
         // backtrack: popf, remove last element from f, store in variable and revert that action
-        backtrack("goal was achieved");
+        backtrack("goal was achieved", true);
 
         return true;
     }
@@ -799,7 +806,7 @@ bool CSPExecGenerator::orderNodes(std::vector<int> open_list, int &number_expand
         ROS_DEBUG("valid nodes are empty");
         // ROS_INFO("$$$ No valid nodes $$$");
         // backtrack: popf, remove last element from f, store in variable and revert that action
-        backtrack("nodes are empty");
+        backtrack("nodes are empty", true);
         return false;
     }
     else
@@ -841,7 +848,7 @@ bool CSPExecGenerator::orderNodes(std::vector<int> open_list, int &number_expand
             if(!repeated_state){
             
                 ROS_INFO("Calling getActionsJointProbability");
-                CPyObject pFuncCalcProb = PyObject_GetAttrString(pModule, "getActionsJointProbability");
+                CPyObject pFuncCalcProb = PyObject_GetAttrString(pModule_, "getActionsJointProbability");
                 if(pFuncCalcProb && PyCallable_Check(pFuncCalcProb)){
                     
                     std::string full_action_name = getFullActionName(*a);
@@ -881,7 +888,7 @@ bool CSPExecGenerator::orderNodes(std::vector<int> open_list, int &number_expand
                         // ROS_INFO("++++ Performed action");
                         // printNodes("stack after adding", ordered_nodes_);
 
-                        orderNodes(open_list_copy, number_expanded_nodes, plan_probability, explored_states, pModule);                    
+                        orderNodes(open_list_copy, number_expanded_nodes, plan_probability, explored_states);                    
                     }
                     else{
                         // ROS_INFO("---- Skipped action");
@@ -919,41 +926,13 @@ bool CSPExecGenerator::orderNodes(std::vector<int> open_list, int &number_expand
             // printNodes("stack after adding", ordered_nodes_);
 
             // recurse
-            orderNodes(open_list_copy, number_expanded_nodes, 1, explored_states, pModule);
+            orderNodes(open_list_copy, number_expanded_nodes, 1, explored_states);
         }
     }
 
     // pop last element from stack (ordered_nodes_) revert action
-    backtrack("for loop ended (valid nodes exhausted)");
+    backtrack("for loop ended (valid nodes exhausted)", true);
     return true;
-}
-
-void CSPExecGenerator::reverseLastAction(std::string reason_for_reverse)
-{
-    // backtrack: popf, remove last element from f, store in variable and revert that action
-    ROS_DEBUG("backtrack because %s", reason_for_reverse.c_str());
-    if(!ordered_nodes_.empty()) { // ensure stack is not empty
-        // revert action
-        ROS_DEBUG("poping action (removing from stack), reverting action to S, action id: %d", ordered_nodes_.back());
-        std::string action_name;
-        std::vector<std::string> params;
-        bool action_start;
-        int action_id;
-        if(getAction(ordered_nodes_.back(), action_name, params, original_plan_, action_start, action_id)) {
-            ROS_DEBUG("KB after reverting action %d", ordered_nodes_.back());
-
-            ordered_nodes_.pop_back(); // eliminate last node from stack
-            // getAction() finds out if last element of "f" is action start or end, info is in action_start boolean
-            if(action_start)
-                action_simulator_.simulateActionStart(action_name, params);
-            else
-                action_simulator_.simulateActionEnd(action_name, params);
-
-            // action_simulator_.printInternalKBFacts();
-        }
-        else
-            ROS_ERROR("failed to get action properties (while reversing action)");
-    }
 }
 
 std::vector<std::string> CSPExecGenerator::getNodesWithNames(std::vector<int> &nodes)
@@ -1191,19 +1170,19 @@ bool CSPExecGenerator::generatePlans()
 
     ROS_INFO("Importing calculate_plan_prob");
     CPyObject pName = PyUnicode_FromString("calculate_plan_prob");
-    CPyObject pModule = PyImport_Import(pName);
+    pModule_ = PyImport_Import(pName);
 
-    if(pModule){
+    if(pModule_){
 
         ROS_INFO("Calling setup method");
-        CPyObject pFuncGetLayers = PyObject_GetAttrString(pModule, "setup");
+        CPyObject pFuncGetLayers = PyObject_GetAttrString(pModule_, "setup");
         if(pFuncGetLayers && PyCallable_Check(pFuncGetLayers)){
            PyObject_CallObject(pFuncGetLayers, NULL);
 
             // find plan
             // if true, it means at least one valid execution alternative was found
             ROS_INFO("Calling orderNodes");
-            orderNodes(open_list, number_expanded_nodes, 1.0, explored_states, pModule);
+            orderNodes(open_list, number_expanded_nodes, 1.0, explored_states);
 
         }
         else{

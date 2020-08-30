@@ -32,9 +32,6 @@ actions_par_child_ = dict()
 
 layer_number_ = 0
 
-# Dictionary that connects the node to the true probability of its column above
-prob_node_column_ = dict()
-
 list_probabilities_ = list()
 
 joint_prob_ = 1
@@ -1342,7 +1339,6 @@ def parentHasActionAsChild(node):
 
 
 def calculateColumn(bottom_node, true_value):
-    global prob_node_column_
     global accounted_nodes_
 
     # rospy.loginfo('\t\t\t\t>>> Inside calculateColumn <<<')
@@ -1469,6 +1465,34 @@ def orderAllNodes():
     all_nodes_ = ordered_nodes
 
 
+def removeNode(node):
+    global all_nodes_
+    global predicates_par_child_
+    global actions_par_child_
+    global cpds_map_
+
+    all_nodes_.remove(node)
+    if isPredicate(node):
+        predicates_par_child_.pop(node)
+    else:
+        actions_par_child_.pop(node)
+    cpds_map_.pop(node)
+
+
+def backtrack():
+    global added_nodes_
+    global list_probabilities_
+    global layer_number_
+
+    # Remove action and predicates of last layer
+    for node in added_nodes_[-1]:
+        removeNode(node)
+    
+    added_nodes_.pop(-1)
+    list_probabilities_.pop(-1)
+    layer_number_ = layer_number_ - 1
+                
+
 def writeBayesNetAIMAToFile():
     file = open('bayesNetAIMA.txt', 'w')
     for node in all_nodes_:
@@ -1559,7 +1583,7 @@ def calculateFullJointProbability():
 
         joint_prob_ = factor*joint_prob_
 
-        list_probabilities_.append(joint_prob_)
+    list_probabilities_[-1] = joint_prob_
 
     # rospy.loginfo('Returning probability: ' + str(joint_prob_))
     return joint_prob_
