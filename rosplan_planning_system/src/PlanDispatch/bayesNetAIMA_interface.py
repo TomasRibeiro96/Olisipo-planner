@@ -5,8 +5,8 @@ sys.path.insert(1, '/home/tomas/ros_ws/src/ROSPlan/src/rosplan/rosplan_planning_
 import probability
 
 
-def addNodeToEvidence(evidence, action):
-    evidence[action] = True
+def addNodeToEvidence(evidence, node):
+    evidence[node] = True
     return evidence
 
 
@@ -19,6 +19,10 @@ def writeProbToFile(prob_list):
 
 def main():
     list_actions = ['navigate_start#mbot#wp1#wp2#door1#door2$1', 'navigate_end#mbot#wp1#wp2#door1#door2$2', 'open_door_start#mbot#wp2#door2$3', 'open_door_end#mbot#wp2#door2$4', 'navigate_start#mbot#wp2#wp3#door2#door3$5', 'navigate_end#mbot#wp2#wp3#door2#door3$6']
+
+    list_goal = ['robot_at#mbot#wp3%6']
+
+    list_actions_goal = list_actions + list_goal
 
     file = open('bayesNetAIMA.txt', 'r')
     line = file.readline()
@@ -52,24 +56,12 @@ def main():
     prob_list = list()
     previous_prob = 1
 
-    # # Just to check
-    # node = bayes_net.variable_node('navigate_start#mbot#wp1#wp2#door1#door2$1')
-    # print('>>> CPT: ' + str(node.cpt))
-    # print('>>> Parents: ' + str(node.parents))
-    # print('>>> Variable: ' + str(node.variable))
-    # print('')
-    # ####
 
-    for action in list_actions:
-        print('>>> Action: ' + action)
-        # # Just to check
-        # print('>>> CPT: ' + str(node.cpt))
-        # print('>>> Parents: ' + str(node.parents))
-        # print('>>> Variable: ' + str(node.variable))
-        # ####
+    for node in list_actions_goal:
+        print('>>> Node: ' + node)
 
-        # # Using variable elimination
-        prob = probability.elimination_ask(action, evidence, bayes_net).prob[True]
+        # Using variable elimination
+        prob = probability.elimination_ask(node, evidence, bayes_net).prob[True]
 
         if len(prob_list) > 0:
             joint_prob = prob*prob_list[-1]
@@ -78,11 +70,9 @@ def main():
             
         prob_list.append(joint_prob)
         
-        addNodeToEvidence(evidence, action)
+        addNodeToEvidence(evidence, node)
 
-        print('>>> Probability: ' + str(prob_list[-1]))
-
-        print('')
+        print('>>> Probability: ' + str(prob_list[-1]) + '\n')
     
     writeProbToFile(prob_list)
 

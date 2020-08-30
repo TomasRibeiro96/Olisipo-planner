@@ -37,7 +37,7 @@ prob_node_column_ = dict()
 
 list_probabilities_ = list()
 
-joint_actions_prob_ = 1
+joint_prob_ = 1
 
 accounted_nodes_ = set()
 
@@ -1391,7 +1391,7 @@ def calculateColumn(bottom_node, true_value):
 
 
 def calculateActionsJointProbability(action_name):
-    global joint_actions_prob_
+    global joint_prob_
     global added_nodes_
     global accounted_nodes_
 
@@ -1427,8 +1427,8 @@ def calculateActionsJointProbability(action_name):
     
     accounted_nodes_.add(action_name)
     
-    joint_actions_prob_ = joint_actions_prob_*prob
-    # rospy.loginfo('\t*** Exiting calculateActionsProbability with probability ' + str(joint_actions_prob_) + ' ***')
+    joint_prob_ = joint_prob_*prob
+    # rospy.loginfo('\t*** Exiting calculateActionsProbability with probability ' + str(joint_prob_) + ' ***')
 
 
 def orderAllNodes(plan):
@@ -1504,9 +1504,9 @@ def func(received_action_name):
 
     layer_number_ = layer_number_ + 1
 
-    list_probabilities_.append(joint_actions_prob_)
+    list_probabilities_.append(joint_prob_)
 
-    rospy.loginfo('@@@ Returning probability: ' + str(joint_actions_prob_) + ' @@@\n')
+    rospy.loginfo('@@@ Returning probability: ' + str(joint_prob_) + ' @@@\n')
 
 
 def getProbFromBayesNetAIMA():
@@ -1522,13 +1522,37 @@ def getProbFromBayesNetAIMA():
     return prob_list
 
 
+def calculateFullJointProbability():
+    global joint_prob_
+
+    for node in goal_:
+        goal_node = node + '%' + str(layer_number_)
+
+        if goal_node not in all_nodes_:
+            addPredicate(node, layer_number_)
+        
+        buildCPDs()
+
+        factor = calculateColumn(goal_node, True)
+
+        joint_prob_ = factor*joint_prob_
+
+        list_probabilities_.append(joint_prob_)
+
+
 if __name__ == "__main__":
     plan = ['navigate_start#mbot#wp1#wp2#door1#door2', 'navigate_end#mbot#wp1#wp2#door1#door2', 'open_door_start#mbot#wp2#door2', 'open_door_end#mbot#wp2#door2', 'navigate_start#mbot#wp2#wp3#door2#door3', 'navigate_end#mbot#wp2#wp3#door2#door3']    
     list_actions = ['navigate_start#mbot#wp1#wp2#door1#door2$1', 'navigate_end#mbot#wp1#wp2#door1#door2$2', 'open_door_start#mbot#wp2#door2$3', 'open_door_end#mbot#wp2#door2$4', 'navigate_start#mbot#wp2#wp3#door2#door3$5', 'navigate_end#mbot#wp2#wp3#door2#door3$6']
+    list_goal = ['robot_at#mbot#wp3%6']
+
+    list_actions_goal = list_actions + list_goal
+
     rospy.loginfo('Setting up')
     setupEverything()
     for action in plan:
         func(action)
+
+    calculateFullJointProbability()
 
     orderAllNodes(plan)
     writeNodesAndCPDsToFile()
@@ -1537,18 +1561,12 @@ if __name__ == "__main__":
     writeBayesNetAIMAToFile()
     bayes_net_AIMA = getProbFromBayesNetAIMA()
 
-    expected_prob = [0.8, 0.6434856, 0.430878, 0.400717]
+    for i in range(len(list_actions_goal)):
+        node = list_actions_goal[i]+'$'+str(i+1)
 
-    for i in range(len(plan)):
-        action = plan[i]+'$'+str(i+1)
-        index_action = all_nodes_.index(action)
-
-        rospy.loginfo('>>> Action: ' + action)
+        rospy.loginfo('>>> Node: ' + node)
         rospy.loginfo('Code probability:           ' + str(round(list_probabilities_[i], 6)))
-        rospy.loginfo('Bayes net AIMA probability: ' + str(round(bayes_net_AIMA[i], 6)))
-        if i < len(expected_prob):
-            rospy.loginfo('Expected probability:       ' + str(round(expected_prob[i], 6)))
-        print(' ')
+        rospy.loginfo('Bayes net AIMA probability: ' + str(round(bayes_net_AIMA[i], 6)) + '\n')
 
     writePredicatesToFile()
     writePredicateParentsToFile()
