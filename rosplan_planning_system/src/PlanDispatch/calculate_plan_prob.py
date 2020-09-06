@@ -1583,7 +1583,7 @@ def calculateFullJointProbability():
 
         joint_prob_ = factor*joint_prob_
 
-    list_probabilities_[-1] = joint_prob_
+    list_probabilities_.append(joint_prob_)
 
     # rospy.loginfo('Returning probability: ' + str(joint_prob_))
     return joint_prob_
@@ -1604,15 +1604,18 @@ if __name__ == "__main__":
 
     calculateFullJointProbability()
 
-    orderAllNodes(plan)
+    orderAllNodes()
     writeNodesAndCPDsToFile()
 
     # AIMA - BayesNet    
     writeBayesNetAIMAToFile()
     bayes_net_AIMA = getProbFromBayesNetAIMA()
 
+    rospy.loginfo('>>> List probabilities: ' + str(list_probabilities_))
+    rospy.loginfo('>>> BayesNetAIMA:       ' + str(bayes_net_AIMA))
+
     for i in range(len(list_actions_goal)):
-        node = list_actions_goal[i]+'$'+str(i+1)
+        node = list_actions_goal[i]
 
         rospy.loginfo('>>> Node: ' + node)
         rospy.loginfo('Code probability:           ' + str(round(list_probabilities_[i], 6)))

@@ -745,7 +745,7 @@ double CSPExecGenerator::getCurrentPlanProbabilityAndFillExpectedFacts(){
     return plan_success_probability;
 }
 
-bool CSPExecGenerator::orderNodes(std::vector<int> open_list, int &number_expanded_nodes, double plan_prob,
+bool CSPExecGenerator::orderNodes(std::vector<int> open_list, int &number_expanded_nodes,
                                     std::vector<std::vector<rosplan_knowledge_msgs::KnowledgeItem>> explored_states)
 {
     // shift nodes from open list (O) to ordered plans (R)
@@ -788,7 +788,8 @@ bool CSPExecGenerator::orderNodes(std::vector<int> open_list, int &number_expand
             exec_aternatives_msg_.plan_success_prob.push_back(plan_success_probability);
         }
         else{
-            exec_aternatives_msg_.plan_success_prob.push_back(plan_prob);
+            plan_success_probability = computePlanProbability(ordered_nodes_, action_prob_map_);
+            exec_aternatives_msg_.plan_success_prob.push_back(plan_success_probability);
         }
 
         // backtrack: popf, remove last element from f, store in variable and revert that action
@@ -833,13 +834,15 @@ bool CSPExecGenerator::orderNodes(std::vector<int> open_list, int &number_expand
         // Initialised as false in case it's action_end
         bool repeated_state = false;
 
-        if(action_start){
-            std::vector<rosplan_knowledge_msgs::KnowledgeItem> state_after_action = getStateAfterAction(action_name, params, open_list_copy);
-            repeated_state = stateIsRepeated(state_after_action, explored_states);
-            // ROS_INFO(">>> State after action: %s", getStateAsString(state_after_first_action).c_str());
-            // ROS_INFO(">>> Current state: %s", getStateAsString(current_state).c_str());
-            // ROS_INFO(repeated_state ? "+++ State is repeated +++" : "--- State is NOT repeated");
-        }
+        ////// Removed this because state might have already been explored but had no applicable
+        ////// actions and it now might, because the sequence of previously executed actions is not the same 
+        // if(action_start){
+        //     std::vector<rosplan_knowledge_msgs::KnowledgeItem> state_after_action = getStateAfterAction(action_name, params, open_list_copy);
+        //     repeated_state = stateIsRepeated(state_after_action, explored_states);
+        //     // ROS_INFO(">>> State after action: %s", getStateAsString(state_after_first_action).c_str());
+        //     // ROS_INFO(">>> Current state: %s", getStateAsString(current_state).c_str());
+        //     // ROS_INFO(repeated_state ? "+++ State is repeated +++" : "--- State is NOT repeated");
+        // }
 
         // remove a (action) and s (skipped nodes) from open list (O)
         open_list_copy.erase(std::remove(open_list_copy.begin(), open_list_copy.end(), *a), open_list_copy.end());
@@ -888,7 +891,7 @@ bool CSPExecGenerator::orderNodes(std::vector<int> open_list, int &number_expand
                         // ROS_INFO("++++ Performed action");
                         // printNodes("stack after adding", ordered_nodes_);
 
-                        orderNodes(open_list_copy, number_expanded_nodes, plan_probability, explored_states);                    
+                        orderNodes(open_list_copy, number_expanded_nodes, explored_states);                    
                     }
                     else{
                         // ROS_INFO("---- Skipped action");
@@ -926,7 +929,7 @@ bool CSPExecGenerator::orderNodes(std::vector<int> open_list, int &number_expand
             // printNodes("stack after adding", ordered_nodes_);
 
             // recurse
-            orderNodes(open_list_copy, number_expanded_nodes, 1, explored_states);
+            orderNodes(open_list_copy, number_expanded_nodes, explored_states);
         }
     }
 
@@ -1182,7 +1185,7 @@ bool CSPExecGenerator::generatePlans()
             // find plan
             // if true, it means at least one valid execution alternative was found
             ROS_INFO("Calling orderNodes");
-            orderNodes(open_list, number_expanded_nodes, 1.0, explored_states);
+            orderNodes(open_list, number_expanded_nodes, explored_states);
 
         }
         else{

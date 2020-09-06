@@ -18,17 +18,18 @@ def writeProbToFile(prob_list):
 
 
 def main():
-    list_actions = ['navigate_start#mbot#wp1#wp2#door1#door2$1', 'navigate_end#mbot#wp1#wp2#door1#door2$2', 'open_door_start#mbot#wp2#door2$3', 'open_door_end#mbot#wp2#door2$4', 'navigate_start#mbot#wp2#wp3#door2#door3$5', 'navigate_end#mbot#wp2#wp3#door2#door3$6']
-
+    list_actions = ['navigate_start#mbot#wp1#wp2#door1#door2$1', 'navigate_end#mbot#wp1#wp2#door1#door2$2',
+                    'open_door_start#mbot#wp2#door2$3', 'open_door_end#mbot#wp2#door2$4', 'navigate_start#mbot#wp2#wp3#door2#door3$5',
+                    'navigate_end#mbot#wp2#wp3#door2#door3$6']
     list_goal = ['robot_at#mbot#wp3%6']
-
     list_actions_goal = list_actions + list_goal
 
+    ### Reading from file ###
     file = open('bayesNetAIMA.txt', 'r')
     line = file.readline()
 
+    ### Building bayesian network
     bayes_net_list = list()
-
     while line != '':
         # print('LINE: ' + str(line))
         line = file.readline()
@@ -57,6 +58,7 @@ def main():
     previous_prob = 1
 
 
+    ### Calculating probability
     for node in list_actions_goal:
         print('>>> Node: ' + node)
 
