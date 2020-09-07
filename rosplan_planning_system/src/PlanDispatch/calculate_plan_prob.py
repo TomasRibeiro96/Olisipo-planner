@@ -812,17 +812,8 @@ def writePredicatesToFile():
 def writePredicateParentsToFile():
     file = open('nodes_parents.txt', 'w')
     file.write('NODES AND PARENTS:\n')
-    # For loop to print nodes in order
-    # for i in range(0, len(predicates_par_child_.keys())):
-    #     for predicate in predicates_par_child_.keys():
-    #         node_index = predicate.split('%')[1]
-    #         if node_index == str(i):
-    #             file.write('>>> Node: ' + predicate + '\n')
-    #             for par in predicates_par_child_[predicate]['parents']:
-    #                 file.write(par + '\n')
-    #             file.write('----------------------------\n')
 
-    for layer_index in range(layer_number_):
+    for layer_index in range(layer_number_+1):
         for node in all_nodes_:
             if isPredicate(node):
                 node_index = int(node.split('%')[1])
@@ -951,19 +942,39 @@ def addPredicate(predicate, layer_numb):
     predicates_par_child_[pred_name]['parents'] = set()
     predicates_par_child_[pred_name]['children'] = set()
 
-    # rospy.loginfo('Adding predicate: ' + pred_name)
-    # rospy.loginfo('Layer number: ' + str(layer_numb))
+    # rospy.loginfo('>>> Adding predicate: ' + pred_name)
+    # rospy.loginfo('>>> Layer number: ' + str(layer_numb))
 
     if not layer_numb == 0:
-        prev_pred_name = predicate + '%' + str(layer_numb-1)
-        # rospy.loginfo('Previous predicate: ' + str(prev_pred_name))
-        if prev_pred_name not in all_nodes_:
-            # rospy.loginfo('Adding previous predicate to all_nodes_')
-            addPredicate(predicate, layer_numb-1)
-        
-        # rospy.loginfo('Connecting to previous predicate')
-        predicates_par_child_[pred_name]['parents'].add(prev_pred_name)
-        predicates_par_child_[prev_pred_name]['children'].add(pred_name)
+        for action in actions_par_child_.keys():
+            # rospy.loginfo('- Action: ' + action + ' -')
+            if int(action.split('$')[1]) == layer_numb:
+                # rospy.loginfo('- Action found -')
+                full_action_name = action
+                break
+        action_name = full_action_name.split('$')[0]
+
+        # rospy.loginfo('Previous action: ' + full_action_name)
+
+        if isActionEnd(action_name):
+            action = ActionEnd.getActionEnd(action_name)
+        else:
+            action = ActionStart.getActionStart(action_name)
+
+        if predicate in action.getEffectsPredicates():
+            # rospy.loginfo('Action has predicate as effect')
+            connectActionToEffectPredicate(predicate, layer_numb, action, full_action_name)
+        else:
+            # rospy.loginfo('Action does not has predicate as effect')
+            prev_pred_name = predicate + '%' + str(layer_numb-1)
+            # rospy.loginfo('Previous predicate: ' + str(prev_pred_name))
+            if prev_pred_name not in all_nodes_:
+                # rospy.loginfo('Adding previous predicate to all_nodes_')
+                addPredicate(predicate, layer_numb-1)
+            
+            # rospy.loginfo('Connecting to previous predicate')
+            predicates_par_child_[pred_name]['parents'].add(prev_pred_name)
+            predicates_par_child_[prev_pred_name]['children'].add(pred_name)
 
 
 def addEffectPredicate(predicate):
@@ -1016,22 +1027,16 @@ def connectActionToConditionPredicates(action, action_name):
         actions_par_child_[action_name]['neg_parents'].add(pred_name)
 
 
-def connectActionToEffectsPredicates(action, action_name):
-    global all_nodes_
+def connectActionToEffectPredicate(predicate, layer_numb, action, action_name):
     global predicates_par_child_
     global actions_par_child_
     
-    for predicate in action.getPositiveEffectsPredicates():
-        pred_name = predicate + '%' + str(layer_number_+1)
-        addEffectPredicate(pred_name)
-        # Connect predicate to action
+    if predicate in action.getPositiveEffectsPredicates():
+        pred_name = predicate + '%' + str(layer_numb)
         predicates_par_child_[pred_name]['parents'].add(action_name)
         actions_par_child_[action_name]['pos_children'].add(pred_name)
-
-    for predicate in action.getNegativeEffectsPredicates():
-        pred_name = predicate + '%' + str(layer_number_+1)
-        addEffectPredicate(pred_name)
-        # Connect predicate to action
+    else:
+        pred_name = predicate + '%' + str(layer_numb)
         predicates_par_child_[pred_name]['parents'].add(action_name)
         actions_par_child_[action_name]['neg_children'].add(pred_name)
 
@@ -1081,7 +1086,6 @@ def addActionEdges(action, action_name):
     actions_par_child_[action_name]['neg_children'] = set()
 
     connectActionToConditionPredicates(action, action_name)
-    connectActionToEffectsPredicates(action, action_name)
 
     if isinstance(action, ActionEnd):
         start_index = connectActionEndToActionStart(action, action_name)
@@ -1408,6 +1412,7 @@ def calculateActionsJointProbability(action_name):
 
     prob = 1
 
+    # rospy.loginfo('\tAction: ' + action_name)
     number_parents_action = len(cpds_map_[action_name]['parents'])
     # rospy.loginfo('\tNumber of parents of action: ' + str(number_parents_action))
     all_true = (True,)*number_parents_action
@@ -1571,6 +1576,8 @@ def getProbFromBayesNetAIMA():
 def calculateFullJointProbability():
     global joint_prob_
 
+    added_nodes_.append(set())
+
     for node in goal_:
         goal_node = node + '%' + str(layer_number_)
 
@@ -1597,7 +1604,7 @@ if __name__ == "__main__":
 
     list_actions_goal = list_actions + list_goal
 
-    rospy.loginfo('Setting up')
+    rospy.loginfo('Code ready to receive')
     setup()
     for action in plan:
         getActionsJointProbability(action)
