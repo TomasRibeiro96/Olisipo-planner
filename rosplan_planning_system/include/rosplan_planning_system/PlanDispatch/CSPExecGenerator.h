@@ -283,6 +283,8 @@ class CSPExecGenerator
 
         void reusePreviousPlan(int index_facts);
 
+        int getActionEndLayer(int action);
+
     private:
         // ros related variables
         ros::NodeHandle nh_;
