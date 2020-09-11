@@ -1336,7 +1336,7 @@ def predicateHasActionAsParent(node):
     return None
 
 
-def parentHasActionAsChild(node):
+def parentOfNodeHasActionAsChild(node):
     parent = next(iter(predicates_par_child_[node]['parents']))
 
     return predicateHasActionAsChild(parent)
@@ -1357,11 +1357,12 @@ def calculateColumn(bottom_node, true_value):
         prob = 1
     else:
         prob = cpds_map_[top_parent]
+        accounted_nodes_.add(top_parent)
         # If prob has not been calculated and it's a
         # dictionary, then it has an action as parent
+        # and action needs to be true
         if isinstance(prob, dict):
             prob = prob[(True,)]
-            accounted_nodes_.add(top_parent)
 
 
     # rospy.loginfo('\t\t\t\tTop parent: ' + top_parent)
@@ -1383,9 +1384,15 @@ def calculateColumn(bottom_node, true_value):
         # rospy.loginfo('\t\t\t\t\tSpont_false_true: ' + str(spont_false_true))
         # rospy.loginfo('\t\t\t\t\tNode CPD: ' + str(cpds_map_[node]))
 
-        if parentHasActionAsChild(node):
-            # rospy.loginfo('\t\t\t\t\tFactor Probability (only true): ' + str(prob*(1-spont_true_false)))
-            prob = prob*(1-spont_true_false)
+        # TODO: Change this to match pseudocode
+        action = parentOfNodeHasActionAsChild(node)
+        if action:
+            parent = next(iter(predicates_par_child_[node]['parents']))
+            if parent in actions_par_child_[action]['pos_parents']:
+                # rospy.loginfo('\t\t\t\t\tFactor Probability (only true): ' + str(prob*(1-spont_true_false)))
+                prob = prob*(1-spont_true_false)
+            elif parent in actions_par_child_[action]['neg_parents']:
+                prob = prob*spont_false_true
         else:
             # rospy.loginfo('\t\t\t\t\tFactor Probability (true and false): ' + str(prob*(1-spont_true_false) + (1-prob)*spont_false_true))
             prob = prob*(1-spont_true_false) + (1-prob)*spont_false_true
