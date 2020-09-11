@@ -171,15 +171,6 @@ class CSPExecGenerator
          */
         bool simulateAction(bool action_start, std::string action_name, std::vector<std::string> params);
 
-        /**
-         * @brief checks if state was already explored
-         * @param action_name
-         * @param params params of action
-         * @param explored_states list of already explored states
-         * @return true if action was successfully simulated, false otherwise
-         */
-        bool stateIsRepeated(std::vector<rosplan_knowledge_msgs::KnowledgeItem> state,
-                            std::vector<std::vector<rosplan_knowledge_msgs::KnowledgeItem>> explored_states);
 
         std::vector<rosplan_knowledge_msgs::KnowledgeItem> getStateAfterAction(std::string action_name,
                                                                                 std::vector<std::string> params,
@@ -202,8 +193,7 @@ class CSPExecGenerator
          * the ordered list (which is used also as stack for the DFS search with backtrack)
          * @return true if at least one valid execution was found, false otherwise
          */
-        bool orderNodes(std::vector<int> open_list, int &number_expanded_nodes,
-                        std::vector<std::vector<rosplan_knowledge_msgs::KnowledgeItem>> states);
+        bool orderNodes(std::vector<int> open_list, int &number_expanded_nodes);
 
         /**
          * @brief backtrack: popf, remove last element from f, store in variable and revert that action

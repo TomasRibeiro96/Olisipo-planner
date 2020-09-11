@@ -15,9 +15,6 @@
 #include <algorithm>
 
 int total_number_nodes_expanded = 1;
-bool new_algorithm = true;
-int number_service_calls = 0;
-// double service_time_sum = 0;
 
 // TODO: When service is called again, if the at_start effects of an action
 // are alreasdy present in the current state, then remove it from the open list
@@ -526,16 +523,6 @@ bool CSPExecGenerator::simulateAction(bool action_start, std::string action_name
     return true;
 }
 
-bool CSPExecGenerator::stateIsRepeated(std::vector<rosplan_knowledge_msgs::KnowledgeItem> state,
-                                        std::vector<std::vector<rosplan_knowledge_msgs::KnowledgeItem>> explored_states){
-    bool repeated_state = false;
-    for(auto&& state_explored: explored_states){
-        if(statesAreEqual(state, state_explored)){
-            return true;
-        }
-    }
-    return false;
-}
 
 std::vector<rosplan_knowledge_msgs::KnowledgeItem> CSPExecGenerator::getStateAfterAction(std::string action_name,
                                                                                         std::vector<std::string> params,
@@ -745,17 +732,12 @@ double CSPExecGenerator::getCurrentPlanProbabilityAndFillExpectedFacts(){
     return plan_success_probability;
 }
 
-bool CSPExecGenerator::orderNodes(std::vector<int> open_list, int &number_expanded_nodes,
-                                    std::vector<std::vector<rosplan_knowledge_msgs::KnowledgeItem>> explored_states)
+bool CSPExecGenerator::orderNodes(std::vector<int> open_list, int &number_expanded_nodes)
 {
     // shift nodes from open list (O) to ordered plans (R)
     // offering all possible different execution alternatives via DFS (Depth first search)
 
     ROS_DEBUG("order nodes (recurse)");
-
-    // Add current state to explored_states
-    std::vector<rosplan_knowledge_msgs::KnowledgeItem> current_state = action_simulator_.getCurrentState();
-    explored_states.push_back(current_state);
 
     if(!checkTemporalConstraints(ordered_nodes_, set_of_constraints_)) {
         // ROS_INFO("$$$ Temporal constraints not satisfied $$$$");
@@ -783,14 +765,8 @@ bool CSPExecGenerator::orderNodes(std::vector<int> open_list, int &number_expand
 
         double plan_success_probability;
 
-        if(new_algorithm){
-            plan_success_probability = getCurrentPlanProbabilityAndFillExpectedFacts();
-            exec_aternatives_msg_.plan_success_prob.push_back(plan_success_probability);
-        }
-        else{
-            plan_success_probability = computePlanProbability(ordered_nodes_, action_prob_map_);
-            exec_aternatives_msg_.plan_success_prob.push_back(plan_success_probability);
-        }
+        plan_success_probability = getCurrentPlanProbabilityAndFillExpectedFacts();
+        exec_aternatives_msg_.plan_success_prob.push_back(plan_success_probability);
 
         // backtrack: popf, remove last element from f, store in variable and revert that action
         backtrack("goal was achieved", true);
@@ -831,105 +807,58 @@ bool CSPExecGenerator::orderNodes(std::vector<int> open_list, int &number_expand
             return false;
         }
 
-        // Initialised as false in case it's action_end
-        bool repeated_state = false;
-
-        ////// Removed this because state might have already been explored but had no applicable
-        ////// actions and it now might, because the sequence of previously executed actions is not the same 
-        // if(action_start){
-        //     std::vector<rosplan_knowledge_msgs::KnowledgeItem> state_after_action = getStateAfterAction(action_name, params, open_list_copy);
-        //     repeated_state = stateIsRepeated(state_after_action, explored_states);
-        //     // ROS_INFO(">>> State after action: %s", getStateAsString(state_after_first_action).c_str());
-        //     // ROS_INFO(">>> Current state: %s", getStateAsString(current_state).c_str());
-        //     // ROS_INFO(repeated_state ? "+++ State is repeated +++" : "--- State is NOT repeated");
-        // }
-
         // remove a (action) and s (skipped nodes) from open list (O)
         open_list_copy.erase(std::remove(open_list_copy.begin(), open_list_copy.end(), *a), open_list_copy.end());
 
-        if(new_algorithm){
-            if(!repeated_state){
+        ROS_INFO("Calling getActionsJointProbability");
+        CPyObject pFuncCalcProb = PyObject_GetAttrString(pModule_, "getActionsJointProbability");
+        if(pFuncCalcProb && PyCallable_Check(pFuncCalcProb)){
             
-                ROS_INFO("Calling getActionsJointProbability");
-                CPyObject pFuncCalcProb = PyObject_GetAttrString(pModule_, "getActionsJointProbability");
-                if(pFuncCalcProb && PyCallable_Check(pFuncCalcProb)){
-                    
-                    std::string full_action_name = getFullActionName(*a);
-                    PyObject* pArgs = PyTuple_New(1);
-                    CPyObject py_action_string = PyUnicode_FromString(full_action_name.c_str());
-                    PyTuple_SetItem(pArgs, 0, py_action_string);
-                    
-                    CPyObject pReturnedProbability = PyObject_CallObject(pFuncCalcProb, pArgs);
-                    double plan_probability = PyFloat_AsDouble(pReturnedProbability);
+            std::string full_action_name = getFullActionName(*a);
+            PyObject* pArgs = PyTuple_New(1);
+            CPyObject py_action_string = PyUnicode_FromString(full_action_name.c_str());
+            PyTuple_SetItem(pArgs, 0, py_action_string);
+            
+            CPyObject pReturnedProbability = PyObject_CallObject(pFuncCalcProb, pArgs);
+            double plan_probability = PyFloat_AsDouble(pReturnedProbability);
 
-                    if(plan_probability == -1.0){
-                        ROS_ERROR("Received NULL from getActionsJointProbability");
-                    }
-                    else{
-                        ROS_INFO("Plan probability: %f", plan_probability);
-                    }
+            if(plan_probability == -1.0){
+                ROS_ERROR("Received NULL from getActionsJointProbability");
+            }
+            else{
+                ROS_INFO("Plan probability: %f", plan_probability);
+            }
 
-                    int size = exec_aternatives_msg_.plan_success_prob.size();
-                    double best_prob_yet = 0;
-                    if(size != 0)
-                        best_prob_yet = exec_aternatives_msg_.plan_success_prob[size-1];
-                    
-                    // ROS_INFO(">>> Current probability: %f", plan_success_probability);
-                    // ROS_INFO(">>> Best probability yet: %f", best_prob_yet);
+            int size = exec_aternatives_msg_.plan_success_prob.size();
+            double best_prob_yet = 0;
+            if(size != 0)
+                best_prob_yet = exec_aternatives_msg_.plan_success_prob[size-1];
+            
+            // ROS_INFO(">>> Current probability: %f", plan_success_probability);
+            // ROS_INFO(">>> Best probability yet: %f", best_prob_yet);
 
-                    if(plan_probability > best_prob_yet){
-                        number_expanded_nodes++;
+            if(plan_probability > best_prob_yet){
+                number_expanded_nodes++;
 
-                        // std::stringstream full_action_name = getFullActionName(action_name, params, action_start);
-                        // ROS_INFO(">>>>> Apply action : %s <<<<<", full_action_name.str().c_str());
-                        // Add action to queue
-                        ordered_nodes_.push_back(*a);
+                // std::stringstream full_action_name = getFullActionName(action_name, params, action_start);
+                // ROS_INFO(">>>>> Apply action : %s <<<<<", full_action_name.str().c_str());
+                // Add action to queue
+                ordered_nodes_.push_back(*a);
 
-                        if(!simulateAction(action_start, action_name, params))
-                            return false;
-                    
-                        // ROS_INFO("++++ Performed action");
-                        // printNodes("stack after adding", ordered_nodes_);
+                if(!simulateAction(action_start, action_name, params))
+                    return false;
+            
+                // ROS_INFO("++++ Performed action");
+                // printNodes("stack after adding", ordered_nodes_);
 
-                        orderNodes(open_list_copy, number_expanded_nodes, explored_states);                    
-                    }
-                    else{
-                        // ROS_INFO("---- Skipped action");
-                    }
-                }
-                else{
-                    ROS_ERROR("Could not call getActionsJointProbability");
-                }
+                orderNodes(open_list_copy, number_expanded_nodes);                    
+            }
+            else{
+                // ROS_INFO("---- Skipped action");
             }
         }
         else{
-            number_expanded_nodes++;
-            // ROS_INFO(">>>>> Apply action : (%d)", *a);
-            ordered_nodes_.push_back(*a);
-
-            // ROS_INFO("++++ Performed action");
-
-            // Simulate action
-            if(action_start) {
-                // action start
-                ROS_DEBUG("apply action a : (%s)", action_simulator_.convertPredToString(action_name, params).c_str());
-                if(!action_simulator_.simulateActionStart(action_name, params)) {
-                    ROS_ERROR("could not simulate action start");
-                    return false;
-                }
-            }
-            else {
-                // action end
-                if(!action_simulator_.simulateActionEnd(action_name, params)) {
-                    ROS_ERROR("could not simulate action end");
-                    return false;
-                }
-            }
-
-            // printNodes("stack after adding", ordered_nodes_);
-
-            // recurse
-            orderNodes(open_list_copy, number_expanded_nodes, explored_states);
+            ROS_ERROR("Could not call getActionsJointProbability");
         }
     }
 
@@ -1112,15 +1041,13 @@ bool CSPExecGenerator::generatePlans()
     // It starts from the end of expected facts because the state might
     // have unexpectedly changed and we may be able to skip actions
     // ROS_INFO(expected_facts_.empty()? "Expected facts: EMPTY":"Expected facts: FILLED");
-    if(new_algorithm){
-        if(!expected_facts_.empty()){
-            int index_facts = currentStateContainsExpectedFacts();
-            // ROS_INFO(">>> Layer selected: %d", index_facts);
-            if(index_facts >= 0){
-                ROS_INFO(">>> Reusing plan");
-                reusePreviousPlan(index_facts);
-                return true;
-            }
+    if(!expected_facts_.empty()){
+        int index_facts = currentStateContainsExpectedFacts();
+        // ROS_INFO(">>> Layer selected: %d", index_facts);
+        if(index_facts >= 0){
+            ROS_INFO(">>> Reusing plan");
+            reusePreviousPlan(index_facts);
+            return true;
         }
     }
 
@@ -1185,7 +1112,7 @@ bool CSPExecGenerator::generatePlans()
             // find plan
             // if true, it means at least one valid execution alternative was found
             ROS_INFO("Calling orderNodes");
-            orderNodes(open_list, number_expanded_nodes, explored_states);
+            orderNodes(open_list, number_expanded_nodes);
 
         }
         else{
@@ -1202,7 +1129,6 @@ bool CSPExecGenerator::generatePlans()
     // ROS_INFO("#### Number of nodes expanded: %d ####", number_expanded_nodes);
     total_number_nodes_expanded += number_expanded_nodes;
     ROS_INFO("//// Total number of nodes expanded: %d ////", total_number_nodes_expanded);
-    // double average_service_time = service_time_sum/(double)number_service_calls;
     // ROS_INFO("|||| Average service call time: %f", average_service_time);
     return (exec_aternatives_msg_.esterel_plans.size()>0);
 }
