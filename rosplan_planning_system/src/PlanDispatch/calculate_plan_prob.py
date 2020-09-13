@@ -1214,7 +1214,8 @@ def getProbabilities():
     global pred_probabilities_map_
     global action_probabilities_map_
     
-    file = open('/home/tomas/ros_ws/src/ROSPlan/src/rosplan/probabilities.txt', 'r')
+    file = open('/home/tomas/ros_ws/src/ROSPlan/src/rosplan/probabilities-skip_door.txt', 'r')
+    file = open('/home/tomas/ros_ws/src/ROSPlan/src/rosplan/probabilities-factory_robot.txt', 'r')
     line = file.readline()
     predicates = True
     actions_par_child_ = False
@@ -1495,15 +1496,23 @@ def backtrack():
     global added_nodes_
     global list_probabilities_
     global layer_number_
+    global joint_prob_
 
+    rospy.loginfo('//////////////////////////////////////')
     rospy.loginfo('Backtracking from layer ' + str(layer_number_) + ' to ' + str(layer_number_-1))
+    rospy.loginfo('List probabilities: ' + str(list_probabilities_))
+    rospy.loginfo('Previous joint_prob_: ' + str(joint_prob_))
     # Remove action and predicates of last layer
     for node in added_nodes_[-1]:
         removeNode(node)
     
     added_nodes_.pop(-1)
     list_probabilities_.pop(-1)
+    joint_prob_ = list_probabilities_[-1]
     layer_number_ = layer_number_ - 1
+
+    rospy.loginfo('New joint_prob_: ' + str(joint_prob_))
+    rospy.loginfo('//////////////////////////////////////')
                 
 
 def writeBayesNetAIMAToFile():
