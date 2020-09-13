@@ -1,13 +1,18 @@
 (define (problem task)
-(:domain skip_door)
+(:domain factory_robot)
 (:objects
     mbot - robot
-    door1 door2 door3 - door
-    wp1 wp2 wp3 - waypoint
+    m1 m2 m3 - machine
 )
 (:init
-    (robot_at mbot wp1)
+    (robot_at mbot m1)
 
-    (connected wp1 wp2)
-    (connected wp2 wp3)
+    (machine_is_fixed m1)
 
+)
+(:goal (and
+    (machine_is_fixed m1)
+    (machine_is_fixed m2)
+    (machine_is_fixed m3)
+))
+)

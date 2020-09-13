@@ -1613,16 +1613,43 @@ def calculateFullJointProbability():
     return joint_prob_
 
 
+def getListActions(plan):
+    lst = list()
+    for i in range(len(plan)):
+        lst.append(plan[i] + '%' + str(i+1))
+    
+    return lst
+
+
+def getGoalFacts(plan):
+    lst = list()
+    layer = str(len(plan))
+    for fact in goal_:
+        lst.append(fact + '%' + layer)
+    
+    return lst
+
+
 ''' This is only for testing with the 'skip_door' domain and 'problem_r1_w3' '''
 if __name__ == "__main__":
-    plan = ['navigate_start#mbot#wp1#wp2#door1#door2', 'navigate_end#mbot#wp1#wp2#door1#door2', 'open_door_start#mbot#wp2#door2', 'open_door_end#mbot#wp2#door2', 'navigate_start#mbot#wp2#wp3#door2#door3', 'navigate_end#mbot#wp2#wp3#door2#door3']    
-    list_actions = ['navigate_start#mbot#wp1#wp2#door1#door2$1', 'navigate_end#mbot#wp1#wp2#door1#door2$2', 'open_door_start#mbot#wp2#door2$3', 'open_door_end#mbot#wp2#door2$4', 'navigate_start#mbot#wp2#wp3#door2#door3$5', 'navigate_end#mbot#wp2#wp3#door2#door3$6']
-    list_goal = ['robot_at#mbot#wp3%6']
-
-    list_actions_goal = list_actions + list_goal
 
     rospy.loginfo('Code ready to receive')
     setup()
+
+    # Skip door
+    # plan = ['navigate_start#mbot#wp1#wp2#door1#door2', 'navigate_end#mbot#wp1#wp2#door1#door2', 'open_door_start#mbot#wp2#door2', 'open_door_end#mbot#wp2#door2', 'navigate_start#mbot#wp2#wp3#door2#door3', 'navigate_end#mbot#wp2#wp3#door2#door3']    
+    # list_actions = ['navigate_start#mbot#wp1#wp2#door1#door2$1', 'navigate_end#mbot#wp1#wp2#door1#door2$2', 'open_door_start#mbot#wp2#door2$3', 'open_door_end#mbot#wp2#door2$4', 'navigate_start#mbot#wp2#wp3#door2#door3$5', 'navigate_end#mbot#wp2#wp3#door2#door3$6']
+    # list_goal = ['robot_at#mbot#wp3%6']
+
+    # Factory robot
+    plan = ['navigate_start#mbot#m1#m2', 'navigate_end#mbot#m1#m2', 'fix_machine_start#mbot#m2', 'fix_machine_end#mbot#m2', 'navigate_start#mbot#m2#m3', 'navigate_end#mbot#m2#m3', 'fix_machine_start#mbot#m3', 'fix_machine_end#mbot#m3']    
+    list_actions = getListActions(plan)
+    list_goal = getGoalFacts(plan)
+
+    list_actions_goal = list_actions + list_goal
+
+    rospy.loginfo('>>> List actions+goal: ' + str(list_actions_goal))
+
     for action in plan:
         getActionsJointProbability(action)
 
@@ -1638,12 +1665,12 @@ if __name__ == "__main__":
     rospy.loginfo('>>> List probabilities: ' + str(list_probabilities_))
     rospy.loginfo('>>> BayesNetAIMA:       ' + str(bayes_net_AIMA))
 
-    for i in range(len(list_actions_goal)):
+    for i in range(len(list_actions)+1):
         node = list_actions_goal[i]
 
         rospy.loginfo('>>> Node: ' + node)
         rospy.loginfo('Code probability:           ' + str(round(list_probabilities_[i], 6)))
-        rospy.loginfo('Bayes net AIMA probability: ' + str(round(bayes_net_AIMA[i], 6)) + '\n')
+        # rospy.loginfo('Bayes net AIMA probability: ' + str(round(bayes_net_AIMA[i], 6)) + '\n')
 
     writePredicatesToFile()
     writePredicateParentsToFile()

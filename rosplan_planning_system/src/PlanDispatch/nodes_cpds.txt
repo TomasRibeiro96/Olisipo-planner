@@ -1,247 +1,144 @@
 NODES AND CPDs:
->>> Node: robot_at#mbot#wp1%0
+>>> Node: robot_at#mbot#m1%0
 1
->>> Node: door_at#door1#wp1%0
+>>> Node: machine_is_fixed#m1%0
 1
->>> Node: connected#wp1#wp2%0
-1
->>> Node: door_is_open#door1%0
-1
->>> Node: door_at#door2#wp2%0
-1
->>> Node: connected#wp2#wp3%0
-1
->>> Node: door_at#door3#wp3%0
-1
->>> Node: navigate_start#mbot#wp1#wp2#door1#door2$1
-(True, True, True, False, False): 0
-(True, False, True, True, False): 0
-(True, True, False, True, True): 0
-(True, False, False, False, False): 0
-(False, False, False, False, True): 0
-(True, False, True, False, False): 0
-(False, False, True, True, True): 0
-(True, True, True, True, False): 0
-(False, True, False, True, True): 0
-(True, False, False, True, False): 0
-(False, False, True, False, True): 0
-(False, True, True, True, False): 0
-(False, False, True, False, False): 0
-(True, True, True, False, True): 0
-(False, True, False, False, False): 0
-(True, False, True, True, True): 0
-(True, True, False, True, False): 0
-(True, True, False, False, False): 0
-parents: set(['door_is_open#door1%0', 'connected#wp1#wp2%0', 'door_at#door2#wp2%0', 'robot_at#mbot#wp1%0', 'door_at#door1#wp1%0'])
-(True, False, True, False, True): 0
-(False, False, True, True, False): 0
-(False, True, True, False, False): 0
-(False, False, False, True, False): 0
-(True, False, False, False, True): 0
-(False, False, False, False, False): 0
-(True, True, True, True, True): 0.8
-(False, False, False, True, True): 0
-(True, False, False, True, True): 0
-(False, True, False, False, True): 0
-(False, True, True, False, True): 0
-(False, True, False, True, False): 0
-(True, True, False, False, True): 0
-(False, True, True, True, True): 0
-
->>> Node: door_at#door1#wp1%1
-(False,): 0.05
-parents: set(['door_at#door1#wp1%0'])
-(True,): 0.93
-
->>> Node: door_is_open#door1%1
-(False,): 0.05
-parents: set(['door_is_open#door1%0'])
-(True,): 0.93
-
->>> Node: door_at#door2#wp2%1
-(False,): 0.05
-parents: set(['door_at#door2#wp2%0'])
-(True,): 0.93
-
->>> Node: connected#wp2#wp3%1
-(False,): 0.05
-parents: set(['connected#wp2#wp3%0'])
-(True,): 0.93
-
->>> Node: door_at#door3#wp3%1
-(False,): 0.05
-parents: set(['door_at#door3#wp3%0'])
-(True,): 0.93
-
->>> Node: navigate_end#mbot#wp1#wp2#door1#door2$2
-(True, False, True, True): 0
-(True, True, False, True): 0
-(True, False, False, False): 0
-(False, True, True, False): 0
-(True, False, True, False): 0
-(False, False, False, True): 0
-(False, False, True, True): 0
-(True, False, False, True): 0
-(False, True, False, False): 0
-(True, True, True, True): 1
-(False, False, False, False): 0
-parents: set(['door_is_open#door1%1', 'door_at#door2#wp2%1', 'navigate_start#mbot#wp1#wp2#door1#door2$1', 'door_at#door1#wp1%1'])
-(False, False, True, False): 0
-(False, True, False, True): 0
-(True, True, True, False): 0
-(False, True, True, True): 0
-(True, True, False, False): 0
-
->>> Node: robot_at#mbot#wp2%2
+>>> Node: navigate_start#mbot#m1#m2$1
 (False,): 0
-parents: navigate_end#mbot#wp1#wp2#door1#door2$2
+parents: set(['robot_at#mbot#m1%0'])
+(True,): 0.8
+
+>>> Node: machine_is_fixed#m1%1
+(False,): 0.05
+parents: set(['machine_is_fixed#m1%0'])
 (True,): 0.9
 
->>> Node: door_at#door2#wp2%2
+>>> Node: navigate_end#mbot#m1#m2$2
+(False,): 0
+parents: set(['navigate_start#mbot#m1#m2$1'])
+(True,): 1
+
+>>> Node: robot_at#mbot#m2%2
+(False,): 0
+parents: navigate_end#mbot#m1#m2$2
+(True,): 0.9
+
+>>> Node: machine_is_fixed#m1%2
 (False,): 0.05
-parents: set(['door_at#door2#wp2%1'])
+parents: set(['machine_is_fixed#m1%1'])
+(True,): 0.9
+
+>>> Node: fix_machine_start#mbot#m2$3
+(False,): 0
+parents: set(['robot_at#mbot#m2%2'])
+(True,): 0.85
+
+>>> Node: robot_at#mbot#m2%3
+(False,): 0.05
+parents: set(['robot_at#mbot#m2%2'])
 (True,): 0.93
 
->>> Node: connected#wp2#wp3%2
+>>> Node: machine_is_fixed#m1%3
 (False,): 0.05
-parents: set(['connected#wp2#wp3%1'])
-(True,): 0.93
+parents: set(['machine_is_fixed#m1%2'])
+(True,): 0.9
 
->>> Node: door_at#door3#wp3%2
-(False,): 0.05
-parents: set(['door_at#door3#wp3%1'])
-(True,): 0.93
-
->>> Node: open_door_start#mbot#wp2#door2$3
+>>> Node: fix_machine_end#mbot#m2$4
 (False, True): 0
 (True, False): 0
 (False, False): 0
-parents: set(['door_at#door2#wp2%2', 'robot_at#mbot#wp2%2'])
-(True, True): 0.8
-
->>> Node: door_at#door2#wp2%3
-(False,): 0.05
-parents: set(['door_at#door2#wp2%2'])
-(True,): 0.93
-
->>> Node: robot_at#mbot#wp2%3
-(False,): 0.05
-parents: set(['robot_at#mbot#wp2%2'])
-(True,): 0.93
-
->>> Node: connected#wp2#wp3%3
-(False,): 0.05
-parents: set(['connected#wp2#wp3%2'])
-(True,): 0.93
-
->>> Node: door_at#door3#wp3%3
-(False,): 0.05
-parents: set(['door_at#door3#wp3%2'])
-(True,): 0.93
-
->>> Node: open_door_end#mbot#wp2#door2$4
-(False, True): 0
-(True, False): 0
-(False, False): 0
-parents: set(['door_at#door2#wp2%3', 'open_door_start#mbot#wp2#door2$3'])
+parents: set(['fix_machine_start#mbot#m2$3', 'robot_at#mbot#m2%3'])
 (True, True): 1
 
->>> Node: robot_at#mbot#wp2%4
+>>> Node: robot_at#mbot#m2%4
 (False,): 0.05
-parents: set(['robot_at#mbot#wp2%3'])
+parents: set(['robot_at#mbot#m2%3'])
 (True,): 0.93
 
->>> Node: door_at#door2#wp2%4
+>>> Node: machine_is_fixed#m1%4
 (False,): 0.05
-parents: set(['door_at#door2#wp2%3'])
-(True,): 0.93
-
->>> Node: connected#wp2#wp3%4
-(False,): 0.05
-parents: set(['connected#wp2#wp3%3'])
-(True,): 0.93
-
->>> Node: door_at#door3#wp3%4
-(False,): 0.05
-parents: set(['door_at#door3#wp3%3'])
-(True,): 0.93
-
->>> Node: door_is_open#door2%4
-(False,): 0
-parents: open_door_end#mbot#wp2#door2$4
+parents: set(['machine_is_fixed#m1%3'])
 (True,): 0.9
 
->>> Node: navigate_start#mbot#wp2#wp3#door2#door3$5
-(True, True, True, False, False): 0
-(True, False, True, True, False): 0
-(True, True, False, True, True): 0
-(True, False, False, False, False): 0
-(False, False, False, False, True): 0
-(True, False, True, False, False): 0
-(False, False, True, True, True): 0
-(True, True, True, True, False): 0
-(False, True, False, True, True): 0
-(True, False, False, True, False): 0
-(False, False, True, False, True): 0
-(False, True, True, True, False): 0
-(False, False, True, False, False): 0
-(True, True, True, False, True): 0
-(False, True, False, False, False): 0
-(True, False, True, True, True): 0
-(True, True, False, True, False): 0
-(True, True, False, False, False): 0
-parents: set(['robot_at#mbot#wp2%4', 'connected#wp2#wp3%4', 'door_at#door3#wp3%4', 'door_is_open#door2%4', 'door_at#door2#wp2%4'])
-(True, False, True, False, True): 0
-(False, False, True, True, False): 0
-(False, True, True, False, False): 0
-(False, False, False, True, False): 0
-(True, False, False, False, True): 0
-(False, False, False, False, False): 0
-(True, True, True, True, True): 0.8
-(False, False, False, True, True): 0
-(True, False, False, True, True): 0
-(False, True, False, False, True): 0
-(False, True, True, False, True): 0
-(False, True, False, True, False): 0
-(True, True, False, False, True): 0
-(False, True, True, True, True): 0
-
->>> Node: door_at#door2#wp2%5
-(False,): 0.05
-parents: set(['door_at#door2#wp2%4'])
-(True,): 0.93
-
->>> Node: door_at#door3#wp3%5
-(False,): 0.05
-parents: set(['door_at#door3#wp3%4'])
-(True,): 0.93
-
->>> Node: door_is_open#door2%5
-(False,): 0.05
-parents: set(['door_is_open#door2%4'])
-(True,): 0.93
-
->>> Node: navigate_end#mbot#wp2#wp3#door2#door3$6
-(True, False, True, True): 0
-(True, True, False, True): 0
-(True, False, False, False): 0
-(False, True, True, False): 0
-(True, False, True, False): 0
-(False, False, False, True): 0
-(False, False, True, True): 0
-(True, False, False, True): 0
-(False, True, False, False): 0
-(True, True, True, True): 1
-(False, False, False, False): 0
-parents: set(['navigate_start#mbot#wp2#wp3#door2#door3$5', 'door_at#door3#wp3%5', 'door_at#door2#wp2%5', 'door_is_open#door2%5'])
-(False, False, True, False): 0
-(False, True, False, True): 0
-(True, True, True, False): 0
-(False, True, True, True): 0
-(True, True, False, False): 0
-
->>> Node: robot_at#mbot#wp3%6
+>>> Node: machine_is_fixed#m2%4
 (False,): 0
-parents: navigate_end#mbot#wp2#wp3#door2#door3$6
+parents: fix_machine_end#mbot#m2$4
+(True,): 0.95
+
+>>> Node: navigate_start#mbot#m2#m3$5
+(False,): 0
+parents: set(['robot_at#mbot#m2%4'])
+(True,): 0.8
+
+>>> Node: machine_is_fixed#m1%5
+(False,): 0.05
+parents: set(['machine_is_fixed#m1%4'])
 (True,): 0.9
+
+>>> Node: machine_is_fixed#m2%5
+(False,): 0.06
+parents: set(['machine_is_fixed#m2%4'])
+(True,): 0.89
+
+>>> Node: navigate_end#mbot#m2#m3$6
+(False,): 0
+parents: set(['navigate_start#mbot#m2#m3$5'])
+(True,): 1
+
+>>> Node: robot_at#mbot#m3%6
+(False,): 0
+parents: navigate_end#mbot#m2#m3$6
+(True,): 0.9
+
+>>> Node: machine_is_fixed#m1%6
+(False,): 0.05
+parents: set(['machine_is_fixed#m1%5'])
+(True,): 0.9
+
+>>> Node: machine_is_fixed#m2%6
+(False,): 0.06
+parents: set(['machine_is_fixed#m2%5'])
+(True,): 0.89
+
+>>> Node: fix_machine_start#mbot#m3$7
+(False,): 0
+parents: set(['robot_at#mbot#m3%6'])
+(True,): 0.85
+
+>>> Node: robot_at#mbot#m3%7
+(False,): 0.05
+parents: set(['robot_at#mbot#m3%6'])
+(True,): 0.93
+
+>>> Node: machine_is_fixed#m1%7
+(False,): 0.05
+parents: set(['machine_is_fixed#m1%6'])
+(True,): 0.9
+
+>>> Node: machine_is_fixed#m2%7
+(False,): 0.06
+parents: set(['machine_is_fixed#m2%6'])
+(True,): 0.89
+
+>>> Node: fix_machine_end#mbot#m3$8
+(False, True): 0
+(True, False): 0
+(False, False): 0
+parents: set(['robot_at#mbot#m3%7', 'fix_machine_start#mbot#m3$7'])
+(True, True): 1
+
+>>> Node: machine_is_fixed#m1%8
+(False,): 0.05
+parents: set(['machine_is_fixed#m1%7'])
+(True,): 0.9
+
+>>> Node: machine_is_fixed#m2%8
+(False,): 0.06
+parents: set(['machine_is_fixed#m2%7'])
+(True,): 0.89
+
+>>> Node: machine_is_fixed#m3%8
+(False,): 0
+parents: fix_machine_end#mbot#m3$8
+(True,): 0.95
 

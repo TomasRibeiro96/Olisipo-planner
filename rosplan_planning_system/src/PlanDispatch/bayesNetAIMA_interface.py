@@ -17,18 +17,11 @@ def writeProbToFile(prob_list):
     file.close()
 
 
-def main():
-    list_actions = ['navigate_start#mbot#wp1#wp2#door1#door2$1', 'navigate_end#mbot#wp1#wp2#door1#door2$2',
-                    'open_door_start#mbot#wp2#door2$3', 'open_door_end#mbot#wp2#door2$4', 'navigate_start#mbot#wp2#wp3#door2#door3$5',
-                    'navigate_end#mbot#wp2#wp3#door2#door3$6']
-    list_goal = ['robot_at#mbot#wp3%6']
-    list_actions_goal = list_actions + list_goal
-
+def buildBayesNetwork():
     ### Reading from file ###
     file = open('bayesNetAIMA.txt', 'r')
     line = file.readline()
 
-    ### Building bayesian network
     bayes_net_list = list()
     while line != '':
         # print('LINE: ' + str(line))
@@ -50,7 +43,24 @@ def main():
         line = file.readline()
         bayes_net_list.append((name, parents, cpt))
 
-    bayes_net = probability.BayesNet(bayes_net_list)
+    return probability.BayesNet(bayes_net_list)
+
+
+def main():
+    # Skip door
+    # list_actions = ['navigate_start#mbot#wp1#wp2#door1#door2$1', 'navigate_end#mbot#wp1#wp2#door1#door2$2',
+    #                 'open_door_start#mbot#wp2#door2$3', 'open_door_end#mbot#wp2#door2$4', 'navigate_start#mbot#wp2#wp3#door2#door3$5',
+    #                 'navigate_end#mbot#wp2#wp3#door2#door3$6']
+    # list_goal = ['robot_at#mbot#wp3%6']
+
+    # Factory robot
+    list_actions = ['navigate_start#mbot#m1#m2$1', 'navigate_end#mbot#m1#m2$2', 'fix_machine_start#mbot#m2$3',
+                    'fix_machine_end#mbot#m2$4', 'navigate_start#mbot#m2#m3$5', 'navigate_end#mbot#m2#m3$6',
+                    'fix_machine_start#mbot#m3$7', 'fix_machine_end#mbot#m3$8']
+    list_goal = ['machine_is_fixed#m1%8', 'machine_is_fixed#m2%8', 'machine_is_fixed#m3%8']
+    
+
+    bayes_net = buildBayesNetwork()
 
     evidence = {}
 
@@ -58,8 +68,8 @@ def main():
     previous_prob = 1
 
 
-    ### Calculating probability
-    for node in list_actions_goal:
+    ### Calculating actions probability
+    for node in list_actions:
         print('>>> Node: ' + node)
 
         # Using variable elimination
@@ -75,6 +85,26 @@ def main():
         addNodeToEvidence(evidence, node)
 
         print('>>> Probability: ' + str(prob_list[-1]) + '\n')
+    
+    ### Calculating goal probability
+    goal_prob = 1
+    for node in list_goal:
+        # print('>>> Goal: ' + node)
+
+        # Using variable elimination
+        prob = probability.elimination_ask(node, evidence, bayes_net).prob[True]
+
+        goal_prob = goal_prob*prob
+        
+        addNodeToEvidence(evidence, node)
+
+        # print('>>> Probability: ' + str(prob_list[-1]) + '\n')
+
+    total_joint_prob = prob_list[-1]*goal_prob
+    prob_list.append(total_joint_prob)
+
+    print('Full joint probability: ' + str(total_joint_prob))
+
     
     writeProbToFile(prob_list)
 
