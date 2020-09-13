@@ -399,7 +399,7 @@ void CSPExecGenerator::backtrack(std::string reason_for_backtrack, bool backtrac
                 action_simulator_.revertActionEnd(action_name, params);
             
             if(backtrack_bayes_network){
-                ROS_INFO("Backtrack: %s", reason_for_backtrack.c_str());
+                ROS_INFO("--- Backtrack: %s ---", reason_for_backtrack.c_str());
                 backtrackBayesianNetwork();
             }
             // action_simulator_.printInternalKBFacts();
@@ -801,6 +801,8 @@ bool CSPExecGenerator::orderNodes(std::vector<int> open_list, int &number_expand
     // iterate over actions in valid nodes (V)
     for(auto a=valid_nodes.begin(); a!=valid_nodes.end(); a++) {
 
+        ROS_INFO("--------------------------------");
+        printNodes("Plan", ordered_nodes_);
         // Print valid nodes
         printNodes("Valid nodes", valid_nodes);
 
@@ -848,8 +850,8 @@ bool CSPExecGenerator::orderNodes(std::vector<int> open_list, int &number_expand
             // ROS_INFO(">>> Current probability: %f", plan_success_probability);
             // ROS_INFO(">>> Best probability yet: %f", best_prob_yet);
 
-            // if(plan_probability > best_prob_yet){
-            if(plan_probability){
+            if(plan_probability > best_prob_yet){
+            // if(plan_probability){
                 number_expanded_nodes++;
 
                 ROS_INFO(">>>>> Apply action : %s <<<<<", full_action_name.c_str());

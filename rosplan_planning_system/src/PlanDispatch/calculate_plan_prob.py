@@ -1498,10 +1498,10 @@ def backtrack():
     global layer_number_
     global joint_prob_
 
-    rospy.loginfo('//////////////////////////////////////')
-    rospy.loginfo('Backtracking from layer ' + str(layer_number_) + ' to ' + str(layer_number_-1))
-    rospy.loginfo('List probabilities: ' + str(list_probabilities_))
-    rospy.loginfo('Previous joint_prob_: ' + str(joint_prob_))
+    # rospy.loginfo('//////////////////////////////////////')
+    # rospy.loginfo('Backtracking from layer ' + str(layer_number_) + ' to ' + str(layer_number_-1))
+    # rospy.loginfo('List probabilities: ' + str(list_probabilities_))
+    # rospy.loginfo('Previous joint_prob_: ' + str(joint_prob_))
     # Remove action and predicates of last layer
     for node in added_nodes_[-1]:
         removeNode(node)
@@ -1511,8 +1511,8 @@ def backtrack():
     joint_prob_ = list_probabilities_[-1]
     layer_number_ = layer_number_ - 1
 
-    rospy.loginfo('New joint_prob_: ' + str(joint_prob_))
-    rospy.loginfo('//////////////////////////////////////')
+    # rospy.loginfo('New joint_prob_: ' + str(joint_prob_))
+    # rospy.loginfo('//////////////////////////////////////')
                 
 
 def writeBayesNetAIMAToFile():
