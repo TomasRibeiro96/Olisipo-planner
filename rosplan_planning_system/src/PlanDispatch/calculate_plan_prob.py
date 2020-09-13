@@ -1496,6 +1496,7 @@ def backtrack():
     global list_probabilities_
     global layer_number_
 
+    rospy.loginfo('Backtracking from layer ' + str(layer_number_) + ' to ' + str(layer_number_-1))
     # Remove action and predicates of last layer
     for node in added_nodes_[-1]:
         removeNode(node)

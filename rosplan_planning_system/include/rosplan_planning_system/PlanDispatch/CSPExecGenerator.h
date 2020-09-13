@@ -285,6 +285,8 @@ class CSPExecGenerator
 
         int getActionEndLayer(int action);
 
+        void backtrackBayesianNetwork();
+
     private:
         // ros related variables
         ros::NodeHandle nh_;
