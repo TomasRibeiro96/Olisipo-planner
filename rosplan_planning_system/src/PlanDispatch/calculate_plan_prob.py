@@ -936,7 +936,7 @@ def addPredicate(predicate, layer_numb):
 
     pred_name = predicate + '%' + str(layer_numb)
     all_nodes_.append(pred_name)
-    added_nodes_[layer_numb].add(pred_name)
+    added_nodes_[-1].add(pred_name)
 
     predicates_par_child_[pred_name] = dict()
     predicates_par_child_[pred_name]['parents'] = set()
@@ -987,7 +987,7 @@ def addEffectPredicate(predicate):
     global predicates_par_child_
 
     all_nodes_.append(predicate)
-    added_nodes_[layer_number_].add(predicate)
+    added_nodes_[-1].add(predicate)
 
     predicates_par_child_[predicate] = dict()
     predicates_par_child_[predicate]['parents'] = set()
@@ -1500,20 +1500,27 @@ def backtrack():
 
     # rospy.loginfo('//////////////////////////////////////')
     # rospy.loginfo('Backtracking from layer ' + str(layer_number_) + ' to ' + str(layer_number_-1))
-    # rospy.loginfo('List probabilities: ' + str(list_probabilities_))
-    # rospy.loginfo('Previous joint_prob_: ' + str(joint_prob_))
+    # rounded_list_prob = [ '%.6f' % elem for elem in list_probabilities_ ]
+    # rospy.loginfo('List probabilities: ' + str(rounded_list_prob))
+    # rospy.loginfo('Previous current probability: ' + str(joint_prob_))
+    # if len(list_probabilities_) > 1:
+    #     rospy.loginfo('New current probability: ' + str(list_probabilities_[-2]))
+    # else:
+    #     rospy.loginfo('New current probability: ' + str(1))
+    # rospy.loginfo('//////////////////////////////////////')
+    
     # Remove action and predicates of last layer
     for node in added_nodes_[-1]:
         removeNode(node)
     
     added_nodes_.pop(-1)
     list_probabilities_.pop(-1)
-    joint_prob_ = list_probabilities_[-1]
+    if len(list_probabilities_) > 0:
+        joint_prob_ = list_probabilities_[-1]
+    else:
+        joint_prob_ = 1
     layer_number_ = layer_number_ - 1
 
-    # rospy.loginfo('New joint_prob_: ' + str(joint_prob_))
-    # rospy.loginfo('//////////////////////////////////////')
-                
 
 def writeBayesNetAIMAToFile():
     file = open('bayesNetAIMA.txt', 'w')
@@ -1537,11 +1544,11 @@ def getActionsJointProbability(received_action_name):
     global layer_number_
     global added_nodes_
 
-    # Need to convert this to handle backtracking
-    if layer_number_ == len(added_nodes_):
-        added_nodes_.append(set())
-
-    # rospy.loginfo('Action: ' + received_action_name)
+    # rospy.loginfo('Adding action to layer ' + str(layer_number_))
+    # rospy.loginfo('Action: ' + str(received_action_name))
+    # rospy.loginfo('Added nodes: ' + str(added_nodes_))
+    # rospy.loginfo('All nodes: ' + str(all_nodes_))
+    added_nodes_.append(set())
 
     # rospy.loginfo('Creating grounded action')
     grounded_action = createGroundedAction(received_action_name)
@@ -1557,7 +1564,7 @@ def getActionsJointProbability(received_action_name):
     action_name = action.name + '$' + str(layer_number_+1)
 
     all_nodes_.append(action_name)
-    added_nodes_[layer_number_].add(action_name)
+    added_nodes_[-1].add(action_name)
 
     # rospy.loginfo('Adding action edges')
     addActionEdges(action, action_name)
@@ -1593,7 +1600,7 @@ def getProbFromBayesNetAIMA():
 def calculateFullJointProbability():
     global joint_prob_
 
-    added_nodes_.append(set())
+    # rospy.loginfo('Calculating full joint of layer ' + str(layer_number_))
 
     for node in goal_:
         goal_node = node + '%' + str(layer_number_)
@@ -1607,7 +1614,7 @@ def calculateFullJointProbability():
 
         joint_prob_ = factor*joint_prob_
 
-    list_probabilities_.append(joint_prob_)
+    list_probabilities_[-1] = joint_prob_
 
     # rospy.loginfo('Returning probability: ' + str(joint_prob_))
     return joint_prob_

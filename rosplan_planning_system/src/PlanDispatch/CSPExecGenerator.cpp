@@ -399,7 +399,7 @@ void CSPExecGenerator::backtrack(std::string reason_for_backtrack, bool backtrac
                 action_simulator_.revertActionEnd(action_name, params);
             
             if(backtrack_bayes_network){
-                ROS_INFO("--- Backtrack: %s ---", reason_for_backtrack.c_str());
+                ROS_INFO("||| Backtrack: %s |||", reason_for_backtrack.c_str());
                 backtrackBayesianNetwork();
             }
             // action_simulator_.printInternalKBFacts();
@@ -754,10 +754,6 @@ bool CSPExecGenerator::orderNodes(std::vector<int> open_list, int &number_expand
     // check if goals are achieved
     ROS_DEBUG("checking if goals are achieved...");
     if(action_simulator_.areGoalsAchieved()) {
-        ROS_INFO("@@@ SOLUTION FOUND @@@");
-        // we print all plans at the end, so only we print here in debug mode
-        //ROS_INFO("found valid ordering:");
-        // printNodes("plan", ordered_nodes_);
 
         // convert list of orderes nodes into esterel plan (reuses the originally received esterel plan)
         rosplan_dispatch_msgs::EsterelPlan esterel_plan_msg = convertListToEsterel(ordered_nodes_);
@@ -774,6 +770,7 @@ bool CSPExecGenerator::orderNodes(std::vector<int> open_list, int &number_expand
         plan_success_probability = getCurrentPlanProbabilityAndFillExpectedFacts();
         exec_aternatives_msg_.plan_success_prob.push_back(plan_success_probability);
 
+        ROS_INFO(">>> SOLUTION FOUND <<<");
         ROS_INFO("Solution probability: %f", plan_success_probability);
 
         // backtrack: popf, remove last element from f, store in variable and revert that action
@@ -819,11 +816,10 @@ bool CSPExecGenerator::orderNodes(std::vector<int> open_list, int &number_expand
         }
 
         std::string full_action_name = getFullActionName(*a);
-        ROS_INFO("Trying action: %s", full_action_name.c_str());
+        ROS_INFO("Action: %s", full_action_name.c_str());
 
         // remove a (action) and s (skipped nodes) from open list (O)
         open_list_copy.erase(std::remove(open_list_copy.begin(), open_list_copy.end(), *a), open_list_copy.end());
-
         // ROS_INFO("Calling getActionsJointProbability");
         CPyObject pFuncCalcProb = PyObject_GetAttrString(pModule_, "getActionsJointProbability");
         if(pFuncCalcProb && PyCallable_Check(pFuncCalcProb)){
@@ -831,15 +827,15 @@ bool CSPExecGenerator::orderNodes(std::vector<int> open_list, int &number_expand
             PyObject* pArgs = PyTuple_New(1);
             CPyObject py_action_string = PyUnicode_FromString(full_action_name.c_str());
             PyTuple_SetItem(pArgs, 0, py_action_string);
-            
+
             CPyObject pReturnedProbability = PyObject_CallObject(pFuncCalcProb, pArgs);
+            PyErr_Print();
             double plan_probability = PyFloat_AsDouble(pReturnedProbability);
+
 
             if(plan_probability == -1.0){
                 ROS_ERROR("Received NULL from getActionsJointProbability");
-            }
-            else{
-                ROS_INFO("Plan probability: %f", plan_probability);
+                PyErr_Print();
             }
 
             int size = exec_aternatives_msg_.plan_success_prob.size();
@@ -847,27 +843,26 @@ bool CSPExecGenerator::orderNodes(std::vector<int> open_list, int &number_expand
             if(size != 0)
                 best_prob_yet = exec_aternatives_msg_.plan_success_prob[size-1];
             
-            // ROS_INFO(">>> Current probability: %f", plan_success_probability);
-            // ROS_INFO(">>> Best probability yet: %f", best_prob_yet);
+            ROS_INFO("Probability after action: %f", plan_probability);
+            ROS_INFO("Best probability yet: %f", best_prob_yet);
+
+            ordered_nodes_.push_back(*a);
+
+            if(!simulateAction(action_start, action_name, params))
+                return false;
 
             if(plan_probability > best_prob_yet){
-            // if(plan_probability){
                 number_expanded_nodes++;
 
-                ROS_INFO(">>>>> Apply action : %s <<<<<", full_action_name.c_str());
-                // Add action to queue
-                ordered_nodes_.push_back(*a);
-
-                if(!simulateAction(action_start, action_name, params))
-                    return false;
+                ROS_INFO("+++ Apply action +++");
             
-                // ROS_INFO("++++ Performed action");
+                // Add action to queue
+                orderNodes(open_list_copy, number_expanded_nodes);
                 // printNodes("stack after adding", ordered_nodes_);
-
-                orderNodes(open_list_copy, number_expanded_nodes);                    
             }
             else{
-                // ROS_INFO("---- Skipped action");
+                ROS_INFO("--- Skip action ---");
+                backtrack("Plan probability too low", true);
             }
         }
         else{
