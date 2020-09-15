@@ -399,7 +399,7 @@ void CSPExecGenerator::backtrack(std::string reason_for_backtrack, bool backtrac
                 action_simulator_.revertActionEnd(action_name, params);
             
             if(backtrack_bayes_network){
-                ROS_INFO("||| Backtrack: %s |||", reason_for_backtrack.c_str());
+                // ROS_INFO("||| Backtrack: %s |||", reason_for_backtrack.c_str());
                 backtrackBayesianNetwork();
             }
             // action_simulator_.printInternalKBFacts();
@@ -770,8 +770,10 @@ bool CSPExecGenerator::orderNodes(std::vector<int> open_list, int &number_expand
         plan_success_probability = getCurrentPlanProbabilityAndFillExpectedFacts();
         exec_aternatives_msg_.plan_success_prob.push_back(plan_success_probability);
 
-        ROS_INFO(">>> SOLUTION FOUND <<<");
-        ROS_INFO("Solution probability: %f", plan_success_probability);
+        // ROS_INFO("---------------------");
+        // ROS_INFO(">>> SOLUTION FOUND <<<");
+        // printNodes("Plan", ordered_nodes_);
+        // ROS_INFO("Probability: %f", plan_success_probability);
 
         // backtrack: popf, remove last element from f, store in variable and revert that action
         backtrack("Solution found", true);
@@ -798,10 +800,10 @@ bool CSPExecGenerator::orderNodes(std::vector<int> open_list, int &number_expand
     // iterate over actions in valid nodes (V)
     for(auto a=valid_nodes.begin(); a!=valid_nodes.end(); a++) {
 
-        ROS_INFO("--------------------------------");
-        printNodes("Plan", ordered_nodes_);
-        // Print valid nodes
-        printNodes("Valid nodes", valid_nodes);
+        // ROS_INFO("--------------------------------");
+        // printNodes("Plan", ordered_nodes_);
+        // // Print valid nodes
+        // printNodes("Valid nodes", valid_nodes);
 
         std::vector<int> open_list_copy = open_list;
 
@@ -816,7 +818,7 @@ bool CSPExecGenerator::orderNodes(std::vector<int> open_list, int &number_expand
         }
 
         std::string full_action_name = getFullActionName(*a);
-        ROS_INFO("Action: %s", full_action_name.c_str());
+        // ROS_INFO("Action: %s", full_action_name.c_str());
 
         // remove a (action) and s (skipped nodes) from open list (O)
         open_list_copy.erase(std::remove(open_list_copy.begin(), open_list_copy.end(), *a), open_list_copy.end());
@@ -832,7 +834,6 @@ bool CSPExecGenerator::orderNodes(std::vector<int> open_list, int &number_expand
             PyErr_Print();
             double plan_probability = PyFloat_AsDouble(pReturnedProbability);
 
-
             if(plan_probability == -1.0){
                 ROS_ERROR("Received NULL from getActionsJointProbability");
                 PyErr_Print();
@@ -843,8 +844,8 @@ bool CSPExecGenerator::orderNodes(std::vector<int> open_list, int &number_expand
             if(size != 0)
                 best_prob_yet = exec_aternatives_msg_.plan_success_prob[size-1];
             
-            ROS_INFO("Probability after action: %f", plan_probability);
-            ROS_INFO("Best probability yet: %f", best_prob_yet);
+            // ROS_INFO("Probability after action: %f", plan_probability);
+            // ROS_INFO("Best probability yet: %f", best_prob_yet);
 
             ordered_nodes_.push_back(*a);
 
@@ -854,14 +855,14 @@ bool CSPExecGenerator::orderNodes(std::vector<int> open_list, int &number_expand
             if(plan_probability > best_prob_yet){
                 number_expanded_nodes++;
 
-                ROS_INFO("+++ Apply action +++");
+                // ROS_INFO("+++ Apply action +++");
             
                 // Add action to queue
                 orderNodes(open_list_copy, number_expanded_nodes);
                 // printNodes("stack after adding", ordered_nodes_);
             }
             else{
-                ROS_INFO("--- Skip action ---");
+                // ROS_INFO("--- Skip action ---");
                 backtrack("Plan probability too low", true);
             }
         }
@@ -1134,7 +1135,7 @@ bool CSPExecGenerator::generatePlans()
 
     // ROS_INFO("Initiliasing rospy node");
     PyObject *init_node_args = PyTuple_New(1);
-	PyObject *node_name = PyString_FromString("bayesian_network_calculator");	
+	PyObject *node_name = PyString_FromString("bayes_net_calc");	
 	PyTuple_SetItem(init_node_args, 0, node_name);
 	PyObject_CallObject(init_node, init_node_args);
 

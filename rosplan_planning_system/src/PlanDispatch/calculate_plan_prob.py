@@ -41,7 +41,7 @@ accounted_nodes_ = set()
 # List of nodes added on each
 added_nodes_ = list()
 
-rospy.init_node('bayesian_network_calculator')
+rospy.init_node('bayes_net_calc')
 
 
 class Action:
@@ -1413,13 +1413,13 @@ def calculateColumn(bottom_node, true_value):
 
 def calculateActionsJointProbability(action_name):
     global joint_prob_
-    global added_nodes_
     global accounted_nodes_
 
     # rospy.loginfo('\t*** Inside calculateActionsProbability ***')
 
     prob = 1
 
+    # rospy.loginfo('\tAll nodes: ' + str(all_nodes_))
     # rospy.loginfo('\tAction: ' + action_name)
     number_parents_action = len(cpds_map_[action_name]['parents'])
     # rospy.loginfo('\tNumber of parents of action: ' + str(number_parents_action))
@@ -1483,6 +1483,7 @@ def removeNode(node):
     global predicates_par_child_
     global actions_par_child_
     global cpds_map_
+    global accounted_nodes_
 
     all_nodes_.remove(node)
     if isPredicate(node):
@@ -1490,6 +1491,7 @@ def removeNode(node):
     else:
         actions_par_child_.pop(node)
     cpds_map_.pop(node)
+    accounted_nodes_.remove(node)
 
 
 def backtrack():
@@ -1544,8 +1546,9 @@ def getActionsJointProbability(received_action_name):
     global layer_number_
     global added_nodes_
 
-    # rospy.loginfo('Adding action to layer ' + str(layer_number_))
+    # rospy.loginfo('Adding action to layer ' + str(layer_number_+1))
     # rospy.loginfo('Action: ' + str(received_action_name))
+    # rospy.loginfo('Previous joint_prob: ' + str(joint_prob_))
     # rospy.loginfo('Added nodes: ' + str(added_nodes_))
     # rospy.loginfo('All nodes: ' + str(all_nodes_))
     added_nodes_.append(set())
@@ -1649,13 +1652,28 @@ if __name__ == "__main__":
     # list_goal = ['robot_at#mbot#wp3%6']
 
     # Factory robot
-    plan = ['navigate_start#mbot#m1#m2', 'navigate_end#mbot#m1#m2', 'fix_machine_start#mbot#m2', 'fix_machine_end#mbot#m2', 'navigate_start#mbot#m2#m3', 'navigate_end#mbot#m2#m3', 'fix_machine_start#mbot#m3', 'fix_machine_end#mbot#m3']    
+    # plan = ['navigate_start#mbot#m1#m2', 'navigate_end#mbot#m1#m2', 'fix_machine_start#mbot#m2',
+    #         'fix_machine_end#mbot#m2', 'navigate_start#mbot#m2#m3', 'navigate_end#mbot#m2#m3',
+    #         'fix_machine_start#mbot#m3', 'fix_machine_end#mbot#m3']    
+    # Solution probability: 0.001507
+    plan = ['go_fix_machine_start#m1', 'go_fix_machine_end#m1', 'go_fix_machine_start#m2',
+            'go_fix_machine_end#m2', 'go_fix_machine_start#m3', 'go_fix_machine_end#m3']
+    # Solution probability: 0.284757
+    # plan = ['go_fix_machine_start#m1', 'go_fix_machine_end#m1', 'go_fix_machine_start#m2',
+    #         'go_fix_machine_start#m3', 'go_fix_machine_end#m2', 'go_fix_machine_end#m3']
+    # Solution probability: 0.552712
+    # plan = ['go_fix_machine_start#m1', 'go_fix_machine_end#m1', 'go_fix_machine_start#m3',
+    #         'go_fix_machine_start#m2', 'go_fix_machine_end#m2', 'go_fix_machine_end#m3']
+    # Solution probability: 0.614125
+    # plan = ['go_fix_machine_start#m1', 'go_fix_machine_start#m2', 'go_fix_machine_start#m3',
+    #         'go_fix_machine_end#m1', 'go_fix_machine_end#m2', 'go_fix_machine_end#m3']
+
     list_actions = getListActions(plan)
     list_goal = getGoalFacts(plan)
 
     list_actions_goal = list_actions + list_goal
 
-    rospy.loginfo('>>> List actions+goal: ' + str(list_actions_goal))
+    # rospy.loginfo('>>> List actions+goal: ' + str(list_actions_goal))
 
     for action in plan:
         getActionsJointProbability(action)
@@ -1670,9 +1688,9 @@ if __name__ == "__main__":
     bayes_net_AIMA = getProbFromBayesNetAIMA()
 
     rospy.loginfo('>>> List probabilities: ' + str(list_probabilities_))
-    rospy.loginfo('>>> BayesNetAIMA:       ' + str(bayes_net_AIMA))
+    # rospy.loginfo('>>> BayesNetAIMA:       ' + str(bayes_net_AIMA))
 
-    for i in range(len(list_actions)+1):
+    for i in range(len(list_actions)):
         node = list_actions_goal[i]
 
         rospy.loginfo('>>> Node: ' + node)
