@@ -1,31 +1,48 @@
 NODES AND PARENTS:
->>> Node: robot_at#mbot#m1%0
+>>> Node: machine_is_working#m1%0
 ----------------------------
->>> Node: machine_is_fixed#m1%0
+>>> Node: machine_is_working#m2%0
 ----------------------------
->>> Node: machine_is_fixed#m1%1
-machine_is_fixed#m1%0
+>>> Node: machine_is_working#m3%0
 ----------------------------
->>> Node: robot_at#mbot#m2%2
-navigate_end#mbot#m1#m2$2
+>>> Node: machine_is_working#m1%1
+machine_is_working#m1%0
+----------------------------
+>>> Node: machine_is_working#m2%1
+machine_is_working#m2%0
+----------------------------
+>>> Node: machine_is_working#m3%1
+machine_is_working#m3%0
+----------------------------
+>>> Node: machine_is_working#m2%2
+machine_is_working#m2%1
+----------------------------
+>>> Node: machine_is_working#m3%2
+machine_is_working#m3%1
 ----------------------------
 >>> Node: machine_is_fixed#m1%2
-machine_is_fixed#m1%1
+go_fix_machine_end#m1$2
 ----------------------------
->>> Node: robot_at#mbot#m2%3
-robot_at#mbot#m2%2
+>>> Node: machine_is_working#m2%3
+machine_is_working#m2%2
+----------------------------
+>>> Node: machine_is_working#m3%3
+machine_is_working#m3%2
 ----------------------------
 >>> Node: machine_is_fixed#m1%3
 machine_is_fixed#m1%2
 ----------------------------
->>> Node: robot_at#mbot#m2%4
-robot_at#mbot#m2%3
+>>> Node: machine_is_working#m3%4
+machine_is_working#m3%3
 ----------------------------
 >>> Node: machine_is_fixed#m1%4
 machine_is_fixed#m1%3
 ----------------------------
 >>> Node: machine_is_fixed#m2%4
-fix_machine_end#mbot#m2$4
+go_fix_machine_end#m2$4
+----------------------------
+>>> Node: machine_is_working#m3%5
+machine_is_working#m3%4
 ----------------------------
 >>> Node: machine_is_fixed#m1%5
 machine_is_fixed#m1%4
@@ -33,30 +50,12 @@ machine_is_fixed#m1%4
 >>> Node: machine_is_fixed#m2%5
 machine_is_fixed#m2%4
 ----------------------------
->>> Node: robot_at#mbot#m3%6
-navigate_end#mbot#m2#m3$6
-----------------------------
 >>> Node: machine_is_fixed#m1%6
 machine_is_fixed#m1%5
 ----------------------------
 >>> Node: machine_is_fixed#m2%6
 machine_is_fixed#m2%5
 ----------------------------
->>> Node: robot_at#mbot#m3%7
-robot_at#mbot#m3%6
-----------------------------
->>> Node: machine_is_fixed#m1%7
-machine_is_fixed#m1%6
-----------------------------
->>> Node: machine_is_fixed#m2%7
-machine_is_fixed#m2%6
-----------------------------
->>> Node: machine_is_fixed#m1%8
-machine_is_fixed#m1%7
-----------------------------
->>> Node: machine_is_fixed#m2%8
-machine_is_fixed#m2%7
-----------------------------
->>> Node: machine_is_fixed#m3%8
-fix_machine_end#mbot#m3$8
+>>> Node: machine_is_fixed#m3%6
+go_fix_machine_end#m3$6
 ----------------------------

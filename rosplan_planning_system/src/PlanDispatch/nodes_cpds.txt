@@ -1,144 +1,133 @@
 NODES AND CPDs:
->>> Node: robot_at#mbot#m1%0
+>>> Node: machine_is_working#m1%0
 1
->>> Node: machine_is_fixed#m1%0
+>>> Node: machine_is_working#m2%0
 1
->>> Node: navigate_start#mbot#m1#m2$1
+>>> Node: machine_is_working#m3%0
+1
+>>> Node: go_fix_machine_start#m1$1
 (False,): 0
-parents: set(['robot_at#mbot#m1%0'])
-(True,): 0.8
-
->>> Node: machine_is_fixed#m1%1
-(False,): 0.05
-parents: set(['machine_is_fixed#m1%0'])
-(True,): 0.9
-
->>> Node: navigate_end#mbot#m1#m2$2
-(False,): 0
-parents: set(['navigate_start#mbot#m1#m2$1'])
-(True,): 1
-
->>> Node: robot_at#mbot#m2%2
-(False,): 0
-parents: navigate_end#mbot#m1#m2$2
-(True,): 0.9
-
->>> Node: machine_is_fixed#m1%2
-(False,): 0.05
-parents: set(['machine_is_fixed#m1%1'])
-(True,): 0.9
-
->>> Node: fix_machine_start#mbot#m2$3
-(False,): 0
-parents: set(['robot_at#mbot#m2%2'])
+parents: set(['machine_is_working#m1%0'])
 (True,): 0.85
 
->>> Node: robot_at#mbot#m2%3
-(False,): 0.05
-parents: set(['robot_at#mbot#m2%2'])
-(True,): 0.93
-
->>> Node: machine_is_fixed#m1%3
-(False,): 0.05
-parents: set(['machine_is_fixed#m1%2'])
+>>> Node: machine_is_working#m1%1
+(False,): 0.01
+parents: set(['machine_is_working#m1%0'])
 (True,): 0.9
 
->>> Node: fix_machine_end#mbot#m2$4
+>>> Node: machine_is_working#m2%1
+(False,): 0.02
+parents: set(['machine_is_working#m2%0'])
+(True,): 0.8
+
+>>> Node: machine_is_working#m3%1
+(False,): 0.03
+parents: set(['machine_is_working#m3%0'])
+(True,): 0.2
+
+>>> Node: go_fix_machine_end#m1$2
 (False, True): 0
 (True, False): 0
 (False, False): 0
-parents: set(['fix_machine_start#mbot#m2$3', 'robot_at#mbot#m2%3'])
+parents: set(['machine_is_working#m1%1', 'go_fix_machine_start#m1$1'])
 (True, True): 1
 
->>> Node: robot_at#mbot#m2%4
-(False,): 0.05
-parents: set(['robot_at#mbot#m2%3'])
-(True,): 0.93
+>>> Node: machine_is_working#m2%2
+(False,): 0.02
+parents: set(['machine_is_working#m2%1'])
+(True,): 0.8
+
+>>> Node: machine_is_working#m3%2
+(False,): 0.03
+parents: set(['machine_is_working#m3%1'])
+(True,): 0.2
+
+>>> Node: machine_is_fixed#m1%2
+(False,): 0
+parents: go_fix_machine_end#m1$2
+(True,): 0.95
+
+>>> Node: go_fix_machine_start#m2$3
+(False,): 0
+parents: set(['machine_is_working#m2%2'])
+(True,): 0.85
+
+>>> Node: machine_is_working#m2%3
+(False,): 0.02
+parents: set(['machine_is_working#m2%2'])
+(True,): 0.8
+
+>>> Node: machine_is_working#m3%3
+(False,): 0.03
+parents: set(['machine_is_working#m3%2'])
+(True,): 0.2
+
+>>> Node: machine_is_fixed#m1%3
+(False,): 0.04
+parents: set(['machine_is_fixed#m1%2'])
+(True,): 0.97
+
+>>> Node: go_fix_machine_end#m2$4
+(False, True): 0
+(True, False): 0
+(False, False): 0
+parents: set(['machine_is_working#m2%3', 'go_fix_machine_start#m2$3'])
+(True, True): 1
+
+>>> Node: machine_is_working#m3%4
+(False,): 0.03
+parents: set(['machine_is_working#m3%3'])
+(True,): 0.2
 
 >>> Node: machine_is_fixed#m1%4
-(False,): 0.05
+(False,): 0.04
 parents: set(['machine_is_fixed#m1%3'])
-(True,): 0.9
+(True,): 0.97
 
 >>> Node: machine_is_fixed#m2%4
 (False,): 0
-parents: fix_machine_end#mbot#m2$4
+parents: go_fix_machine_end#m2$4
 (True,): 0.95
 
->>> Node: navigate_start#mbot#m2#m3$5
+>>> Node: go_fix_machine_start#m3$5
 (False,): 0
-parents: set(['robot_at#mbot#m2%4'])
-(True,): 0.8
-
->>> Node: machine_is_fixed#m1%5
-(False,): 0.05
-parents: set(['machine_is_fixed#m1%4'])
-(True,): 0.9
-
->>> Node: machine_is_fixed#m2%5
-(False,): 0.06
-parents: set(['machine_is_fixed#m2%4'])
-(True,): 0.89
-
->>> Node: navigate_end#mbot#m2#m3$6
-(False,): 0
-parents: set(['navigate_start#mbot#m2#m3$5'])
-(True,): 1
-
->>> Node: robot_at#mbot#m3%6
-(False,): 0
-parents: navigate_end#mbot#m2#m3$6
-(True,): 0.9
-
->>> Node: machine_is_fixed#m1%6
-(False,): 0.05
-parents: set(['machine_is_fixed#m1%5'])
-(True,): 0.9
-
->>> Node: machine_is_fixed#m2%6
-(False,): 0.06
-parents: set(['machine_is_fixed#m2%5'])
-(True,): 0.89
-
->>> Node: fix_machine_start#mbot#m3$7
-(False,): 0
-parents: set(['robot_at#mbot#m3%6'])
+parents: set(['machine_is_working#m3%4'])
 (True,): 0.85
 
->>> Node: robot_at#mbot#m3%7
+>>> Node: machine_is_working#m3%5
+(False,): 0.03
+parents: set(['machine_is_working#m3%4'])
+(True,): 0.2
+
+>>> Node: machine_is_fixed#m1%5
+(False,): 0.04
+parents: set(['machine_is_fixed#m1%4'])
+(True,): 0.97
+
+>>> Node: machine_is_fixed#m2%5
 (False,): 0.05
-parents: set(['robot_at#mbot#m3%6'])
-(True,): 0.93
+parents: set(['machine_is_fixed#m2%4'])
+(True,): 0.96
 
->>> Node: machine_is_fixed#m1%7
-(False,): 0.05
-parents: set(['machine_is_fixed#m1%6'])
-(True,): 0.9
-
->>> Node: machine_is_fixed#m2%7
-(False,): 0.06
-parents: set(['machine_is_fixed#m2%6'])
-(True,): 0.89
-
->>> Node: fix_machine_end#mbot#m3$8
+>>> Node: go_fix_machine_end#m3$6
 (False, True): 0
 (True, False): 0
 (False, False): 0
-parents: set(['robot_at#mbot#m3%7', 'fix_machine_start#mbot#m3$7'])
+parents: set(['go_fix_machine_start#m3$5', 'machine_is_working#m3%5'])
 (True, True): 1
 
->>> Node: machine_is_fixed#m1%8
+>>> Node: machine_is_fixed#m1%6
+(False,): 0.04
+parents: set(['machine_is_fixed#m1%5'])
+(True,): 0.97
+
+>>> Node: machine_is_fixed#m2%6
 (False,): 0.05
-parents: set(['machine_is_fixed#m1%7'])
-(True,): 0.9
+parents: set(['machine_is_fixed#m2%5'])
+(True,): 0.96
 
->>> Node: machine_is_fixed#m2%8
-(False,): 0.06
-parents: set(['machine_is_fixed#m2%7'])
-(True,): 0.89
-
->>> Node: machine_is_fixed#m3%8
+>>> Node: machine_is_fixed#m3%6
 (False,): 0
-parents: fix_machine_end#mbot#m3$8
+parents: go_fix_machine_end#m3$6
 (True,): 0.95
 

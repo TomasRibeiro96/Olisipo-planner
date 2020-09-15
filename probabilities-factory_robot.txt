@@ -1,16 +1,10 @@
-robot_at#mbot#m1 0.05 0.07
-robot_at#mbot#m2 0.05 0.07
-robot_at#mbot#m3 0.05 0.07
-machine_is_fixed#m1 .05 .10
-machine_is_fixed#m2 .06 .11
-machine_is_fixed#m3 .07 .12
+machine_is_fixed#m1 0.04 0.03
+machine_is_fixed#m2 0.05 0.04
+machine_is_fixed#m3 0.06 0.05
+machine_is_working#m1 0.01 0.1
+machine_is_working#m2 0.02 0.2
+machine_is_working#m3 0.03 0.8
 -
-navigate#mbot#m1#m2 0.8 robot_at%0.9
-navigate#mbot#m1#m3 0.8 robot_at%0.9
-navigate#mbot#m2#m1 0.8 robot_at%0.9
-navigate#mbot#m2#m3 0.8 robot_at%0.9
-navigate#mbot#m3#m1 0.8 robot_at%0.9
-navigate#mbot#m3#m2 0.8 robot_at%0.9
-fix_machine#mbot#m1 0.85 machine_is_fixed%0.95
-fix_machine#mbot#m2 0.85 machine_is_fixed%0.95
-fix_machine#mbot#m3 0.85 machine_is_fixed%0.95
+go_fix_machine#m1 0.85 machine_is_fixed%0.95
+go_fix_machine#m2 0.85 machine_is_fixed%0.95
+go_fix_machine#m3 0.85 machine_is_fixed%0.95

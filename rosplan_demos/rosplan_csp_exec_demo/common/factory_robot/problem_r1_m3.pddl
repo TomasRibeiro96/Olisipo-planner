@@ -7,9 +7,10 @@
 )
 
 (:init
-    (robot_at mbot m1)
-
-    (machine_is_fixed m1)
+    ; (robot_at mbot m1)
+    (machine_is_working m1)
+    (machine_is_working m2)
+    (machine_is_working m3)
 )
 
 (:goal (and
