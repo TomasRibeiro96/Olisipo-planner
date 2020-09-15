@@ -4,6 +4,9 @@ import sys
 sys.path.insert(1, '/home/tomas/ros_ws/src/ROSPlan/src/rosplan/rosplan_planning_system/src/PlanDispatch/aima-python')
 import probability
 
+list_actions_ = list()
+list_goal_ = list()
+layer_goal_ = '0'
 
 def addNodeToEvidence(evidence, node):
     evidence[node] = True
@@ -18,6 +21,9 @@ def writeProbToFile(prob_list):
 
 
 def buildBayesNetwork():
+    global list_actions_
+    global layer_goal_
+
     ### Reading from file ###
     file = open('bayesNetAIMA.txt', 'r')
     line = file.readline()
@@ -29,6 +35,15 @@ def buildBayesNetwork():
         line = line.strip('\n')
         # print('Name: ' + str(line))
         name = line
+
+        if len(name.split('$')) > 1:
+            list_actions_.append(name)
+        elif name.split('%')[1] == layer_goal_:
+            list_goal_.append(name)
+        else:
+            layer_goal_ = name.split('%')[1]
+            list_goal_.clear()
+            list_goal_.append(name)
 
         line = file.readline()
         line = line.strip('\n')
@@ -54,10 +69,10 @@ def main():
     # list_goal = ['robot_at#mbot#wp3%6']
 
     # Factory robot
-    list_actions = ['navigate_start#mbot#m1#m2$1', 'navigate_end#mbot#m1#m2$2', 'fix_machine_start#mbot#m2$3',
-                    'fix_machine_end#mbot#m2$4', 'navigate_start#mbot#m2#m3$5', 'navigate_end#mbot#m2#m3$6',
-                    'fix_machine_start#mbot#m3$7', 'fix_machine_end#mbot#m3$8']
-    list_goal = ['machine_is_fixed#m1%8', 'machine_is_fixed#m2%8', 'machine_is_fixed#m3%8']
+    # list_actions = ['navigate_start#mbot#m1#m2$1', 'navigate_end#mbot#m1#m2$2', 'fix_machine_start#mbot#m2$3',
+    #                 'fix_machine_end#mbot#m2$4', 'navigate_start#mbot#m2#m3$5', 'navigate_end#mbot#m2#m3$6',
+    #                 'fix_machine_start#mbot#m3$7', 'fix_machine_end#mbot#m3$8']
+    # list_goal = ['machine_is_fixed#m1%8', 'machine_is_fixed#m2%8', 'machine_is_fixed#m3%8']
     
 
     bayes_net = buildBayesNetwork()
@@ -69,7 +84,7 @@ def main():
 
 
     ### Calculating actions probability
-    for node in list_actions:
+    for node in list_actions_:
         print('>>> Node: ' + node)
 
         # Using variable elimination
@@ -88,7 +103,7 @@ def main():
     
     ### Calculating goal probability
     goal_prob = 1
-    for node in list_goal:
+    for node in list_goal_:
         # print('>>> Goal: ' + node)
 
         # Using variable elimination
