@@ -3,7 +3,7 @@
 
 (:objects
     m1 m2 m3 - machine
-    mbot - robot
+    ; mbot - robot
 )
 
 (:init

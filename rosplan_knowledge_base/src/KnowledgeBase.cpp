@@ -41,7 +41,8 @@ namespace KCL_rosplan {
 	/* knowledge query */
 	/*-----------------*/
 
-	bool KnowledgeBase::queryKnowledge(rosplan_knowledge_msgs::KnowledgeQueryService::Request  &req, rosplan_knowledge_msgs::KnowledgeQueryService::Response &res) {
+	bool KnowledgeBase::queryKnowledge(rosplan_knowledge_msgs::KnowledgeQueryService::Request  &req,
+										rosplan_knowledge_msgs::KnowledgeQueryService::Response &res) {
 
 		res.all_true = true;
 		std::vector<rosplan_knowledge_msgs::KnowledgeItem>::iterator iit;
@@ -366,6 +367,34 @@ namespace KCL_rosplan {
 		rosplan_knowledge_msgs::KnowledgeItem empty;
 		ROS_INFO("KCL: (%s) Removing metric", ros::this_node::getName().c_str());
 		model_metric = empty;
+	}
+
+	void KnowledgeBase::printCurrentState(){
+		std::stringstream ss;
+
+		for(rosplan_knowledge_msgs::KnowledgeItem fact: model_facts){
+			ss << fact.attribute_name;
+			for(diagnostic_msgs::KeyValue kv: fact.values){
+				ss << "#";
+				ss << kv.value;
+			}
+			ss << " ";
+		}
+
+		ROS_INFO("ISR: (%s) Current state: %s", ros::this_node::getName().c_str(), ss.str().c_str());
+	}
+
+	std::string KnowledgeBase::getFactAsString(rosplan_knowledge_msgs::KnowledgeItem fact){
+		std::stringstream ss;
+
+		ss << fact.attribute_name;
+		for(diagnostic_msgs::KeyValue kv: fact.values){
+			ss << "#";
+			ss << kv.value;
+		}
+		ss << " ";
+
+		return ss.str();
 	}
 
 	/*--------------*/

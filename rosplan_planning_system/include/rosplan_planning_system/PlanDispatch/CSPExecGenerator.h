@@ -287,6 +287,8 @@ class CSPExecGenerator
 
         void backtrackBayesianNetwork();
 
+        bool isNodeAnActionOcurring(int node);
+
     private:
         // ros related variables
         ros::NodeHandle nh_;

@@ -980,8 +980,9 @@ int CSPExecGenerator::getActionEndLayer(int a){
 
 int CSPExecGenerator::currentStateContainsExpectedFacts(){
 
+    // TODO: The perturbations do not appear in this current state
     std::vector<rosplan_knowledge_msgs::KnowledgeItem> current_state = action_simulator_.getCurrentState();
-    // ROS_INFO(">>> Current state: %s", getStateAsString(current_state).c_str());
+    ROS_INFO(">>> Current state: %s", getStateAsString(current_state).c_str());
     printNodes(">>> Best plan", best_plan_);
     printNodes(">>> Actions occurring", actions_occurring_);
 
@@ -991,6 +992,7 @@ int CSPExecGenerator::currentStateContainsExpectedFacts(){
         for(auto&& fact: expected_facts){
             if(!stateHasFact(current_state, fact)){
                 all_facts_are_present = false;
+                break;
             }
         }
 
@@ -999,7 +1001,6 @@ int CSPExecGenerator::currentStateContainsExpectedFacts(){
         // Check if there are any previous actions which have been started but not ended
         // If there are, then dispatch the corresponding action end
         // If there aren't, then dispatch action after the layer
-
         if(all_facts_are_present){
             if(actions_occurring_.size() > 0){
                 int action = actions_occurring_[0];
@@ -1053,9 +1054,19 @@ void CSPExecGenerator::reusePreviousPlan(int index_facts){
     exec_aternatives_msg_.plan_success_prob.push_back(0.4);
 }
 
+
+bool CSPExecGenerator::isNodeAnActionOcurring(int node){
+    for(int action: actions_occurring_){
+        if(node == action){
+            return true;
+        }
+    }
+    return false;
+}
+
+
 bool CSPExecGenerator::generatePlans()
 {
-    ROS_INFO("\n");
     // get current state (S) and store in memory
     action_simulator_.saveKBSnapshot();
 
@@ -1081,7 +1092,7 @@ bool CSPExecGenerator::generatePlans()
     // Check if current state contains expected facts
     // It starts from the end of expected facts because the state might
     // have unexpectedly changed and we may be able to skip actions
-    // ROS_INFO(expected_facts_.empty()? "Expected facts: EMPTY":"Expected facts: FILLED");
+    ROS_INFO("Checking expected facts");
     if(!expected_facts_.empty()){
         int index_facts = currentStateContainsExpectedFacts();
         // ROS_INFO(">>> Layer selected: %d", index_facts);
@@ -1093,14 +1104,27 @@ bool CSPExecGenerator::generatePlans()
     }
 
     ROS_INFO("Building new plan");
-    // printNodes("open list", open_list);
+
+    std::vector<int> open_list_copy = open_list;
+    // printNodes("Open list before", open_list);
+    // printNodes("Actions ocurring", actions_occurring_);
+    bool all_elements_removed = false;
+    while(!all_elements_removed){
+        for(int i = 0; i < open_list.size(); i++){
+            if(isNodeAnActionOcurring(open_list[i])){
+                open_list.erase(open_list.begin()+i);
+                break;
+            }
+        }
+        all_elements_removed = true;
+    }
+    // printNodes("Open list after ", open_list);
 
     // init set of constraints (C)
     initConstraints(set_of_constraints_);
 
     // init set of ordered nodes (F)
     ordered_nodes_.clear();
-
     // NOTE: init set of totally ordered plans (R) is stored in exec_aternatives_msg_.esterel_plans
 
     std::vector<std::vector<rosplan_knowledge_msgs::KnowledgeItem>> explored_states;
@@ -1110,16 +1134,16 @@ bool CSPExecGenerator::generatePlans()
 
     CPyInstance hInstance;
 
-    // ROS_INFO("Add current directory to system path");
+    ROS_INFO("Add current directory to system path");
     PyObject* sysPath = PySys_GetObject((char*)"path");
     PyList_Append(sysPath, PyUnicode_FromString("/home/tomas/ros_ws/src/ROSPlan/src/rosplan/rosplan_planning_system/src/PlanDispatch/"));
 
-    // ROS_INFO("Setting arguments");
+    ROS_INFO("Setting arguments");
     int argc = 1;
     char *argv[1];
     PySys_SetArgv(argc, argv);
 
-    // ROS_INFO("Importing rospy");
+    ROS_INFO("Importing rospy");
     PyObject *rospy = PyImport_ImportModule("rospy");
 	if (!rospy){
         ROS_ERROR("ERROR: Failed to import rospy");
@@ -1360,6 +1384,7 @@ void CSPExecGenerator::removeStartActionFromOccurringActions(int action1){
 
 bool CSPExecGenerator::srvCB(rosplan_dispatch_msgs::ExecAlternatives::Request& req, rosplan_dispatch_msgs::ExecAlternatives::Response& res)
 {
+    ROS_INFO("\n");
     ROS_INFO("generating execution alternatives service is computing now");
 
     if(!is_esterel_plan_received_) {

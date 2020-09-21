@@ -59,7 +59,6 @@ namespace KCL_rosplan {
                     // highest probability
                     bestProb = plan.plan_success_prob[i];
                     current_plan = plan.esterel_plans[i];
-				// Tomas: We are substituing if the new plan has more nodes than the previous one? Why?
                 } else if(plan.plan_success_prob[i] == bestProb && current_plan.nodes.size() < plan.esterel_plans[i].nodes.size()) { 
                     // break ties on number of actions
                     current_plan = plan.esterel_plans[i];
@@ -211,6 +210,16 @@ namespace KCL_rosplan {
 						for(; ci != node.edges_out.end(); ci++) {
 							edge_active[*ci] = true;
 						}
+					}
+					else{
+						ROS_INFO("ISR: (%s) Action is no longer applicable [%i, %s]",
+								ros::this_node::getName().c_str(),
+								node.action.action_id,
+								node.action.name.c_str());
+						ROS_INFO("ISR: (%s) Must build a new plan", ros::this_node::getName().c_str());
+						state_changed = true;
+						break;
+						// continue;
 					}
 				}
 

@@ -286,8 +286,11 @@ bool ActionSimulator::getAllKnowledgeItems(ros::ServiceClient &srv_client,
         knowledge_item_array.clear();
 
         for(auto it=srv.response.attributes.begin(); it!= srv.response.attributes.end(); it++) {
+            rosplan_knowledge_msgs::KnowledgeItem ki = *it;
+            if(!ki.is_negative){
+                knowledge_item_array.push_back(*it);
+            }
             // return by reference a list of knowledge items
-            knowledge_item_array.push_back(*it);
         }
     }
     else {
@@ -366,12 +369,12 @@ void ActionSimulator::printArrayKI(std::vector<rosplan_knowledge_msgs::Knowledge
     // print all elements in a KnowledgeItem array (used for printing all facts or goals)
 
     // print header msg
-    ROS_DEBUG("%s", header_msg.c_str());
+    ROS_INFO("%s", header_msg.c_str());
 
     // handle empty array scenario
     if(!ki_array.size() > 0) {
-        ROS_DEBUG("empty!");
-        ROS_DEBUG("...................");
+        ROS_INFO("empty!");
+        ROS_INFO("...................");
         return;
     }
 
@@ -379,14 +382,14 @@ void ActionSimulator::printArrayKI(std::vector<rosplan_knowledge_msgs::Knowledge
     for(auto it=ki_array.begin(); it!=ki_array.end(); it++)
     {
         if(it->is_negative) {
-            ROS_DEBUG("(not(%s))", convertPredToString(*it).c_str());
+            ROS_INFO("(not(%s))", convertPredToString(*it).c_str());
         }
         else {
-            ROS_DEBUG("(%s)", convertPredToString(*it).c_str());
+            ROS_INFO("(%s)", convertPredToString(*it).c_str());
         }
     }
 
-    ROS_DEBUG("...................");
+    ROS_INFO("...................");
 }
 
 void ActionSimulator::printInternalKBFacts()

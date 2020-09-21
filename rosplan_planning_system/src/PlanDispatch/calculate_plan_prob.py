@@ -1215,7 +1215,7 @@ def getProbabilities():
     global action_probabilities_map_
     
     file = open('/home/tomas/ros_ws/src/ROSPlan/src/rosplan/probabilities-skip_door.txt', 'r')
-    file = open('/home/tomas/ros_ws/src/ROSPlan/src/rosplan/probabilities-factory_robot.txt', 'r')
+    # file = open('/home/tomas/ros_ws/src/ROSPlan/src/rosplan/probabilities-factory_robot.txt', 'r')
     line = file.readline()
     predicates = True
     actions_par_child_ = False
