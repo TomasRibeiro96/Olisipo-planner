@@ -20,7 +20,6 @@
 #include <rosplan_dispatch_msgs/EsterelPlanEdge.h>
 #include <rosplan_dispatch_msgs/EsterelPlanArray.h>
 #include <rosplan_dispatch_msgs/ExecAlternatives.h>
-#include <rosplan_dispatch_msgs/CalculateProbability.h>
 #include <diagnostic_msgs/KeyValue.h>
 #include "rosplan_action_interface/ActionSimulator.h"
 #include <algorithm>
