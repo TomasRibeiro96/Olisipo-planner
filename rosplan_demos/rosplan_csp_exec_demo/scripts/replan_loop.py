@@ -8,7 +8,7 @@ from std_srvs.srv import Empty, EmptyResponse, Trigger, TriggerResponse
 from rosplan_dispatch_msgs.srv import DispatchService, DispatchServiceResponse
 from rosplan_dispatch_msgs.srv import ExecAlternatives, ExecAlternativesResponse
 
-from rosplan_knowledge_msgs.srv import KnowledgeUpdateServiceArray, KnowledgeUpdateServiceArrayResponse, KnowledgeUpdateServiceArrayRequest, KnowledgeQueryService, KnowledgeQueryServiceResponse, KnowledgeQueryServiceRequest, GetAttributeService, GetAttributeServiceRequest, GetAttributeServiceResponse
+from rosplan_knowledge_msgs.srv import KnowledgeUpdateServiceArray, KnowledgeUpdateServiceArrayResponse, KnowledgeUpdateServiceArrayRequest, KnowledgeQueryService, KnowledgeQueryServiceResponse, KnowledgeQueryServiceRequest, GetDomainAttributeService, GetDomainAttributeServiceRequest, GetDomainAttributeServiceResponse
 from rosplan_knowledge_msgs.msg import KnowledgeItem
 from diagnostic_msgs.msg import KeyValue
 
@@ -18,12 +18,14 @@ number_machines_ = 3
 
 pred_probabilities_map_ = dict()
 
+predicates_list_ = list()
+
 
 def getProbabilities():
     global pred_probabilities_map_
     
     file = open('/home/tomas/ros_ws/src/ROSPlan/src/rosplan/probabilities-factory_robot.txt', 'r')
-    file = open('/home/tomas/ros_ws/src/ROSPlan/src/rosplan/probabilities-skip_door.txt', 'r')
+    # file = open('/home/tomas/ros_ws/src/ROSPlan/src/rosplan/probabilities-skip_door.txt', 'r')
     line = file.readline()
     predicates = True
     while line:
@@ -40,23 +42,32 @@ def getProbabilities():
 
 
 def getPredicateKnowledgeItem(predicate):
-    attribute_name = predicate.split('#')[0]
+    predicate_name = predicate.split('#')[0]
     values = predicate.split('#')[1:]
 
-    prop_serv = rospy.ServiceProxy('/rosplan_knowledge_base/state/propositions', GetAttributeService)
-    prop_req = GetAttributeServiceRequest()
-    prop_req.predicate_name = attribute_name
-    prop_resp = prop_serv(prop_req)
-    # if predicate == 'door_is_open#door7':
-    #     rospy.loginfo('----------------------')
-    #     rospy.loginfo('Predicate: ' + predicate)
-    #     rospy.loginfo('Knowledge item: \n' + str(prop_resp))
-    ki = prop_resp.attributes[0]
+    # rospy.loginfo('ISR: (/coordinator_adaptable) Predicate: ' + str(predicate))
+    # rospy.loginfo('ISR: (/coordinator_adaptable) Predicate name: ' + str(predicate_name))
+    # rospy.loginfo('ISR: (/coordinator_adaptable) Values: ' + str(values))
 
-    for i in range(len(ki.values)):
-        ki.values[i].value = values[i]
-    
-    # rospy.loginfo('Knowledge item:\n' + str(ki))
+    ki = KnowledgeItem()
+    ki.knowledge_type = ki.FACT
+    ki.is_negative = False
+    ki.attribute_name = predicate_name
+    ki_values = list()
+
+    i = 0
+
+    for pred in predicates_list_:
+        if pred.name == predicate_name:
+            for kv in pred.typed_parameters:
+                key_value = KeyValue()
+                key_value.key = kv.key
+                key_value.value = values[i]
+                i = i + 1
+                ki_values.append(key_value)
+
+    ki.values = ki_values
+
     return ki
 
 
@@ -65,19 +76,16 @@ def perturb():
 
         rospy.loginfo('ISR: (/coordinator_adaptable) Starting to perturb')
         # rospy.loginfo('Predicates: ' + str(pred_probabilities_map_.keys()))
+
         for predicate in pred_probabilities_map_.keys():
             spont_false_true = pred_probabilities_map_[predicate][0]
             spont_true_false = pred_probabilities_map_[predicate][1]
 
-            if predicate == 'door_is_open#door1':
-                spont_true_false = 1
-            
-            if predicate == 'door_is_open#door3':
-                spont_false_true = 1
-
+            # Service to add or remove fact to knowledge base
             update_serv = rospy.ServiceProxy('/rosplan_knowledge_base/update_array', KnowledgeUpdateServiceArray)
             update_req = KnowledgeUpdateServiceArrayRequest()
 
+            # Service to check whether a fact is already in the knowledge base or not (whether it is in the current state)
             queryKB = rospy.ServiceProxy('/rosplan_knowledge_base/query_state', KnowledgeQueryService)
             query_KB_req = KnowledgeQueryServiceRequest()
 
@@ -125,6 +133,8 @@ def perturb():
 
 
 def run():
+    global predicates_list_
+
     rospy.init_node('coordinator', anonymous=False)
 
     # use or not adaptable plan dispatcher
@@ -159,6 +169,10 @@ def run():
 
     getProbabilities()
 
+    prop_serv = rospy.ServiceProxy('/rosplan_knowledge_base/domain/predicates', GetDomainAttributeService)
+    prop_req = GetDomainAttributeServiceRequest()
+    predicates_list_ = prop_serv(prop_req).items
+
     while not goal_achieved and replans<25:
         rospy.wait_for_service('/rosplan_problem_interface/problem_generation_server')
         rospy.wait_for_service('/rosplan_planner_interface/planning_server')
@@ -166,7 +180,8 @@ def run():
         rospy.wait_for_service('/rosplan_plan_dispatcher/dispatch_plan')
         rospy.wait_for_service('/rosplan_knowledge_base/update_array')
         rospy.wait_for_service('/rosplan_knowledge_base/query_state')
-        rospy.wait_for_service('rosplan_knowledge_base/state/propositions')
+        rospy.wait_for_service('/rosplan_knowledge_base/state/propositions')
+        rospy.wait_for_service('/rosplan_knowledge_base/domain/predicates')
 
         try:
             pg = rospy.ServiceProxy('/rosplan_problem_interface/problem_generation_server', Empty)

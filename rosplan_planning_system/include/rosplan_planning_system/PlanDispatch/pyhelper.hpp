@@ -2,7 +2,8 @@
 #define PYHELPER_HPP
 #pragma once
 
-#include </usr/local/include/python3.8/Python.h>
+// #include </usr/local/include/python3.8/Python.h>
+#include </usr/include/python2.7/Python.h>
 
 class CPyInstance
 {

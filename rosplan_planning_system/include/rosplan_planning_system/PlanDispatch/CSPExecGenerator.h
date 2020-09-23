@@ -20,6 +20,11 @@
 #include <rosplan_dispatch_msgs/EsterelPlanEdge.h>
 #include <rosplan_dispatch_msgs/EsterelPlanArray.h>
 #include <rosplan_dispatch_msgs/ExecAlternatives.h>
+#include <rosplan_dispatch_msgs/CalculateActionsProbabilityService.h>
+#include <rosplan_dispatch_msgs/CalculateFullProbabilityService.h>
+#include <rosplan_dispatch_msgs/GetNodesLayersService.h>
+#include <rosplan_dispatch_msgs/SetupService.h>
+#include <rosplan_dispatch_msgs/BacktrackService.h>
 #include <diagnostic_msgs/KeyValue.h>
 #include "rosplan_action_interface/ActionSimulator.h"
 #include <algorithm>
@@ -294,7 +299,11 @@ class CSPExecGenerator
         ros::Publisher pub_valid_plans_, pub_esterel_plan_;
         ros::Subscriber sub_esterel_plan_;
         ros::ServiceServer srv_gen_alternatives_;
-        ros::ServiceClient calculate_prob_client_;
+        ros::ServiceClient calculate_actions_prob_client_;
+        ros::ServiceClient calculate_full_prob_client_;
+        ros::ServiceClient setup_client_;
+        ros::ServiceClient get_nodes_layers_client_;
+        ros::ServiceClient backtrack_client_;
 
         /// flag used to know when we have received a callback
         bool is_esterel_plan_received_;

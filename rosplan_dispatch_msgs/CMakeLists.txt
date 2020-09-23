@@ -32,6 +32,11 @@ add_service_files(
   GetPlanningParams.srv
   DispatchService.srv
   ExecAlternatives.srv
+  CalculateActionsProbabilityService.srv
+  CalculateFullProbabilityService.srv
+  GetNodesLayersService.srv
+  SetupService.srv
+  BacktrackService.srv
 )
 
 add_action_files(

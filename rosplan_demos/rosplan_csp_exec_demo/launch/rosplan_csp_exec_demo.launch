@@ -1,18 +1,21 @@
 <?xml version="1.0"?>
 <launch>
 
+
+    <!-- select between normal or smart plan dispatcher -->
+    <arg name="adaptable_plan_dispatcher_required" default="true" />
     
     <!-- FACTORY ROBOT -->
-    <!-- <arg name="category" default="factory_robot" />
+    <arg name="category" default="factory_robot" />
     <arg name="domain" default="domain_factory_robot" />
-    <arg name="problem" default="problem_r1_m3" /> -->
+    <arg name="problem" default="problem_r1_m3" />
 
 
     <!-- SKIP DOOR -->
-    <arg name="category" default="skip_door" />
-    <arg name="domain" default="domain_skip_door" />
+    <!-- <arg name="category" default="skip_door" />
+    <arg name="domain" default="domain_skip_door" /> -->
     <!-- <arg name="problem" default="problem_r1_w2" /> -->
-    <arg name="problem" default="problem_r1_w3" />
+    <!-- <arg name="problem" default="problem_r1_w3" /> -->
     <!-- <arg name="problem" default="problem_r1_w4" /> -->
     <!-- <arg name="problem" default="problem_r1_w5" /> -->
     <!-- <arg name="problem" default="problem_r1_w6" /> -->
@@ -43,9 +46,6 @@
     <arg name="category" default="iros_problems_free" />
     -->
 
-
-    <!-- select between normal or smart plan dispatcher -->
-    <arg name="adaptable_plan_dispatcher_required" default="true" />
 
     <!-- do not touch this params, but rather update args above -->
     <arg name="common_path" default="$(find rosplan_csp_exec_demo)/common/$(arg category)" />

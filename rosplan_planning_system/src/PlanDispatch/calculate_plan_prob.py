@@ -4,7 +4,7 @@ import sys
 import rospy
 from rosplan_knowledge_msgs.srv import *
 from rosplan_knowledge_msgs.msg import *
-from rosplan_dispatch_msgs.msg import EsterelPlanArray
+from rosplan_dispatch_msgs.srv import CalculateActionsProbabilityService, CalculateActionsProbabilityServiceResponse, CalculateFullProbabilityService, CalculateFullProbabilityServiceResponse, GetNodesLayersService, GetNodesLayersServiceResponse, SetupService, SetupServiceResponse, BacktrackService, BacktrackServiceResponse
 from std_msgs.msg import String
 import collections
 import itertools
@@ -38,10 +38,8 @@ joint_prob_ = 1
 
 accounted_nodes_ = set()
 
-# List of nodes added on each
+# List of nodes added on each turn
 added_nodes_ = list()
-
-rospy.init_node('bayes_net_calc')
 
 
 class Action:
@@ -1214,8 +1212,8 @@ def getProbabilities():
     global pred_probabilities_map_
     global action_probabilities_map_
     
-    file = open('/home/tomas/ros_ws/src/ROSPlan/src/rosplan/probabilities-skip_door.txt', 'r')
-    # file = open('/home/tomas/ros_ws/src/ROSPlan/src/rosplan/probabilities-factory_robot.txt', 'r')
+    # file = open('/home/tomas/ros_ws/src/ROSPlan/src/rosplan/probabilities-skip_door.txt', 'r')
+    file = open('/home/tomas/ros_ws/src/ROSPlan/src/rosplan/probabilities-factory_robot.txt', 'r')
     line = file.readline()
     predicates = True
     actions_par_child_ = False
@@ -1252,7 +1250,7 @@ def getElementsFromStateList(elements_list):
     return elements_set
 
 
-def getNodesLayers():
+def getNodesLayers(req):
     orderAllNodes()
     nodes_layers = list()
 
@@ -1262,36 +1260,39 @@ def getNodesLayers():
     
     # rospy.loginfo("Returning nodes layers: " + str(nodes_layers))
 
-    return nodes_layers
+    return GetNodesLayersServiceResponse(nodes_layers)
+    # return nodes_layers
 
 
 # Gets everything needed to start building the network
-def setup():
-    # print ("Waiting for service")
+def setup(req):
+    # rospy.loginfo("ISR: (/bayes_net_calc) Waiting for service")
     rospy.wait_for_service('/rosplan_knowledge_base/domain/operators')
     rospy.wait_for_service('/rosplan_knowledge_base/domain/operator_details')
 
-    # print ("Obtaining operators")
+    # rospy.loginfo("ISR: (/bayes_net_calc) Obtaining operators")
     domain_operators = rospy.ServiceProxy('/rosplan_knowledge_base/domain/operators', GetDomainOperatorService)
 
-    # print('Obtaining goal_')
+    # rospy.loginfo("ISR: (/bayes_net_calc) Obtaining goal_")
     global goal_
     goals_list = rospy.ServiceProxy("/rosplan_knowledge_base/state/goals", GetAttributeService)().attributes
     goal_ = getElementsFromStateList(goals_list)
 
-    # print('Obtaining initial state')
+    # rospy.loginfo("ISR: (/bayes_net_calc) Obtaining initial state")
     global initial_state_
     initial_state_list = rospy.ServiceProxy('/rosplan_knowledge_base/state/propositions', GetAttributeService)().attributes
     initial_state_ = getElementsFromStateList(initial_state_list)
 
-    # print('Obtaining probabilities')
+    # rospy.loginfo("ISR: (/bayes_net_calc) Obtaining probabilities")
     getProbabilities()
     # print('   Predicates: ' + str(pred_probabilities_map_))
     # print('   Actions: ' + str(action_probabilities_map_))
 
-    # print('Creating actions')
+    # rospy.loginfo("ISR: (/bayes_net_calc) Creating actions")
     operators = domain_operators().operators
     createActions(operators)
+
+    return SetupServiceResponse(True)
 
 
 def getTopPredicateParent(node):
@@ -1494,7 +1495,7 @@ def removeNode(node):
     accounted_nodes_.remove(node)
 
 
-def backtrack():
+def backtrack(req):
     global added_nodes_
     global list_probabilities_
     global layer_number_
@@ -1523,6 +1524,8 @@ def backtrack():
         joint_prob_ = 1
     layer_number_ = layer_number_ - 1
 
+    return BacktrackServiceResponse(True)
+
 
 def writeBayesNetAIMAToFile():
     file = open('bayesNetAIMA.txt', 'w')
@@ -1542,10 +1545,11 @@ def writeBayesNetAIMAToFile():
     file.close()
 
 
-def getActionsJointProbability(received_action_name):
+def getActionsJointProbability(req):
     global layer_number_
     global added_nodes_
 
+    received_action_name = req.node
     # rospy.loginfo('Adding action to layer ' + str(layer_number_+1))
     # rospy.loginfo('Action: ' + str(received_action_name))
     # rospy.loginfo('Previous joint_prob: ' + str(joint_prob_))
@@ -1584,7 +1588,8 @@ def getActionsJointProbability(received_action_name):
 
     # rospy.loginfo(' Returning probability: ' + str(joint_prob_))
 
-    return joint_prob_
+    return CalculateActionsProbabilityServiceResponse(joint_prob_)
+    # return joint_prob_
 
 
 def getProbFromBayesNetAIMA():
@@ -1600,7 +1605,7 @@ def getProbFromBayesNetAIMA():
     return prob_list
 
 
-def calculateFullJointProbability():
+def calculateFullJointProbability(req):
     global joint_prob_
 
     # rospy.loginfo('Calculating full joint of layer ' + str(layer_number_))
@@ -1620,7 +1625,8 @@ def calculateFullJointProbability():
     list_probabilities_[-1] = joint_prob_
 
     # rospy.loginfo('Returning probability: ' + str(joint_prob_))
-    return joint_prob_
+    return CalculateFullProbabilityServiceResponse(joint_prob_)
+    # return joint_prob_
 
 
 def getListActions(plan):
@@ -1643,59 +1649,69 @@ def getGoalFacts(plan):
 ''' This is only for testing with the 'skip_door' domain and 'problem_r1_w3' '''
 if __name__ == "__main__":
 
-    rospy.loginfo('Code ready to receive')
-    setup()
+    rospy.init_node('bayes_net_calc')
 
-    # Skip door
-    # plan = ['navigate_start#mbot#wp1#wp2#door1#door2', 'navigate_end#mbot#wp1#wp2#door1#door2', 'open_door_start#mbot#wp2#door2', 'open_door_end#mbot#wp2#door2', 'navigate_start#mbot#wp2#wp3#door2#door3', 'navigate_end#mbot#wp2#wp3#door2#door3']    
-    # list_actions = ['navigate_start#mbot#wp1#wp2#door1#door2$1', 'navigate_end#mbot#wp1#wp2#door1#door2$2', 'open_door_start#mbot#wp2#door2$3', 'open_door_end#mbot#wp2#door2$4', 'navigate_start#mbot#wp2#wp3#door2#door3$5', 'navigate_end#mbot#wp2#wp3#door2#door3$6']
-    # list_goal = ['robot_at#mbot#wp3%6']
+    rospy.Service('getActionsJointProbability', CalculateActionsProbabilityService, getActionsJointProbability)
+    rospy.Service('calculateFullJointProbability', CalculateFullProbabilityService, calculateFullJointProbability)
+    rospy.Service('getNodesLayers', GetNodesLayersService, getNodesLayers)
+    rospy.Service('setup', SetupService, setup)
+    rospy.Service('backtrack', BacktrackService, backtrack)
 
-    # Factory robot
-    # plan = ['navigate_start#mbot#m1#m2', 'navigate_end#mbot#m1#m2', 'fix_machine_start#mbot#m2',
-    #         'fix_machine_end#mbot#m2', 'navigate_start#mbot#m2#m3', 'navigate_end#mbot#m2#m3',
-    #         'fix_machine_start#mbot#m3', 'fix_machine_end#mbot#m3']    
-    # Solution probability: 0.001507
-    plan = ['go_fix_machine_start#m1', 'go_fix_machine_end#m1', 'go_fix_machine_start#m2',
-            'go_fix_machine_end#m2', 'go_fix_machine_start#m3', 'go_fix_machine_end#m3']
-    # Solution probability: 0.284757
+    rospy.spin()
+    
+    # rospy.loginfo('Code ready to receive')
+    # setup()
+
+    # # Skip door
+    # # plan = ['navigate_start#mbot#wp1#wp2#door1#door2', 'navigate_end#mbot#wp1#wp2#door1#door2', 'open_door_start#mbot#wp2#door2', 'open_door_end#mbot#wp2#door2', 'navigate_start#mbot#wp2#wp3#door2#door3', 'navigate_end#mbot#wp2#wp3#door2#door3']    
+    # # list_actions = ['navigate_start#mbot#wp1#wp2#door1#door2$1', 'navigate_end#mbot#wp1#wp2#door1#door2$2', 'open_door_start#mbot#wp2#door2$3', 'open_door_end#mbot#wp2#door2$4', 'navigate_start#mbot#wp2#wp3#door2#door3$5', 'navigate_end#mbot#wp2#wp3#door2#door3$6']
+    # # list_goal = ['robot_at#mbot#wp3%6']
+
+    # # Factory robot
+    # # plan = ['navigate_start#mbot#m1#m2', 'navigate_end#mbot#m1#m2', 'fix_machine_start#mbot#m2',
+    # #         'fix_machine_end#mbot#m2', 'navigate_start#mbot#m2#m3', 'navigate_end#mbot#m2#m3',
+    # #         'fix_machine_start#mbot#m3', 'fix_machine_end#mbot#m3']    
+    # # Solution probability: 0.001507
     # plan = ['go_fix_machine_start#m1', 'go_fix_machine_end#m1', 'go_fix_machine_start#m2',
-    #         'go_fix_machine_start#m3', 'go_fix_machine_end#m2', 'go_fix_machine_end#m3']
-    # Solution probability: 0.552712
-    # plan = ['go_fix_machine_start#m1', 'go_fix_machine_end#m1', 'go_fix_machine_start#m3',
-    #         'go_fix_machine_start#m2', 'go_fix_machine_end#m2', 'go_fix_machine_end#m3']
-    # Solution probability: 0.614125
-    # plan = ['go_fix_machine_start#m1', 'go_fix_machine_start#m2', 'go_fix_machine_start#m3',
-    #         'go_fix_machine_end#m1', 'go_fix_machine_end#m2', 'go_fix_machine_end#m3']
+    #         'go_fix_machine_end#m2', 'go_fix_machine_start#m3', 'go_fix_machine_end#m3']
+    # # Solution probability: 0.284757
+    # # plan = ['go_fix_machine_start#m1', 'go_fix_machine_end#m1', 'go_fix_machine_start#m2',
+    # #         'go_fix_machine_start#m3', 'go_fix_machine_end#m2', 'go_fix_machine_end#m3']
+    # # Solution probability: 0.552712
+    # # plan = ['go_fix_machine_start#m1', 'go_fix_machine_end#m1', 'go_fix_machine_start#m3',
+    # #         'go_fix_machine_start#m2', 'go_fix_machine_end#m2', 'go_fix_machine_end#m3']
+    # # Solution probability: 0.614125
+    # # plan = ['go_fix_machine_start#m1', 'go_fix_machine_start#m2', 'go_fix_machine_start#m3',
+    # #         'go_fix_machine_end#m1', 'go_fix_machine_end#m2', 'go_fix_machine_end#m3']
 
-    list_actions = getListActions(plan)
-    list_goal = getGoalFacts(plan)
+    # list_actions = getListActions(plan)
+    # list_goal = getGoalFacts(plan)
 
-    list_actions_goal = list_actions + list_goal
+    # list_actions_goal = list_actions + list_goal
 
-    # rospy.loginfo('>>> List actions+goal: ' + str(list_actions_goal))
+    # # rospy.loginfo('>>> List actions+goal: ' + str(list_actions_goal))
 
-    for action in plan:
-        getActionsJointProbability(action)
+    # for action in plan:
+    #     getActionsJointProbability(action)
 
-    calculateFullJointProbability()
+    # calculateFullJointProbability()
 
-    orderAllNodes()
-    writeNodesAndCPDsToFile()
+    # orderAllNodes()
+    # writeNodesAndCPDsToFile()
 
-    # AIMA - BayesNet    
-    writeBayesNetAIMAToFile()
-    bayes_net_AIMA = getProbFromBayesNetAIMA()
+    # # AIMA - BayesNet    
+    # writeBayesNetAIMAToFile()
+    # bayes_net_AIMA = getProbFromBayesNetAIMA()
 
-    rospy.loginfo('>>> List probabilities: ' + str(list_probabilities_))
-    # rospy.loginfo('>>> BayesNetAIMA:       ' + str(bayes_net_AIMA))
+    # rospy.loginfo('>>> List probabilities: ' + str(list_probabilities_))
+    # # rospy.loginfo('>>> BayesNetAIMA:       ' + str(bayes_net_AIMA))
 
-    for i in range(len(list_actions)):
-        node = list_actions_goal[i]
+    # for i in range(len(list_actions)):
+    #     node = list_actions_goal[i]
 
-        rospy.loginfo('>>> Node: ' + node)
-        rospy.loginfo('Code probability:           ' + str(round(list_probabilities_[i], 6)))
-        # rospy.loginfo('Bayes net AIMA probability: ' + str(round(bayes_net_AIMA[i], 6)) + '\n')
+    #     rospy.loginfo('>>> Node: ' + node)
+    #     rospy.loginfo('Code probability:           ' + str(round(list_probabilities_[i], 6)))
+    #     # rospy.loginfo('Bayes net AIMA probability: ' + str(round(bayes_net_AIMA[i], 6)) + '\n')
 
-    writePredicatesToFile()
-    writePredicateParentsToFile()
+    # writePredicatesToFile()
+    # writePredicateParentsToFile()

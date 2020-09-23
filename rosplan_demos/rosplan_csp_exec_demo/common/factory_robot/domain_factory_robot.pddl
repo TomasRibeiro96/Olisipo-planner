@@ -24,14 +24,4 @@
 		    )
 )
 
-(:durative-action go_turn_machine_on
-	:parameters (?m - machine)
-	:duration ( = ?duration 1)
-	:condition (and
-			   )
-	:effect (and
-				(at end (machine_is_working ?m))
-		    )
-)
-
 )
