@@ -14,6 +14,7 @@
 #include <algorithm>
 
 int total_number_nodes_expanded = 1;
+bool first_time = true;
 
 // TODO: When service is called again, if the at_start effects of an action
 // are alreasdy present in the current state, then remove it from the open list
@@ -530,7 +531,6 @@ bool CSPExecGenerator::simulateAction(bool action_start, std::string action_name
     return true;
 }
 
-
 std::vector<rosplan_knowledge_msgs::KnowledgeItem> CSPExecGenerator::getStateAfterAction(std::string action_name,
                                                                                         std::vector<std::string> params,
                                                                                         std::vector<int> open_list){
@@ -651,92 +651,8 @@ void CSPExecGenerator::fillExpectedFacts(std::vector<std::string> expected_predi
 
 }
 
-PyObject* CSPExecGenerator::convertVectorToPythonList(std::vector<std::string> plan_with_names){
-    
-    PyObject* pList = PyList_New(plan_with_names.size());
-    PyObject* pName;
-
-    for(int i = 0; i < plan_with_names.size(); i++){
-        pName = PyUnicode_FromString(plan_with_names[i].c_str());
-        PyList_SetItem(pList, i, pName);
-    }
-
-    return pList;
-}
-
-PyObject* CSPExecGenerator::convertVectorToPythonTuple(std::vector<std::string> plan_with_names){
-    
-    PyObject* pTuple = PyTuple_New(plan_with_names.size());
-    PyObject* pName;
-
-    for(int i = 0; i < plan_with_names.size(); i++){
-        pName = PyUnicode_FromString(plan_with_names[i].c_str());
-        PyTuple_SetItem(pTuple, i, pName);
-    }
-
-    return pTuple;
-}
-
-std::vector<std::string> CSPExecGenerator::convertCPyObjectToVector(CPyObject pList){
-    
-    if(!pList){
-        ROS_ERROR("Expected predicates list is null");
-    }
-
-    std::vector<std::string> vec;
-    Py_ssize_t size = PyList_Size(pList);
-    std::string predicate;
-
-    for(int i = 0; i < size; i++){
-        PyObject* item = PyList_GetItem(pList, i);
-        predicate = PyBytes_AsString(item);
-        vec.push_back(predicate);
-    }
-
-    return vec;
-}
-
 double CSPExecGenerator::getCurrentPlanProbabilityAndFillExpectedFacts(){
 
-    // double plan_success_probability;
-    // std::vector<std::string> expected_predicates;
-
-    // // ROS_INFO("Calling calculateFullJointProbability");
-    // CPyObject pFuncCalcProb = PyObject_GetAttrString(pModule_, "calculateFullJointProbability");
-    // if(pFuncCalcProb && PyCallable_Check(pFuncCalcProb)){
-        
-    //     CPyObject pReturnedProbability = PyObject_CallObject(pFuncCalcProb, NULL);
-    //     plan_success_probability = PyFloat_AsDouble(pReturnedProbability);
-
-    //     if(plan_success_probability == -1.0){
-    //         ROS_ERROR("Received NULL from calculateFullJointProbability");
-    //     }
-    //     else{
-    //         // ROS_INFO("Full joint probability: %f", plan_success_probability);
-    //     }
-
-    //     // ROS_INFO("Calling getNodesLayers");
-    //     CPyObject pFuncGetLayers = PyObject_GetAttrString(pModule_, "getNodesLayers");
-    //     if(pFuncGetLayers && PyCallable_Check(pFuncGetLayers)){
-    //         // ROS_INFO("Got answer from getNodesLayers");
-    //         CPyObject pReturned = PyObject_CallObject(pFuncGetLayers, NULL);
-    //         // ROS_INFO("Converting CPyObject to Vector");
-    //         expected_predicates = convertCPyObjectToVector(pReturned);
-    //         // ROS_INFO("Filling expected facts");
-    //         fillExpectedFacts(expected_predicates);
-    //     }
-    //     else{
-    //         PyErr_Print();
-    //         ROS_ERROR("ERROR: Failed to call getNodesLayers");
-    //     }
-    
-    // }
-    // else{
-    //     PyErr_Print();
-    //     ROS_ERROR("ERROR: Unable to import calculateFullJointProbability");
-    // }
-
-    ////////////////////////////////////////////////////////////
     rosplan_dispatch_msgs::CalculateFullProbabilityService srv;
     double plan_success_probability;
     if(calculate_full_prob_client_.call(srv)){
@@ -757,17 +673,10 @@ double CSPExecGenerator::getCurrentPlanProbabilityAndFillExpectedFacts(){
         // ROS_INFO("ISR: (%s) Did NOT receive response of getNodesLayers", ros::this_node::getName().c_str());
     }
 
-    ////////////////////////////////////////////////////////////
     return plan_success_probability;
 }
 
 void CSPExecGenerator::backtrackBayesianNetwork(){
-    // // ROS_INFO("Calling backtrack");
-    // CPyObject pFuncCalcProb = PyObject_GetAttrString(pModule_, "backtrack");
-    // if(pFuncCalcProb && PyCallable_Check(pFuncCalcProb)){
-        
-    //     PyObject_CallObject(pFuncCalcProb, NULL);
-    // }
 
     rosplan_dispatch_msgs::BacktrackService srv;
     if(backtrack_client_.call(srv)){
@@ -907,56 +816,6 @@ bool CSPExecGenerator::orderNodes(std::vector<int> open_list, int &number_expand
             // ROS_INFO("--- Skip action ---");
             backtrack("Plan probability too low", true);
         }
-
-        ///////////////////////////////////////////////////////
-
-        // ROS_INFO("Calling getActionsJointProbability");
-        // CPyObject pFuncCalcProb = PyObject_GetAttrString(pModule_, "getActionsJointProbability");
-        // if(pFuncCalcProb && PyCallable_Check(pFuncCalcProb)){
-            
-        //     PyObject* pArgs = PyTuple_New(1);
-        //     CPyObject py_action_string = PyUnicode_FromString(full_action_name.c_str());
-        //     PyTuple_SetItem(pArgs, 0, py_action_string);
-
-        //     CPyObject pReturnedProbability = PyObject_CallObject(pFuncCalcProb, pArgs);
-        //     PyErr_Print();
-        //     double plan_probability = PyFloat_AsDouble(pReturnedProbability);
-
-        //     if(plan_probability == -1.0){
-        //         ROS_ERROR("Received NULL from getActionsJointProbability");
-        //         PyErr_Print();
-        //     }
-
-        //     int size = exec_aternatives_msg_.plan_success_prob.size();
-        //     double best_prob_yet = 0;
-        //     if(size != 0)
-        //         best_prob_yet = exec_aternatives_msg_.plan_success_prob[size-1];
-            
-        //     // ROS_INFO("Probability after action: %f", plan_probability);
-        //     // ROS_INFO("Best probability yet: %f", best_prob_yet);
-
-        //     ordered_nodes_.push_back(*a);
-
-        //     if(!simulateAction(action_start, action_name, params))
-        //         return false;
-
-        //     if(plan_probability > best_prob_yet){
-        //         number_expanded_nodes++;
-
-        //         // ROS_INFO("+++ Apply action +++");
-            
-        //         // Add action to queue
-        //         orderNodes(open_list_copy, number_expanded_nodes);
-        //         // printNodes("stack after adding", ordered_nodes_);
-        //     }
-        //     else{
-        //         // ROS_INFO("--- Skip action ---");
-        //         backtrack("Plan probability too low", true);
-        //     }
-        // }
-        // else{
-        //     ROS_ERROR("Could not call getActionsJointProbability");
-        // }
     }
 
     // pop last element from stack (ordered_nodes_) revert action
@@ -990,7 +849,8 @@ std::vector<std::string> CSPExecGenerator::getNodesWithNames(std::vector<int> &n
     return vec;
 }
 
-bool CSPExecGenerator::stateHasFact(std::vector<rosplan_knowledge_msgs::KnowledgeItem> state, rosplan_knowledge_msgs::KnowledgeItem fact){
+bool CSPExecGenerator::stateHasFact(std::vector<rosplan_knowledge_msgs::KnowledgeItem> state,
+                                    rosplan_knowledge_msgs::KnowledgeItem fact){
     for(auto&& fact_in_state: state){
         if(factsAreEqual(fact_in_state, fact))
             return true;
@@ -999,7 +859,7 @@ bool CSPExecGenerator::stateHasFact(std::vector<rosplan_knowledge_msgs::Knowledg
 }
 
 bool CSPExecGenerator::stateContainsFacts(std::vector<rosplan_knowledge_msgs::KnowledgeItem> state,
-                                                    std::vector<rosplan_knowledge_msgs::KnowledgeItem> facts){
+                                            std::vector<rosplan_knowledge_msgs::KnowledgeItem> facts){
     for(auto&& fact: facts){
         if(!stateHasFact(state, fact)){
             return false;
@@ -1142,7 +1002,6 @@ void CSPExecGenerator::reusePreviousPlan(int index_facts){
     exec_aternatives_msg_.plan_success_prob.push_back(0.4);
 }
 
-
 bool CSPExecGenerator::isNodeAnActionOcurring(int node){
     for(int action: actions_occurring_){
         if(node == action){
@@ -1151,7 +1010,6 @@ bool CSPExecGenerator::isNodeAnActionOcurring(int node){
     }
     return false;
 }
-
 
 bool CSPExecGenerator::generatePlans()
 {
@@ -1220,76 +1078,20 @@ bool CSPExecGenerator::generatePlans()
 
     ROS_INFO("Total number of actions: %d", (int)open_list.size());
 
-    // CPyInstance hInstance;
-
-    // ROS_INFO("ISR: (%s) Add current directory to system path", ros::this_node::getName().c_str());
-    // PyObject* sysPath = PySys_GetObject((char*)"path");
-    // PyList_Append(sysPath, PyUnicode_FromString("/home/tomas/ros_ws/src/ROSPlan/src/rosplan/rosplan_planning_system/src/PlanDispatch/"));
-
-    // ROS_INFO("ISR: (%s) Setting arguments", ros::this_node::getName().c_str());
-    // int argc = 1;
-    // char *argv[1];
-    // PySys_SetArgv(argc, argv);
-
-    // ROS_INFO("ISR: (%s) Importing rospy", ros::this_node::getName().c_str());
-    // PyObject *rospy = PyImport_ImportModule("rospy");
-    // if (!rospy){
-    //     ROS_ERROR("ERROR: (%s) Failed to import rospy", ros::this_node::getName().c_str());
-    //     PyErr_Print();
-    // }
-
-    // ROS_INFO("ISR: (%s) Getting rospy init_node", ros::this_node::getName().c_str());
-    // PyObject *init_node = PyObject_GetAttrString(rospy, "init_node");
-    // if (!init_node){
-    //     ROS_ERROR("ERROR: (%s) Failed to initialise rospy node", ros::this_node::getName().c_str());
-    //     PyErr_Print();
-    // }
-
-    // ROS_INFO("ISR: (%s) Initiliasing rospy node", ros::this_node::getName().c_str());
-    // PyObject *init_node_args = PyTuple_New(1);
-    // PyObject *node_name = PyString_FromString("bayes_net_calc");	
-    // PyTuple_SetItem(init_node_args, 0, node_name);
-    // PyObject_CallObject(init_node, init_node_args);
-
-    // ROS_INFO("ISR: (%s) Importing calculate_plan_prob", ros::this_node::getName().c_str());
-    // CPyObject pName = PyUnicode_FromString("calculate_plan_prob");
-    // pModule_ = PyImport_Import(pName);
-
-    // if(pModule_){
-
-    //     ROS_INFO("Calling setup method");
-    //     CPyObject pFuncSetup = PyObject_GetAttrString(pModule_, "setup");
-    //     if(pFuncSetup && PyCallable_Check(pFuncSetup)){
-    //         PyObject_CallObject(pFuncSetup, NULL);
-
-    //         // find plan
-    //         // if true, it means at least one valid execution alternative was found
-    //         ROS_INFO("Calling orderNodes");
-    //         orderNodes(open_list, number_expanded_nodes);
-
-    //     }
-    //     else{
-    //         PyErr_Print();
-    //         ROS_ERROR("ERROR: Failed to call setup");
-    //     }
-
-    // }
-    // else{
-    //     PyErr_Print();
-    //     ROS_ERROR("ERROR: Failed to call calculate_plan_prob");
-    // }
-
-    rosplan_dispatch_msgs::SetupService srv;
-    if(setup_client_.call(srv)){
-        if(srv.response.success){
-            // ROS_INFO("ISR: (%s) Successfully called setup method", ros::this_node::getName().c_str());
+    if(first_time){
+        rosplan_dispatch_msgs::SetupService srv;
+        if(setup_client_.call(srv)){
+            if(srv.response.success){
+                first_time = false;
+                // ROS_INFO("ISR: (%s) Successfully called setup method", ros::this_node::getName().c_str());
+            }
+            else{
+                // ROS_INFO("ISR: (%s) Something went wrong in setup method", ros::this_node::getName().c_str());
+            }
         }
         else{
-            // ROS_INFO("ISR: (%s) Something went wrong in setup method", ros::this_node::getName().c_str());
+            // ROS_INFO("ISR: (%s) Couldn't call setup method", ros::this_node::getName().c_str());
         }
-    }
-    else{
-        // ROS_INFO("ISR: (%s) Couldn't call setup method", ros::this_node::getName().c_str());
     }
 
     orderNodes(open_list, number_expanded_nodes);
@@ -1485,7 +1287,8 @@ void CSPExecGenerator::removeStartActionFromOccurringActions(int action1){
     }
 }
 
-bool CSPExecGenerator::srvCB(rosplan_dispatch_msgs::ExecAlternatives::Request& req, rosplan_dispatch_msgs::ExecAlternatives::Response& res)
+bool CSPExecGenerator::srvCB(rosplan_dispatch_msgs::ExecAlternatives::Request& req,
+                                rosplan_dispatch_msgs::ExecAlternatives::Response& res)
 {
     ROS_INFO("\n");
     ROS_INFO("generating execution alternatives service is computing now");
