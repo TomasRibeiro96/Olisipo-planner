@@ -12,6 +12,10 @@ namespace KCL_rosplan {
 
 		node_handle = &nh;
 
+		ros::NodeHandle nh_;
+		// perturb_client_ = node_handle->serviceClient<rosplan_knowledge_msgs::PerturbStateService>("perturb_state");
+		perturb_client_ = nh_.serviceClient<rosplan_knowledge_msgs::PerturbStateService>("perturb_state");
+
 		std::string plan_graph_topic = "plan_graph";
 		nh.getParam("plan_graph_topic", plan_graph_topic);
 		plan_graph_publisher = node_handle->advertise<std_msgs::String>(plan_graph_topic, 1000, true);
@@ -254,6 +258,22 @@ namespace KCL_rosplan {
 
 			ros::spinOnce();
 			loop_rate.sleep();
+
+			//// Perturb state here
+			rosplan_knowledge_msgs::PerturbStateService srv;
+			ROS_INFO("ISR: (%s) Perturbing world state", ros::this_node::getName().c_str());
+			if(perturb_client_.call(srv)){
+				if(srv.response.success){
+					// ROS_INFO("ISR: (%s) Successfully perturbed state", ros::this_node::getName().c_str());
+				}
+				else{
+					// ROS_INFO("ISR: (%s) Something went wrong while perturbing", ros::this_node::getName().c_str());
+				}
+			}
+			else{
+				// ROS_INFO("ISR: (%s) Did NOT perturb state", ros::this_node::getName().c_str());
+			}
+
 
 			if(goalAchieved()){
 				ROS_INFO("KCL: (%s) Goal is achieved", ros::this_node::getName().c_str());

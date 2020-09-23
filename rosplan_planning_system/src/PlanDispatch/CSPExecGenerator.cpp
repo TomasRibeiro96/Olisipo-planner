@@ -928,11 +928,10 @@ int CSPExecGenerator::getActionEndLayer(int a){
 
 int CSPExecGenerator::currentStateContainsExpectedFacts(){
 
-    // TODO: The perturbations do not appear in this current state
     std::vector<rosplan_knowledge_msgs::KnowledgeItem> current_state = action_simulator_.getCurrentState();
-    ROS_INFO(">>> Current state: %s", getStateAsString(current_state).c_str());
-    printNodes(">>> Best plan", best_plan_);
-    printNodes(">>> Actions occurring", actions_occurring_);
+    // ROS_INFO(">>> Current state: %s", getStateAsString(current_state).c_str());
+    // printNodes(">>> Best plan", best_plan_);
+    // printNodes(">>> Actions occurring", actions_occurring_);
 
     for (int i = expected_facts_.size(); i-- > 0; ){
         std::vector<rosplan_knowledge_msgs::KnowledgeItem> expected_facts = expected_facts_[i];
@@ -1038,7 +1037,7 @@ bool CSPExecGenerator::generatePlans()
     // Check if current state contains expected facts
     // It starts from the end of expected facts because the state might
     // have unexpectedly changed and we may be able to skip actions
-    ROS_INFO("Checking expected facts");
+    // ROS_INFO("Checking expected facts");
     if(!expected_facts_.empty()){
         int index_facts = currentStateContainsExpectedFacts();
         // ROS_INFO(">>> Layer selected: %d", index_facts);
@@ -1054,6 +1053,7 @@ bool CSPExecGenerator::generatePlans()
     std::vector<int> open_list_copy = open_list;
     // printNodes("Open list before", open_list);
     // printNodes("Actions ocurring", actions_occurring_);
+    //// Remove occurring actions from open list
     bool all_elements_removed = false;
     while(!all_elements_removed){
         for(int i = 0; i < open_list.size(); i++){
@@ -1076,7 +1076,7 @@ bool CSPExecGenerator::generatePlans()
     std::vector<std::vector<rosplan_knowledge_msgs::KnowledgeItem>> explored_states;
     int number_expanded_nodes = 0;
 
-    ROS_INFO("Total number of actions: %d", (int)open_list.size());
+    // ROS_INFO("Total number of actions: %d", (int)open_list.size());
 
     if(first_time){
         rosplan_dispatch_msgs::SetupService srv;
@@ -1328,6 +1328,8 @@ bool CSPExecGenerator::srvCB(rosplan_dispatch_msgs::ExecAlternatives::Request& r
 
         // publish esterel array msg
         pub_valid_plans_.publish(exec_aternatives_msg_);
+
+        printNodes("Plan", best_plan_);
 
         ROS_INFO(">>> Action to be executed: %s", getFullActionName(action_to_be_executed_).c_str());
 

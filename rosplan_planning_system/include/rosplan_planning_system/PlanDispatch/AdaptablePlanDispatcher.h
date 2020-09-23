@@ -11,6 +11,7 @@
 #include "PlanDispatcher.h"
 
 #include "rosplan_knowledge_msgs/KnowledgeItem.h"
+#include "rosplan_knowledge_msgs/PerturbStateService.h"
 #include "rosplan_dispatch_msgs/EsterelPlan.h"
 #include "rosplan_dispatch_msgs/EsterelPlanArray.h"
 #include "rosplan_dispatch_msgs/ExecAlternatives.h"
@@ -62,6 +63,8 @@ namespace KCL_rosplan
 		ros::ServiceClient gen_alternatives_client;
 
 		bool display_edge_type_;
+
+		ros::ServiceClient perturb_client_;
 
 	public:
 
