@@ -1,5 +1,5 @@
 #include "rosplan_planning_system/PlanDispatch/AdaptablePlanDispatcher.h"
-
+#include <unistd.h>
 
 namespace KCL_rosplan {
 
@@ -13,7 +13,6 @@ namespace KCL_rosplan {
 		node_handle = &nh;
 
 		ros::NodeHandle nh_;
-		// perturb_client_ = node_handle->serviceClient<rosplan_knowledge_msgs::PerturbStateService>("perturb_state");
 		perturb_client_ = nh_.serviceClient<rosplan_knowledge_msgs::PerturbStateService>("perturb_state");
 
 		std::string plan_graph_topic = "plan_graph";
@@ -21,7 +20,6 @@ namespace KCL_rosplan {
 		plan_graph_publisher = node_handle->advertise<std_msgs::String>(plan_graph_topic, 1000, true);
 
         gen_alternatives_client = node_handle->serviceClient<rosplan_dispatch_msgs::ExecAlternatives>("/csp_exec_generator/gen_exec_alternatives");
-
 
 		// display edge type with colors (conditional edge, interference edge, etc)
 		nh.param("display_edge_type", display_edge_type_, false);
@@ -93,6 +91,24 @@ namespace KCL_rosplan {
 //		} else {
 //			ROS_INFO("KCL: (%s) Plan received, but current execution not yet finished.", ros::this_node::getName().c_str());
 //		}
+	}
+
+	void AdaptablePlanDispatcher::perturbWorldState(){
+		//// Perturb state
+		rosplan_knowledge_msgs::PerturbStateService srv;
+		ROS_INFO("ISR: (%s) Perturbing world state", ros::this_node::getName().c_str());
+		if(perturb_client_.call(srv)){
+			if(srv.response.success){
+				ROS_INFO("ISR: (%s) Successfully perturbed state", ros::this_node::getName().c_str());
+			}
+			else{
+				ROS_INFO("ISR: (%s) Something went wrong while perturbing", ros::this_node::getName().c_str());
+			}
+		}
+		else{
+			ROS_INFO("ISR: (%s) Did NOT perturb state", ros::this_node::getName().c_str());
+		}
+
 	}
 
 	/*-----------------*/
@@ -191,13 +207,19 @@ namespace KCL_rosplan {
 						action_received[node.action.action_id] = false;
 						action_completed[node.action.action_id] = false;
 
-						// dispatch action
-						ROS_INFO("KCL: (%s) Dispatching action [%i, %s, %f, %f]",
+						std::stringstream params_ss;
+                        std::vector<diagnostic_msgs::KeyValue, std::allocator<diagnostic_msgs::KeyValue>> action_params = node.action.parameters;
+
+                        for(diagnostic_msgs::KeyValue param: action_params){
+                            params_ss << param.value;
+                            params_ss << " ";
+                        }
+
+						// dispatch action start
+						ROS_INFO("KCL: (%s) Dispatching action start [%s %s]",
 								ros::this_node::getName().c_str(),
-								node.action.action_id,
 								node.action.name.c_str(),
-								(node.action.dispatch_time+planStartTime-missionStartTime),
-								node.action.duration);
+								params_ss.str().c_str());
 
 						action_dispatch_publisher.publish(node.action);
                         actions_executing.push_back(node.node_id);
@@ -214,6 +236,13 @@ namespace KCL_rosplan {
 						for(; ci != node.edges_out.end(); ci++) {
 							edge_active[*ci] = true;
 						}
+
+						// Waits for the set time in microseconds
+						// Wait so the print of rosplan_interface occurs
+						// before the print of the state's perturbation
+						usleep(10000);
+
+						perturbWorldState();
 					}
 					else{
 						ROS_INFO("ISR: (%s) Action is no longer applicable [%i, %s]",
@@ -230,14 +259,24 @@ namespace KCL_rosplan {
 				// handle completion of an action
 				if(node.node_type == rosplan_dispatch_msgs::EsterelPlanNode::ACTION_END && action_completed[node.action.action_id]) {
 
-					ROS_INFO("KCL: (%s) %i: action %s completed",
+					std::stringstream params_ss;
+					std::vector<diagnostic_msgs::KeyValue, std::allocator<diagnostic_msgs::KeyValue>> action_params = node.action.parameters;
+
+					for(diagnostic_msgs::KeyValue param: action_params){
+						params_ss << param.value;
+						params_ss << " ";
+					}
+
+					// dispatch action end
+					ROS_INFO("KCL: (%s) Dispatching action end [%s %s]",
 							ros::this_node::getName().c_str(),
-							node.action.action_id,
-							node.action.name.c_str());
+							node.action.name.c_str(),
+							params_ss.str().c_str());
 
 					finished_execution = false;
 					state_changed = true;
                     actions_executing.push_back(node.node_id);
+					action_dispatch_publisher.publish(node.action);
                     // actions_executing.erase(std::remove(actions_executing.begin(), actions_executing.end(), node.action.action_id), actions_executing.end());
 
 
@@ -252,28 +291,19 @@ namespace KCL_rosplan {
 					for(; ci != node.edges_out.end(); ci++) {
 						edge_active[*ci] = true;
 					}
+
+					// Waits for the set time in microseconds
+					// Wait so the print of rosplan_interface occurs
+					// before the print of the state's perturbation
+					usleep(10000);
+
+					perturbWorldState();
 				}
 
 			} // end loop (action nodes)
 
 			ros::spinOnce();
 			loop_rate.sleep();
-
-			//// Perturb state here
-			rosplan_knowledge_msgs::PerturbStateService srv;
-			ROS_INFO("ISR: (%s) Perturbing world state", ros::this_node::getName().c_str());
-			if(perturb_client_.call(srv)){
-				if(srv.response.success){
-					// ROS_INFO("ISR: (%s) Successfully perturbed state", ros::this_node::getName().c_str());
-				}
-				else{
-					// ROS_INFO("ISR: (%s) Something went wrong while perturbing", ros::this_node::getName().c_str());
-				}
-			}
-			else{
-				// ROS_INFO("ISR: (%s) Did NOT perturb state", ros::this_node::getName().c_str());
-			}
-
 
 			if(goalAchieved()){
 				ROS_INFO("KCL: (%s) Goal is achieved", ros::this_node::getName().c_str());

@@ -133,7 +133,7 @@ def perturb(req):
 
 
 if __name__ == '__main__':
-    rospy.init_node('perturb_server')
+    rospy.init_node('perturb_state_server')
 
     # rospy.loginfo('ISR: (/perturb_server) Waiting for services')
     rospy.wait_for_service('/rosplan_knowledge_base/domain/predicates')

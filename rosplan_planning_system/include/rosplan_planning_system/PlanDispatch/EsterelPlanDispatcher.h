@@ -12,6 +12,7 @@
 
 #include "rosplan_knowledge_msgs/KnowledgeItem.h"
 #include "rosplan_dispatch_msgs/EsterelPlan.h"
+#include "rosplan_knowledge_msgs/PerturbStateService.h"
 
 #include "std_msgs/String.h"
 
@@ -68,6 +69,8 @@ namespace KCL_rosplan
         bool timeout_actions;
         double action_timeout_fraction;
 
+		ros::ServiceClient perturb_client_;
+
 	public:
 
 		/* constructor */
@@ -83,6 +86,8 @@ namespace KCL_rosplan
 
 		/* action feedback methods */
 		void feedbackCallback(const rosplan_dispatch_msgs::ActionFeedback::ConstPtr& msg) override;
+
+		void perturbWorldState();
 	};
 }
 

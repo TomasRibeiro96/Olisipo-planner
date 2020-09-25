@@ -81,6 +81,8 @@ namespace KCL_rosplan
 
 		/* action feedback methods */
 		void feedbackCallback(const rosplan_dispatch_msgs::ActionFeedback::ConstPtr& msg) override;
+
+		void perturbWorldState();
 	};
 }
 

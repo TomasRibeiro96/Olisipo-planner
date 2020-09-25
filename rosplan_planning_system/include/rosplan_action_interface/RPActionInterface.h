@@ -45,7 +45,15 @@ namespace KCL_rosplan {
 		bool action_success;
 		bool action_cancelled;
 
+		std::vector<std::string> actions_dispatched_;
+
+		// std::map<std::string, rosplan_knowledge_msgs::DomainOperator> actions_dispatched_;
+
+		void printDispatchedActions();
+
 	public:
+
+		bool startActionAlreadyExecuted(std::string action_name);
 
 		/* main loop for action interface */
 		void runActionInterface();
@@ -55,6 +63,8 @@ namespace KCL_rosplan {
 		
 		/* perform or call real action implementation */
 		virtual bool concreteCallback(const rosplan_dispatch_msgs::ActionDispatch::ConstPtr& msg) =0;
+
+		std::string getFullActionName(const rosplan_dispatch_msgs::ActionDispatch::ConstPtr& msg);
 	};
 }
 #endif

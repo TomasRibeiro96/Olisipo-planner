@@ -1,4 +1,7 @@
 #include "rosplan_action_interface/RPActionInterface.h"
+#include <iostream>
+#include <iterator>
+#include <map>
 
 /* The implementation of RPMoveBase.h */
 namespace KCL_rosplan {
@@ -137,6 +140,48 @@ namespace KCL_rosplan {
 		}
 	}
 
+	void RPActionInterface::printDispatchedActions(){
+		std::stringstream ss;
+
+		for(std::string action_name: actions_dispatched_){
+			ss << " ";
+			ss << action_name;
+			ss << ",";
+		}
+
+		ROS_INFO("ISR: Actions dispatched: %s", ss.str().c_str());
+	}
+
+	bool RPActionInterface::startActionAlreadyExecuted(std::string action_name){
+		for(std::string name: actions_dispatched_){
+			if(name == action_name){
+				return true;
+			}
+		}
+		// std::map<std::string, rosplan_knowledge_msgs::DomainOperator>::iterator itr;
+		// for( itr = actions_dispatched_.begin(); itr != actions_dispatched_.end(); ++itr){
+		// 	if(action_name == itr->first){
+		// 		return true;
+		// 	}
+		// }
+		return false;
+	}
+
+	std::string RPActionInterface::getFullActionName(const rosplan_dispatch_msgs::ActionDispatch::ConstPtr& msg){
+		std::stringstream full_action_name_ss;
+		full_action_name_ss << msg->name;
+
+		std::vector<diagnostic_msgs::KeyValue, std::allocator<diagnostic_msgs::KeyValue>> action_params = msg->parameters;
+
+		for(diagnostic_msgs::KeyValue param: action_params){
+			full_action_name_ss << " ";
+			full_action_name_ss << param.value;
+		}
+
+		return full_action_name_ss.str();
+
+	}
+
 	/* run action interface */
 	void RPActionInterface::dispatchCallback(const rosplan_dispatch_msgs::ActionDispatch::ConstPtr& msg) {
 
@@ -173,7 +218,21 @@ namespace KCL_rosplan {
 		fb.status = "action enabled";
 		action_feedback_pub.publish(fb);
 
-		{
+		std::string full_action_name = getFullActionName(msg);
+
+		bool start_action_executed = startActionAlreadyExecuted(full_action_name);
+
+		ROS_INFO("ISR: (%s) Full action name: %s", params.name.c_str(), full_action_name.c_str());
+		printDispatchedActions();
+
+		// bool start_action_executed = false;
+
+		// If action with this name is not in actions_dispatched_
+		// then we are executing the start of that action
+		if(!start_action_executed){
+
+			ROS_INFO("ISR: (%s) Connecting action to at_start effects", params.name.c_str());
+
 			// update knowledge base
 			rosplan_knowledge_msgs::KnowledgeUpdateServiceArray updatePredSrv;
 			
@@ -219,23 +278,36 @@ namespace KCL_rosplan {
 
 			if(updatePredSrv.request.knowledge.size()>0 && !update_knowledge_client.call(updatePredSrv))
 				ROS_INFO("KCL: (%s) failed to update PDDL model in knowledge base", params.name.c_str());
+
+			// actions_dispatched_.insert(std::pair<std::string, rosplan_knowledge_msgs::DomainOperator>(full_action_name, op));
+			actions_dispatched_.push_back(full_action_name);
+
+			// publish feedback (achieved)
+			fb.status = "action achieved";
+			action_feedback_pub.publish(fb);
+
 		}
 
 		// call concrete implementation
-		action_success = concreteCallback(msg);
-        ros::spinOnce();
-        if(action_cancelled) {
-            action_success = false;
-			ROS_INFO("KCL: (%s) an old action that was cancelled is stopping now", params.name.c_str());
-            return;
-        }
+		// action_success = concreteCallback(msg);
+		// action_success = true;
+        // // ros::spinOnce();
+        // if(action_cancelled) {
+        //     action_success = false;
+		// 	ROS_INFO("KCL: (%s) an old action that was cancelled is stopping now", params.name.c_str());
+        //     return;
+        // }
 
-		if(action_success) {
+		else{
+		// if(action_success){
 
-			ROS_INFO("KCL: (%s) action completed successfully", params.name.c_str());
+			ROS_INFO("ISR: (%s) Connecting action to at_end effects", params.name.c_str());
+			// ROS_INFO("KCL: (%s) action completed successfully", params.name.c_str());
 
 			// update knowledge base
 			rosplan_knowledge_msgs::KnowledgeUpdateServiceArray updatePredSrv;
+
+			// op = actions_dispatched_.at(full_action_name);
 
 			// simple END del effects
 			for(int i=0; i<op.at_end_del_effects.size(); i++) {
@@ -284,11 +356,6 @@ namespace KCL_rosplan {
 			fb.status = "action achieved";
 			action_feedback_pub.publish(fb);
 
-		} else {
-
-			// publish feedback (failed)
-			fb.status = "action failed";
-			action_feedback_pub.publish(fb);
 		}
 	}
 

@@ -46,7 +46,7 @@ def run():
     replans = 0
 
 
-    while not goal_achieved and replans<25:
+    while not goal_achieved and replans<10:
         rospy.wait_for_service('/rosplan_problem_interface/problem_generation_server')
         rospy.wait_for_service('/rosplan_planner_interface/planning_server')
         rospy.wait_for_service('/rosplan_parsing_interface/parse_plan')
