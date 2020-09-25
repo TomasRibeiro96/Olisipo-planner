@@ -222,8 +222,8 @@ namespace KCL_rosplan {
 
 		bool start_action_executed = startActionAlreadyExecuted(full_action_name);
 
-		ROS_INFO("ISR: (%s) Full action name: %s", params.name.c_str(), full_action_name.c_str());
-		printDispatchedActions();
+		// ROS_INFO("ISR: (%s) Full action name: %s", params.name.c_str(), full_action_name.c_str());
+		// printDispatchedActions();
 
 		// bool start_action_executed = false;
 
@@ -231,7 +231,7 @@ namespace KCL_rosplan {
 		// then we are executing the start of that action
 		if(!start_action_executed){
 
-			ROS_INFO("ISR: (%s) Connecting action to at_start effects", params.name.c_str());
+			// ROS_INFO("ISR: (%s) Connecting action to at_start effects", params.name.c_str());
 
 			// update knowledge base
 			rosplan_knowledge_msgs::KnowledgeUpdateServiceArray updatePredSrv;
@@ -301,7 +301,7 @@ namespace KCL_rosplan {
 		else{
 		// if(action_success){
 
-			ROS_INFO("ISR: (%s) Connecting action to at_end effects", params.name.c_str());
+			// ROS_INFO("ISR: (%s) Connecting action to at_end effects", params.name.c_str());
 			// ROS_INFO("KCL: (%s) action completed successfully", params.name.c_str());
 
 			// update knowledge base

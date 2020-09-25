@@ -99,10 +99,10 @@ namespace KCL_rosplan {
 		ROS_INFO("ISR: (%s) Perturbing world state", ros::this_node::getName().c_str());
 		if(perturb_client_.call(srv)){
 			if(srv.response.success){
-				ROS_INFO("ISR: (%s) Successfully perturbed state", ros::this_node::getName().c_str());
+				// ROS_INFO("ISR: (%s) Successfully perturbed state", ros::this_node::getName().c_str());
 			}
 			else{
-				ROS_INFO("ISR: (%s) Something went wrong while perturbing", ros::this_node::getName().c_str());
+				// ROS_INFO("ISR: (%s) Something went wrong while perturbing", ros::this_node::getName().c_str());
 			}
 		}
 		else{
