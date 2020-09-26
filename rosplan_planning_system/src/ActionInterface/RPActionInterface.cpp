@@ -1,5 +1,6 @@
 #include "rosplan_action_interface/RPActionInterface.h"
 #include <iostream>
+#include <fstream>
 #include <iterator>
 #include <map>
 
@@ -182,6 +183,43 @@ namespace KCL_rosplan {
 
 	}
 
+	// double RPActionInterface::getActionSuccessProb(std::string name){
+	// 	ros::NodeHandle nh;
+	// 	std::string prob_file_name = "~/ros_ws/src/ROSPlan/src/rosplan/factory_robot-probabilities/fac_rob-w3_p1.txt";
+
+	// 	std::string line;
+	// 	std::ifstream prob_file;
+	// 	prob_file.open(prob_file_name);
+
+	// 	bool inside_actions_probability = false;
+
+	// 	ROS_INFO("ISR: Action name: %s", name.c_str());
+	// 	if(prob_file.is_open()){
+	// 		getline(prob_file, line);
+	// 		ROS_INFO("ISR: getLine: %s", line.c_str());
+
+	// 		while(getline(prob_file, line)){
+	// 			ROS_INFO("ISR: Line: %s", line.c_str());
+	// 			if(line == "-\n"){
+	// 				inside_actions_probability = true;
+	// 			}
+	// 			if(inside_actions_probability){
+	// 					std::string action = line.substr(0, line.find(" "));
+	// 					ROS_INFO("ISR: Line inside: %s", action.c_str());
+	// 					if(name == action){
+	// 						line.erase(0, line.find(" ")+1);
+	// 						line = line.substr(0, line.find(" "));
+
+	// 						ROS_INFO("ISR: Got probability: %s", line.c_str());
+	// 						return atof(line.c_str());
+	// 					}
+	// 			}
+	// 		}
+	// 	}
+	// 	prob_file.close();
+	// 	return 0;
+	// }
+
 	/* run action interface */
 	void RPActionInterface::dispatchCallback(const rosplan_dispatch_msgs::ActionDispatch::ConstPtr& msg) {
 
@@ -225,10 +263,14 @@ namespace KCL_rosplan {
 		// ROS_INFO("ISR: (%s) Full action name: %s", params.name.c_str(), full_action_name.c_str());
 		// printDispatchedActions();
 
+		// double success_prob = getActionSuccessProb(full_action_name);
+		// double success_prob = 1;
+		// double random_number = ((double) rand() / (RAND_MAX));
 		// bool start_action_executed = false;
 
 		// If action with this name is not in actions_dispatched_
 		// then we are executing the start of that action
+		// if((!start_action_executed) && (random_number<success_prob)){
 		if(!start_action_executed){
 
 			// ROS_INFO("ISR: (%s) Connecting action to at_start effects", params.name.c_str());
@@ -287,7 +329,11 @@ namespace KCL_rosplan {
 			action_feedback_pub.publish(fb);
 
 		}
-
+		// else if(random_number > success_prob){
+		// 	ROS_INFO("ISR: (%s) Action failed", params.name.c_str());
+		// 	return;
+		// }
+		
 		// call concrete implementation
 		// action_success = concreteCallback(msg);
 		// action_success = true;

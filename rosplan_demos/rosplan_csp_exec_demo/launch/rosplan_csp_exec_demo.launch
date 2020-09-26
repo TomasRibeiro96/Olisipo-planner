@@ -3,32 +3,39 @@
 
 
     <!-- select between normal or smart plan dispatcher -->
-    <arg name="adaptable_plan_dispatcher_required" default="false" />
+    <arg name="adaptable_plan_dispatcher_required" default="true" />
     
     <!-- FACTORY ROBOT -->
-    <arg name="category" default="factory_robot" />
+    <arg name="category" default="factory_robot_problems" />
     <arg name="domain" default="domain_factory_robot" />
-    <arg name="problem" default="problem_r1_m3" />
+    <arg name="problem" default="problem_m3" />
+    <arg name="probabilities_path" default="/home/tomas/ros_ws/src/ROSPlan/src/rosplan/rosplan_demos/rosplan_csp_exec_demo/common/factory_robot_problems/"/>
+    <arg name="probabilities" default="probabilities_m3_p1.txt"/>
+    <!-- <arg name="probabilities" default="$(arg prob_file_path)/fac_rob-w3_p2.txt"/> -->
+    <!-- <arg name="probabilities" default="$(arg prob_file_path)/fac_rob-w3_p3.txt"/> -->
+    <!-- <arg name="probabilities" default="$(arg prob_file_path)/fac_rob-w3_p4.txt"/> -->
+    <!-- <arg name="probabilities" default="$(arg prob_file_path)/fac_rob-w3_p5.txt"/> -->
+    <!-- <arg name="probabilities" default="$(arg prob_file_path)/fac_rob-w3_p6.txt"/> -->
 
 
     <!-- SKIP DOOR -->
     <!-- <arg name="category" default="skip_door" />
-    <arg name="domain" default="domain_skip_door" /> -->
-    <!-- <arg name="problem" default="problem_r1_w2" /> -->
-    <!-- <arg name="problem" default="problem_r1_w3" /> -->
-    <!-- <arg name="problem" default="problem_r1_w4" /> -->
-    <!-- <arg name="problem" default="problem_r1_w5" /> -->
-    <!-- <arg name="problem" default="problem_r1_w6" /> -->
-    <!-- <arg name="problem" default="problem_r1_w7" /> -->
-    <!-- <arg name="problem" default="problem_r1_w8" /> -->
-    <!-- <arg name="problem" default="problem_r1_w9" /> -->
-    <!-- <arg name="problem" default="problem_r1_w10" /> -->
-    <!-- <arg name="problem" default="problem_r1_w11" /> -->
-    <!-- <arg name="problem" default="problem_r1_w12" /> -->
-    <!-- <arg name="problem" default="problem_r1_w13" /> -->
-    <!-- <arg name="problem" default="problem_r1_w14" /> -->
-    <!-- <arg name="problem" default="problem_r1_w15" /> -->
-    <!-- <arg name="problem" default="problem_r2_w3" /> -->
+    <arg name="domain" default="domain_skip_door" />
+    <arg name="problem" default="problem_r1_w2" />
+    <arg name="problem" default="problem_r1_w3" />
+    <arg name="problem" default="problem_r1_w4" />
+    <arg name="problem" default="problem_r1_w5" />
+    <arg name="problem" default="problem_r1_w6" />
+    <arg name="problem" default="problem_r1_w7" />
+    <arg name="problem" default="problem_r1_w8" />
+    <arg name="problem" default="problem_r1_w9" />
+    <arg name="problem" default="problem_r1_w10" />
+    <arg name="problem" default="problem_r1_w11" />
+    <arg name="problem" default="problem_r1_w12" />
+    <arg name="problem" default="problem_r1_w13" />
+    <arg name="problem" default="problem_r1_w14" />
+    <arg name="problem" default="problem_r1_w15" />
+    <arg name="problem" default="problem_r2_w3" /> -->
     
 
     <!-- BLOCKSWORLD -->
@@ -106,6 +113,7 @@
             <param name="adaptable_plan_dispatcher_required" value="true" />
             <param name="execution_type" type="str" value="$(arg category)" /> <!-- iros_problems_free or iros_problems_deadlines, debug purposes -->
             <param name="problem_name" type="str" value="$(arg problem)" /> <!-- problem name given for debugging purposes -->
+            <param name="probabilities_file" type="str" value="$(arg probabilities_path)$(arg probabilities)"/>
         </node>
     </group>
 
@@ -125,6 +133,7 @@
             <param name="adaptable_plan_dispatcher_required" value="false" />
             <param name="execution_type" type="str" value="$(arg category)" /> <!-- iros_problems_free or iros_problems_deadlines -->
             <param name="problem_name" type="str" value="$(arg problem)" /> <!-- problem name given for debugging purposes -->
+            <param name="probabilities_file" type="str" value="$(arg probabilities_path)$(arg probabilities)"/>
         </node>
     </group>
 
@@ -135,9 +144,13 @@
     <include file="$(find rosplan_csp_exec_demo)/launch/$(arg domain)_sim_actions.launch" />
 
     <!-- Perturb world state -->
-    <node name="perturb_state_server" pkg="rosplan_planning_system" type="perturb_state.py" output="screen" />
+    <node name="perturb_state_server" pkg="rosplan_csp_exec_demo" type="perturb_state.py" output="screen" >
+        <param name="probabilities_file" type="str" value="$(arg probabilities_path)$(arg probabilities)"/>
+    </node>
 
     <!-- Bayesian network calculator -->
-    <node name="bayes_net_calc" pkg="rosplan_planning_system" type="calculate_plan_prob.py" output="screen" />
+    <node name="bayes_net_calc" pkg="rosplan_planning_system" type="calculate_plan_prob.py" output="screen" >
+        <param name="probabilities_file" type="str" value="$(arg probabilities_path)$(arg probabilities)"/>
+    </node>
 
 </launch>

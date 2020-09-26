@@ -18,8 +18,8 @@ predicates_list_ = list()
 def getProbabilities():
     global pred_probabilities_map_
     
-    file = open('/home/tomas/ros_ws/src/ROSPlan/src/rosplan/probabilities-factory_robot.txt', 'r')
-    # file = open('/home/tomas/ros_ws/src/ROSPlan/src/rosplan/probabilities-skip_door.txt', 'r')
+    prob_file_path = rospy.get_param('~probabilities_file')
+    file = open(prob_file_path, 'r')
     line = file.readline()
     predicates = True
     while line:
