@@ -74,7 +74,7 @@ namespace KCL_rosplan {
 			rosplan_dispatch_msgs::ActionDispatch currentMessage = current_plan.plan[current_action];
 
 			// check action preconditions
-			if(!checkPreconditions(currentMessage)) {
+			if(!checkStartPreconditions(currentMessage)) {
 
 				ROS_INFO("KCL: (%s) Preconditions not achieved [%i, %s]", ros::this_node::getName().c_str(), currentMessage.action_id, currentMessage.name.c_str());
 

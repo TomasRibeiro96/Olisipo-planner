@@ -356,6 +356,8 @@ namespace KCL_rosplan {
 			fb.status = "action achieved";
 			action_feedback_pub.publish(fb);
 
+			ros::V_string::iterator index_action = std::find(actions_dispatched_.begin(), actions_dispatched_.end(), full_action_name);
+			actions_dispatched_.erase(index_action);
 		}
 	}
 

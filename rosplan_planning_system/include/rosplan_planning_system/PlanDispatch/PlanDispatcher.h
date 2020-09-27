@@ -50,7 +50,8 @@ namespace KCL_rosplan
         ros::Publisher action_feedback_publisher;
 
         /* check preconditions are true */
-        bool checkPreconditions(rosplan_dispatch_msgs::ActionDispatch msg);
+        bool checkStartPreconditions(rosplan_dispatch_msgs::ActionDispatch msg);
+		bool checkEndPreconditions(rosplan_dispatch_msgs::ActionDispatch msg);
         ros::ServiceClient queryKnowledgeClient;
         ros::ServiceClient queryDomainClient;
         ros::ServiceClient get_goals;

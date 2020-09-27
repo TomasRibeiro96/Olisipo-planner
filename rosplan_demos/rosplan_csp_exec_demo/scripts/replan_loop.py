@@ -88,12 +88,15 @@ def run():
 
     # check if goal was achieved, write to log file
     if goal_achieved:
-        print 'SUCCESS ', str(replans)
-        #log_file.write('true, ' + str(replans) + ', ' + str(number_of_executed_actions) + '\n')
+        print 'REPLANS: ', str(replans)
+        print 'SUCCESS '
+        # log_file.write('1, ' + str(replans) + ', ' + str(number_of_executed_actions) + '\n')
     else:
-        print 'FAILED ', str(replans)
-        #log_file.write('false' + str(replans) + ', ' + str(number_of_executed_actions) + '\n')
-
+        print 'REPLANS: ', str(replans)
+        print 'FAILED '
+        # log_file.write('0, ' + str(replans) + ', ' + str(number_of_executed_actions) + '\n')
+    
+    print('\n\n')
     # for logging purposes, write experiment results to text file, closing the file since we are done
     #log_file.close()
 

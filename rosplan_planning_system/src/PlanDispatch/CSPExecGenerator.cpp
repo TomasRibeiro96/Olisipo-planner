@@ -71,9 +71,10 @@ void CSPExecGenerator::printNodes(std::string msg, std::vector<int> &nodes)
         }
         std::string full_name = buildActionName(action_name, params, action_start);
         ss << full_name;
-        ss << " | ";
+        ss << ", ";
     }
-    ROS_INFO("%s: {%s}", msg.c_str(), ss.str().c_str());
+
+    ROS_INFO("ISR: (%s) %s: [%s]", ros::this_node::getName().c_str(), msg.c_str(), ss.str().c_str());
 }
 
 void CSPExecGenerator::esterelPlanCB(const rosplan_dispatch_msgs::EsterelPlan::ConstPtr& msg)
@@ -985,8 +986,8 @@ void CSPExecGenerator::reusePreviousPlan(int index_facts){
 
     action_to_be_executed_ = plan.front();
 
-    // printNodes(">>> New plan: ", plan);
-    ROS_INFO("//// Total number of nodes expanded: %d ////", total_number_nodes_expanded);
+    printNodes("Reused plan", plan);
+    // ROS_INFO("//// Total number of nodes expanded: %d ////", total_number_nodes_expanded);
 
     // ROS_INFO(">>> Action to be executed 1: %s", getFullActionName(action_to_be_executed_).c_str());
 
@@ -1039,16 +1040,17 @@ bool CSPExecGenerator::generatePlans()
     // have unexpectedly changed and we may be able to skip actions
     // ROS_INFO("Checking expected facts");
     if(!expected_facts_.empty()){
+        printNodes("Original Plan", best_plan_);
         int index_facts = currentStateContainsExpectedFacts();
         // ROS_INFO(">>> Layer selected: %d", index_facts);
         if(index_facts >= 0){
-            ROS_INFO(">>> Reusing plan");
+            ROS_INFO("ISR: (%s) Reusing plan", ros::this_node::getName().c_str());
             reusePreviousPlan(index_facts);
             return true;
         }
     }
 
-    ROS_INFO("Building new plan");
+    ROS_INFO("ISR: (%s) Building new plan", ros::this_node::getName().c_str());
 
     std::vector<int> open_list_copy = open_list;
     // printNodes("Open list before", open_list);
@@ -1098,6 +1100,9 @@ bool CSPExecGenerator::generatePlans()
 
     // ROS_INFO("#### Number of nodes expanded: %d ####", number_expanded_nodes);
     total_number_nodes_expanded += number_expanded_nodes;
+
+    printNodes("Plan", best_plan_);
+
     // ROS_INFO("//// Total number of nodes expanded: %d ////", total_number_nodes_expanded);
     // ROS_INFO("|||| Average service call time: %f", average_service_time);
     return (exec_aternatives_msg_.esterel_plans.size()>0);
@@ -1322,16 +1327,16 @@ bool CSPExecGenerator::srvCB(rosplan_dispatch_msgs::ExecAlternatives::Request& r
         // indicates that at least one valid execution was found
         res.replan_needed = false;
         res.exec_alternatives_generated = true;
-        ROS_INFO("Found %ld valid execution(s)", exec_aternatives_msg_.esterel_plans.size());
+        res.next_action = getFullActionName(action_to_be_executed_);
+        // ROS_INFO("Found %ld valid execution(s)", exec_aternatives_msg_.esterel_plans.size());
 
         // plans could be printed here for debugging purposes
 
         // publish esterel array msg
         pub_valid_plans_.publish(exec_aternatives_msg_);
 
-        printNodes("Plan", best_plan_);
 
-        ROS_INFO(">>> Action to be executed: %s", getFullActionName(action_to_be_executed_).c_str());
+        ROS_INFO("ISR: (%s) Action to be executed: %s", ros::this_node::getName().c_str(), getFullActionName(action_to_be_executed_).c_str());
 
         if(isStartAction(action_to_be_executed_)){
             actions_occurring_.push_back(action_to_be_executed_);
@@ -1348,7 +1353,7 @@ bool CSPExecGenerator::srvCB(rosplan_dispatch_msgs::ExecAlternatives::Request& r
         ROS_INFO("No valid execution was found, replanning is needed");
     }
 
-    ROS_INFO("Generating execution alternatives service has finished");
+    // ROS_INFO("Generating execution alternatives service has finished");
 
     return true;
 }

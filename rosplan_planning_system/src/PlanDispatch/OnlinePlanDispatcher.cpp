@@ -220,7 +220,7 @@ namespace KCL_rosplan {
     void OnlinePlanDispatcher::dispatchOneAction(rosplan_dispatch_msgs::ActionDispatch current_action_msg,
                                                  double missionStartTime, double planStartTime) {
         // check action preconditions
-        if(!checkPreconditions(current_action_msg)) {
+        if(!checkStartPreconditions(current_action_msg)) {
             ROS_WARN("KCL: (%s) Preconditions not achieved [%i, %s]", ros::this_node::getName().c_str(), current_action_msg.action_id, current_action_msg.name.c_str());
 
             // publish feedback (precondition false)

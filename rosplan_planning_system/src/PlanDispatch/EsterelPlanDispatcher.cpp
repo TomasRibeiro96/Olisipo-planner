@@ -184,43 +184,56 @@ namespace KCL_rosplan {
                 // handle completion of an action
                 if(node.node_type == rosplan_dispatch_msgs::EsterelPlanNode::ACTION_END && action_completed[node.action.action_id]) {
 
-					std::stringstream params_ss;
-					std::vector<diagnostic_msgs::KeyValue, std::allocator<diagnostic_msgs::KeyValue>> action_params = node.action.parameters;
-
-					for(diagnostic_msgs::KeyValue param: action_params){
-						params_ss << param.value;
-						params_ss << " ";
-					}
-
-					// dispatch action end
-					ROS_INFO("KCL: (%s) Dispatching action end [%s %s]",
-                            ros::this_node::getName().c_str(),
-							node.action.name.c_str(),
-							params_ss.str().c_str());
-
-                    finished_execution = false;
-                    state_changed = true;
-					action_dispatch_publisher.publish(node.action);
-
-
-                    // deactivate incoming edges
-                    std::vector<int>::const_iterator ci = node.edges_in.begin();
-                    for(; ci != node.edges_in.end(); ci++) {
-                        edge_active[*ci] = false;
+                    // query KMS for condition edges
+                    bool condition_activate_action = false;
+                    if(edges_activate_action) {
+                        condition_activate_action = checkStartPreconditions(node.action);
                     }
 
-                    // activate new edges
-                    ci = node.edges_out.begin();
-                    for(; ci != node.edges_out.end(); ci++) {
-                        edge_active[*ci] = true;
+                    // the state is unexpected
+                    if(!condition_activate_action && timeout_actions) {
+                        replan_requested = true;
                     }
 
-                    // Waits for the set time in microseconds
-					// Wait so the print of rosplan_interface occurs
-					// before the print of the state's perturbation
-					usleep(10000);
+                    if(condition_activate_action) {
+                        std::stringstream params_ss;
+                        std::vector<diagnostic_msgs::KeyValue, std::allocator<diagnostic_msgs::KeyValue>> action_params = node.action.parameters;
 
-                    perturbWorldState();
+                        for(diagnostic_msgs::KeyValue param: action_params){
+                            params_ss << param.value;
+                            params_ss << " ";
+                        }
+
+                        // dispatch action end
+                        ROS_INFO("KCL: (%s) Dispatching action end [%s %s]",
+                                ros::this_node::getName().c_str(),
+                                node.action.name.c_str(),
+                                params_ss.str().c_str());
+
+                        finished_execution = false;
+                        state_changed = true;
+                        action_dispatch_publisher.publish(node.action);
+
+
+                        // deactivate incoming edges
+                        std::vector<int>::const_iterator ci = node.edges_in.begin();
+                        for(; ci != node.edges_in.end(); ci++) {
+                            edge_active[*ci] = false;
+                        }
+
+                        // activate new edges
+                        ci = node.edges_out.begin();
+                        for(; ci != node.edges_out.end(); ci++) {
+                            edge_active[*ci] = true;
+                        }
+
+                        // Waits for the set time in microseconds
+                        // Wait so the print of rosplan_interface occurs
+                        // before the print of the state's perturbation
+                        usleep(10000);
+
+                        perturbWorldState();
+                    }
                 }
 
                 if(timeout_actions) {
@@ -272,7 +285,7 @@ namespace KCL_rosplan {
                     // query KMS for condition edges
                     bool condition_activate_action = false;
                     if(edges_activate_action) {
-                        condition_activate_action = checkPreconditions(node.action);
+                        condition_activate_action = checkStartPreconditions(node.action);
                     }
 
                     // the state is unexpected

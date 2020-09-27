@@ -3,12 +3,14 @@
 
 
     <!-- select between normal or smart plan dispatcher -->
-    <arg name="adaptable_plan_dispatcher_required" default="false" />
+    <arg name="adaptable_plan_dispatcher_required" default="true" />
     
     <!-- FACTORY ROBOT -->
     <arg name="category" default="factory_robot" />
     <arg name="domain" default="domain_factory_robot" />
     <arg name="problem" default="problem_r1_m3" />
+    <arg name="probabilities_path" default="/home/tomas/ros_ws/src/ROSPlan/src/rosplan/"/>
+    <arg name="probabilities" default="probabilities-factory_robot.txt"/>
 
 
     <!-- SKIP DOOR -->

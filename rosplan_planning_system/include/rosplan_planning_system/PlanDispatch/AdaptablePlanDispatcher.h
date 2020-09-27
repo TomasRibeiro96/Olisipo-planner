@@ -66,6 +66,12 @@ namespace KCL_rosplan
 
 		ros::ServiceClient perturb_client_;
 
+		bool need_to_replan;
+
+		std::map<std::string, int> map_node_id;
+
+		void printMap(std::map<int,bool> m, std::string msg);
+
 	public:
 
 		/* constructor */
@@ -83,6 +89,10 @@ namespace KCL_rosplan
 		void feedbackCallback(const rosplan_dispatch_msgs::ActionFeedback::ConstPtr& msg) override;
 
 		void perturbWorldState();
+
+		void printEsterelPlan();
+
+		void removeNextActionFromCompletedAndDispatched(std::string action_name);
 	};
 }
 
