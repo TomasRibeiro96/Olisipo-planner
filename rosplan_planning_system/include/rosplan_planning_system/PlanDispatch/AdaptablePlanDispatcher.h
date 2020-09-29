@@ -70,7 +70,6 @@ namespace KCL_rosplan
 
 		std::map<std::string, int> map_node_id;
 
-		void printMap(std::map<int,bool> m, std::string msg);
 
 	public:
 
@@ -93,6 +92,12 @@ namespace KCL_rosplan
 		void printEsterelPlan();
 
 		void removeNextActionFromCompletedAndDispatched(std::string action_name);
+
+		void printVectorInts(std::vector<int> v, std::string msg);
+
+		void printMap(std::map<int,bool> m, std::string msg);
+
+		std::string getFullActionName(rosplan_dispatch_msgs::EsterelPlanNode node);
 	};
 }
 

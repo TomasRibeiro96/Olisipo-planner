@@ -58,16 +58,19 @@ namespace KCL_rosplan {
 		}
 		float bestProb = plan.plan_success_prob[0];
 		current_plan = plan.esterel_plans[0];
-		for(int i=1; i<plan.plan_success_prob.size(); i++) {
-			if(plan.plan_success_prob[i] > bestProb) {
-				// highest probability
-				bestProb = plan.plan_success_prob[i];
-				current_plan = plan.esterel_plans[i];
-			} else if(plan.plan_success_prob[i] == bestProb && current_plan.nodes.size() < plan.esterel_plans[i].nodes.size()) { 
-				// break ties on number of actions
-				current_plan = plan.esterel_plans[i];
-			}
-		}
+
+		current_plan = plan.esterel_plans.back();
+		bestProb = plan.plan_success_prob.back();
+		// for(int i=1; i<plan.plan_success_prob.size(); i++) {
+		// 	if(plan.plan_success_prob[i] > bestProb) {
+		// 		// highest probability
+		// 		bestProb = plan.plan_success_prob[i];
+		// 		current_plan = plan.esterel_plans[i];
+		// 	} else if(plan.plan_success_prob[i] == bestProb && current_plan.nodes.size() < plan.esterel_plans[i].nodes.size()) { 
+		// 		// break ties on number of actions
+		// 		current_plan = plan.esterel_plans[i];
+		// 	}
+		// }
 
 /*            std::vector<int> ac;
             for(int i=0; i<actions_executing.size(); i++) {
@@ -113,6 +116,27 @@ namespace KCL_rosplan {
 
 	}
 
+	std::string AdaptablePlanDispatcher::getFullActionName(rosplan_dispatch_msgs::EsterelPlanNode node){
+		std::stringstream ss;
+
+		ss << node.action.name;
+
+		if(node.node_type == node.ACTION_START){
+			ss << "_start";
+		}
+		else{
+			ss << "_end";
+		}
+
+		std::vector<diagnostic_msgs::KeyValue, std::allocator<diagnostic_msgs::KeyValue>> parameters = node.action.parameters;
+		for(diagnostic_msgs::KeyValue param: parameters){
+			ss << "#";
+			ss << param.value;
+		}
+
+		return ss.str();
+	}
+
 	void AdaptablePlanDispatcher::printEsterelPlan(){
 		std::stringstream ss;
 
@@ -120,26 +144,10 @@ namespace KCL_rosplan {
 
 			rosplan_dispatch_msgs::EsterelPlanNode node = *ci;
 
-			if(node.node_type != rosplan_dispatch_msgs::EsterelPlanNode::ACTION_START && node.node_type != rosplan_dispatch_msgs::EsterelPlanNode::ACTION_END){
-				continue;
-			}
-			else{
-				ss << node.action.name;
-
-				if(node.node_type == node.ACTION_START){
-					ss << "_start";
-				}
-				else{
-					ss << "_end";
-				}
-
-				std::vector<diagnostic_msgs::KeyValue, std::allocator<diagnostic_msgs::KeyValue>> parameters = node.action.parameters;
-				for(diagnostic_msgs::KeyValue param: parameters){
-					ss << "#";
-					ss << param.value;
-				}
+			if(ci != current_plan.nodes.begin()){
 				ss << ", ";
 			}
+			ss << getFullActionName(node);
 		}
 
 		ROS_INFO("ISR: (%s) Esterel plan: %s", ros::this_node::getName().c_str(), ss.str().c_str());
@@ -158,77 +166,36 @@ namespace KCL_rosplan {
 		}
 		// ROS_INFO("ISR: (%s) Time: %s", ros::this_node::getName().c_str(), name_no_params.c_str());
 
+		// ROS_INFO("ISR: (%s) Removing node from Dispatched/Completed: %s %d", ros::this_node::getName().c_str(), action_name.c_str(), action_id);
+
 		if(name_no_params == "start"){
-			// ROS_INFO("ISR: (%s) Removing from action dispatched", ros::this_node::getName().c_str());
+			ROS_INFO("ISR: (%s) Removing from action dispatched: %s %d", ros::this_node::getName().c_str(), action_name.c_str(), action_id);
 			action_dispatched[action_id] = false;
 		}
 		else if(name_no_params == "end"){
-			// ROS_INFO("ISR: (%s) Removing from action completed", ros::this_node::getName().c_str());
+			ROS_INFO("ISR: (%s) Removing from action completed: %s %d", ros::this_node::getName().c_str(), action_name.c_str(), action_id);
 			action_completed[action_id] = true;
 		}
 
-		// ROS_INFO("ISR: (%s) Removing from Dispatched/Completed: %s %d", ros::this_node::getName().c_str(), action_name.c_str(), action_id);
-
-		// std::map<int, bool>::iterator it;
-		// for(it = action_dispatched.begin(); it != action_dispatched.end(); it++){
-		// 	if(it->first == action_id){
-		// 		ROS_INFO("ISR: (%s) Removing from action_dispatched", ros::this_node::getName().c_str());
-		// 		action_dispatched[action_id] = false;
-		// 	}
-		// }
-
-		// for(it = action_completed.begin(); it != action_completed.end(); it++){
-		// 	if(it->first == action_id){
-		// 		ROS_INFO("ISR: (%s) Removing from action_completed", ros::this_node::getName().c_str());
-		// 		action_completed[action_id] = false;
-		// 	}
-		// }
-
-		// for(std::vector<rosplan_dispatch_msgs::EsterelPlanNode>::const_iterator ci = current_plan.nodes.begin(); ci != current_plan.nodes.end(); ci++) {
-		// 	rosplan_dispatch_msgs::EsterelPlanNode node = *ci;
-
-		// 	std::stringstream ss;
-		// 	if(node.node_type != rosplan_dispatch_msgs::EsterelPlanNode::ACTION_START && node.node_type != rosplan_dispatch_msgs::EsterelPlanNode::ACTION_END){
-		// 		continue;
-		// 	}
-		// 	else{
-		// 		ROS_INFO("ISR: (%s) Here 1", ros::this_node::getName().c_str());
-		// 		ss << node.action.name;
-
-		// 		if(node.node_type == node.ACTION_START){
-		// 			ss << "_start";
-		// 		}
-		// 		else{
-		// 			ss << "_end";
-		// 		}
-
-		// 		std::vector<diagnostic_msgs::KeyValue, std::allocator<diagnostic_msgs::KeyValue>> parameters = node.action.parameters;
-		// 		for(diagnostic_msgs::KeyValue param: parameters){
-		// 			ss << "#";
-		// 			ss << param.value;
-		// 		}
-		// 		ss << ", ";
-		// 	}
-
-		// 	ROS_INFO("ISR: (%s) Comparing node: %s", ros::this_node::getName().c_str(), ss.str().c_str());
-
-		// 	if((ss.str() == action_name) && node.node_type == (node.ACTION_START)){
-		// 		ROS_INFO("ISR: (%s) Removing from dispatched actions: %s", ros::this_node::getName().c_str(), action_name.c_str());
-		// 		action_dispatched[node.node_id] = false;
-		// 		return;
-		// 	}
-		// 	else if((ss.str() == action_name) && node.node_type == (node.ACTION_END)){
-		// 		ROS_INFO("ISR: (%s) Removing from completed actions: %s", ros::this_node::getName().c_str(), action_name.c_str());
-		// 		action_completed[node.node_id] = false;
-		// 		return;
-		// 	}
-		// }
+		// ROS_INFO("ISR: (%s) Removed from Dispatched/Completed: %s %d", ros::this_node::getName().c_str(), action_name.c_str(), action_id);
 	}
 
 	void AdaptablePlanDispatcher::printMap(std::map<int,bool> m, std::string msg){
 		std::stringstream ss;
 		for (auto const& pair: m) {
-			ss << "{" << pair.first << ": " << pair.second << "}\n";
+			std::string second = pair.second ? "True" : "False";
+			ss << "\n{" << pair.first << ": " << second << "}";
+		}
+		ROS_INFO("ISR: (%s)\nMap of %s: %s", ros::this_node::getName().c_str(), msg.c_str(), ss.str().c_str());
+	}
+
+	void AdaptablePlanDispatcher::printVectorInts(std::vector<int> v, std::string msg){
+		std::stringstream ss;
+		for(std::vector<int>::iterator it = v.begin(); it != v.end(); it++){
+			if(it != v.begin()){
+				ss << ", ";
+			}
+			ss << *it;
 		}
 		ROS_INFO("ISR: (%s) %s: %s", ros::this_node::getName().c_str(), msg.c_str(), ss.str().c_str());
 	}
@@ -280,14 +247,31 @@ namespace KCL_rosplan {
 			state_changed = false;
 
 			// printEsterelPlan();
-			// ROS_INFO("ISR: (%s) Going inside for loop", ros::this_node::getName().c_str());
 
-			// printMap(action_dispatched, "action_dispatched");
-			// printMap(action_completed, "action_completed");
+			printMap(action_dispatched, "action_dispatched");
+			printMap(action_completed, "action_completed");
+			// ROS_INFO("ISR: (%s) Going inside for loop", ros::this_node::getName().c_str());
 			// for nodes check conditions, and dispatch
 			for(std::vector<rosplan_dispatch_msgs::EsterelPlanNode>::const_iterator ci = current_plan.nodes.begin(); ci != current_plan.nodes.end(); ci++) {
 
 				rosplan_dispatch_msgs::EsterelPlanNode node = *ci;
+
+				ROS_INFO("ISR: (%s) -----------------------------", ros::this_node::getName().c_str());
+				ROS_INFO("ISR: (%s) Node id: %d", ros::this_node::getName().c_str(), node.node_id);
+				ROS_INFO("ISR: (%s) Full node name: %s", ros::this_node::getName().c_str(), getFullActionName(node).c_str());
+				// std::string node_type;
+				// if(node.node_type == node.ACTION_START)
+				// 	node_type = "ACTION_START";
+				// else if(node.node_type == node.ACTION_END)
+				// 	node_type = "ACTION_END";
+				// else if(node.node_type == node.PLAN_START)
+				// 	node_type = "PLAN_START";
+				// ROS_INFO("ISR: (%s) Node type: %s", ros::this_node::getName().c_str(), node_type.c_str());
+
+				// std::vector<int> edges_in = node.edges_in;
+				// std::vector<int> edges_out = node.edges_out;
+				// printVectorInts(edges_in, "Edges in");
+				// printVectorInts(edges_out, "Edges out");
 
 				// if(node.node_type == rosplan_dispatch_msgs::EsterelPlanNode::ACTION_START){
 				// 	ROS_INFO("ISR: (%s) Node is action start: %d", ros::this_node::getName().c_str(), node.node_id);
@@ -299,6 +283,7 @@ namespace KCL_rosplan {
 				// activate plan start edges
 				if(node.node_type == rosplan_dispatch_msgs::EsterelPlanNode::PLAN_START && !plan_started) {
 					// activate new edges
+					// ROS_INFO("ISR: (%s) Found PLAN_START", ros::this_node::getName().c_str());
 					std::vector<int>::const_iterator ci = node.edges_in.begin();
 					ci = node.edges_out.begin();
 					for(; ci != node.edges_out.end(); ci++) {
@@ -387,6 +372,8 @@ namespace KCL_rosplan {
 						usleep(10000);
 
 						perturbWorldState();
+
+						// break;
 					}
 					else{
 						ROS_INFO("ISR: (%s) Action is no longer applicable [%i, %s]",
@@ -455,6 +442,7 @@ namespace KCL_rosplan {
 
 						perturbWorldState();
 
+						// break;
 					}
 					else{
 						ROS_INFO("ISR: (%s) Action is no longer applicable [%i, %s]",

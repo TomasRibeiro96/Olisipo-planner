@@ -61,7 +61,7 @@ CSPExecGenerator::~CSPExecGenerator()
 void CSPExecGenerator::printNodes(std::string msg, std::vector<int> &nodes)
 {
     std::stringstream ss;
-    for(auto nit=nodes.begin(); nit!=nodes.end(); nit++) {
+    for(std::vector<int>::iterator nit=nodes.begin(); nit!=nodes.end(); nit++) {
         std::string action_name;
         std::vector<std::string> params;
         bool action_start;
@@ -70,8 +70,10 @@ void CSPExecGenerator::printNodes(std::string msg, std::vector<int> &nodes)
             ROS_ERROR("failed to get action properties (while applying action)");
         }
         std::string full_name = buildActionName(action_name, params, action_start);
-        ss << full_name;
-        ss << ", ";
+        if(nit != nodes.begin()){
+            ss << ", ";
+        }
+        ss << "'" << full_name << "'";
     }
 
     ROS_INFO("ISR: (%s) %s: [%s]", ros::this_node::getName().c_str(), msg.c_str(), ss.str().c_str());
@@ -699,7 +701,8 @@ bool CSPExecGenerator::orderNodes(std::vector<int> open_list, int &number_expand
     // shift nodes from open list (O) to ordered plans (R)
     // offering all possible different execution alternatives via DFS (Depth first search)
 
-    ROS_DEBUG("order nodes (recurse)");
+    // ROS_DEBUG("order nodes (recurse)");
+    // ROS_INFO("ISR: (%s) Inside orderNodes", ros::this_node::getName().c_str());
 
     if(!checkTemporalConstraints(ordered_nodes_, set_of_constraints_)) {
         // ROS_INFO("$$$ Temporal constraints not satisfied $$$$");
@@ -708,7 +711,8 @@ bool CSPExecGenerator::orderNodes(std::vector<int> open_list, int &number_expand
     }
 
     // check if goals are achieved
-    ROS_DEBUG("checking if goals are achieved...");
+    // ROS_DEBUG("checking if goals are achieved...");
+    // ROS_INFO("ISR: (%s) Checking if goals are achieved", ros::this_node::getName().c_str());
     if(action_simulator_.areGoalsAchieved()) {
 
         // convert list of orderes nodes into esterel plan (reuses the originally received esterel plan)
@@ -779,7 +783,6 @@ bool CSPExecGenerator::orderNodes(std::vector<int> open_list, int &number_expand
         // remove a (action) and s (skipped nodes) from open list (O)
         open_list_copy.erase(std::remove(open_list_copy.begin(), open_list_copy.end(), *a), open_list_copy.end());
 
-        ///////////////////////////////////////////////////////
         rosplan_dispatch_msgs::CalculateActionsProbabilityService srv;
         srv.request.node = full_action_name;
         double plan_success_probability;
@@ -801,6 +804,7 @@ bool CSPExecGenerator::orderNodes(std::vector<int> open_list, int &number_expand
 
         ordered_nodes_.push_back(*a);
 
+        // ROS_INFO("ISR: (%s) Simulating action", ros::this_node::getName().c_str());
         if(!simulateAction(action_start, action_name, params))
             return false;
 
@@ -1013,8 +1017,12 @@ bool CSPExecGenerator::isNodeAnActionOcurring(int node){
 
 bool CSPExecGenerator::generatePlans()
 {
+    // ROS_INFO("ISR: (%s) Current state before updating:\n", ros::this_node::getName().c_str());
+    // action_simulator_.printInternalKBFacts();
     // get current state (S) and store in memory
     action_simulator_.saveKBSnapshot();
+    // ROS_INFO("ISR: (%s) Current state after updating:\n", ros::this_node::getName().c_str());
+    // action_simulator_.printInternalKBFacts();
 
     // init open list (O), initially contains all nodes in partial order plan
     std::vector<int> open_list;
@@ -1040,7 +1048,7 @@ bool CSPExecGenerator::generatePlans()
     // have unexpectedly changed and we may be able to skip actions
     // ROS_INFO("Checking expected facts");
     if(!expected_facts_.empty()){
-        printNodes("Original Plan", best_plan_);
+        // printNodes("Original Plan", best_plan_);
         int index_facts = currentStateContainsExpectedFacts();
         // ROS_INFO(">>> Layer selected: %d", index_facts);
         if(index_facts >= 0){
@@ -1069,6 +1077,7 @@ bool CSPExecGenerator::generatePlans()
     // printNodes("Open list after ", open_list);
 
     // init set of constraints (C)
+    // ROS_INFO("ISR: (%s) Initialising constraints", ros::this_node::getName().c_str());
     initConstraints(set_of_constraints_);
 
     // init set of ordered nodes (F)
@@ -1088,11 +1097,11 @@ bool CSPExecGenerator::generatePlans()
                 // ROS_INFO("ISR: (%s) Successfully called setup method", ros::this_node::getName().c_str());
             }
             else{
-                // ROS_INFO("ISR: (%s) Something went wrong in setup method", ros::this_node::getName().c_str());
+                ROS_ERROR("ISR: (%s) Something went wrong in setup method", ros::this_node::getName().c_str());
             }
         }
         else{
-            // ROS_INFO("ISR: (%s) Couldn't call setup method", ros::this_node::getName().c_str());
+            ROS_ERROR("ISR: (%s) Couldn't call setup method", ros::this_node::getName().c_str());
         }
     }
 
@@ -1336,7 +1345,7 @@ bool CSPExecGenerator::srvCB(rosplan_dispatch_msgs::ExecAlternatives::Request& r
         pub_valid_plans_.publish(exec_aternatives_msg_);
 
 
-        ROS_INFO("ISR: (%s) Action to be executed: %s", ros::this_node::getName().c_str(), getFullActionName(action_to_be_executed_).c_str());
+        ROS_INFO("ISR: (%s) Action to be executed: '%s'", ros::this_node::getName().c_str(), getFullActionName(action_to_be_executed_).c_str());
 
         if(isStartAction(action_to_be_executed_)){
             actions_occurring_.push_back(action_to_be_executed_);

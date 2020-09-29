@@ -62,7 +62,7 @@ void ActionSimulator::prepareServices()
     dp_srv_client_ = nh_.serviceClient<rosplan_knowledge_msgs::GetDomainAttributeService>(ss.str());
 
     // prepare service to get all state propositions
-    ss.str("");
+    ss.str("/rosplan_knowledge_base");
     ss << "/" << kb << "/state/propositions";
     sp_srv_client_ = nh_.serviceClient<rosplan_knowledge_msgs::GetAttributeService>(ss.str());
 
