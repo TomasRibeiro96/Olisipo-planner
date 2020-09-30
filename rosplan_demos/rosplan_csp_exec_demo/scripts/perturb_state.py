@@ -84,7 +84,6 @@ def perturb(req):
     for predicate in pred_probabilities_map_.keys():
         spont_false_true = pred_probabilities_map_[predicate][0]
         spont_true_false = pred_probabilities_map_[predicate][1]
-        # spont_true_false = 1
 
         # Service to add or remove fact to knowledge base
         update_serv = rospy.ServiceProxy('/rosplan_knowledge_base/update_array', KnowledgeUpdateServiceArray)
@@ -102,28 +101,12 @@ def perturb(req):
 
         number = random.random()
 
-        # getProp_srv = rospy.ServiceProxy('/rosplan_knowledge_base/state/propositions', GetAttributeService)
-        # getProp_req = GetAttributeServiceRequest()
-        # getProp_req.predicate_name = ''
-        # state = getProp_srv(getProp_req)
-        # rospy.loginfo('ISR: (%s) State before perturbation:\n%s', rospy.get_name(), str(state.attribtues))
-        
-        # rospy.loginfo('------------------------')
-        # rospy.loginfo('Predicate: ' + predicate)
-        # if is_fact_in_KB:
-        #     rospy.loginfo('Fact in KB')
-        #     rospy.loginfo('Probability satisfied: ' + str(number < spont_true_false))
-        # else:
-        #     rospy.loginfo('Fact NOT in KB')
-        #     rospy.loginfo('Probability satisfied: ' + str(number < spont_false_true))
-
         # If fact is not in KB (is False) then add it to
         # the KB with a probability of spont_false_true
         if not is_fact_in_KB and number < spont_false_true:
-            rospy.loginfo('ISR: (%s) Adding ' + predicate + ' to KB', rospy.get_name())
+            # rospy.loginfo('ISR: (%s) Adding ' + predicate + ' to KB', rospy.get_name())
             ki.is_negative = False
             update_req.knowledge.append(ki)
-            # update_type.append(0)
             update_req.update_type = [0]
             update_successful = update_serv(update_req)
             # rospy.loginfo('ISR: (%s) Update successful: %s', rospy.get_name(), str(update_successful))
@@ -132,11 +115,7 @@ def perturb(req):
         # If fact is in KB (is True) then remove it from
         # the KB with a probability of spont_true_false
         elif is_fact_in_KB and number < spont_true_false:
-            rospy.loginfo('ISR: (%s) Removing ' + predicate + ' from KB', rospy.get_name())
-            ###############################
-            # ki.is_negative = True
-            # update_req.update_type = [0]
-            ###############################
+            # rospy.loginfo('ISR: (%s) Removing ' + predicate + ' from KB', rospy.get_name())
             update_req.update_type = [2]
             update_req.knowledge.append(ki)
             update_successful = update_serv(update_req)

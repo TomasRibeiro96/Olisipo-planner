@@ -91,8 +91,6 @@ namespace KCL_rosplan
 
 		void printEsterelPlan();
 
-		void removeNextActionFromCompletedAndDispatched(std::string action_name);
-
 		void makeOnlyNextActionApplicable(std::string next_action_name);
 
 		void printVectorInts(std::vector<int> v, std::string msg);

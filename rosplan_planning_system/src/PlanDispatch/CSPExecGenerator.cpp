@@ -1038,12 +1038,8 @@ bool CSPExecGenerator::isNodeAnActionOcurring(int node){
 
 bool CSPExecGenerator::generatePlans()
 {
-    // ROS_INFO("ISR: (%s) Current state before updating:\n", ros::this_node::getName().c_str());
-    // action_simulator_.printInternalKBFacts();
     // get current state (S) and store in memory
     action_simulator_.saveKBSnapshot();
-    // ROS_INFO("ISR: (%s) Current state after updating:\n", ros::this_node::getName().c_str());
-    // action_simulator_.printInternalKBFacts();
 
     // init open list (O), initially contains all nodes in partial order plan
     std::vector<int> open_list;
@@ -1073,13 +1069,13 @@ bool CSPExecGenerator::generatePlans()
         int index_facts = currentStateContainsExpectedFacts();
         // ROS_INFO(">>> Layer selected: %d", index_facts);
         if(index_facts >= 0){
-            ROS_INFO("ISR: (%s) Reusing plan", ros::this_node::getName().c_str());
+            // ROS_INFO("ISR: (%s) Reusing plan", ros::this_node::getName().c_str());
             reusePreviousPlan(index_facts);
             return true;
         }
     }
 
-    ROS_INFO("ISR: (%s) Building new plan", ros::this_node::getName().c_str());
+    // ROS_INFO("ISR: (%s) Building new plan", ros::this_node::getName().c_str());
 
     std::vector<int> open_list_copy = open_list;
     // printNodes("Open list before", open_list);
@@ -1131,7 +1127,7 @@ bool CSPExecGenerator::generatePlans()
     // ROS_INFO("#### Number of nodes expanded: %d ####", number_expanded_nodes);
     total_number_nodes_expanded += number_expanded_nodes;
 
-    printNodes("Plan", best_plan_);
+    printNodes("New plan", best_plan_);
 
     // ROS_INFO("//// Total number of nodes expanded: %d ////", total_number_nodes_expanded);
     // ROS_INFO("|||| Average service call time: %f", average_service_time);
@@ -1366,7 +1362,7 @@ bool CSPExecGenerator::srvCB(rosplan_dispatch_msgs::ExecAlternatives::Request& r
         pub_valid_plans_.publish(exec_aternatives_msg_);
 
 
-        ROS_INFO("ISR: (%s) Action to be executed: '%s'", ros::this_node::getName().c_str(), getFullActionName(action_to_be_executed_).c_str());
+        // ROS_INFO("ISR: (%s) Action to be executed: '%s'", ros::this_node::getName().c_str(), getFullActionName(action_to_be_executed_).c_str());
 
         if(isStartAction(action_to_be_executed_)){
             actions_occurring_.push_back(action_to_be_executed_);

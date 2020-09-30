@@ -333,10 +333,15 @@ namespace KCL_rosplan {
 
     void KnowledgeBase::removeFact(const rosplan_knowledge_msgs::KnowledgeItem &msg) {
         // remove domain attribute (predicate) from knowledge base
+		std::string param_str;
+		for (size_t i = 0; i < msg.values.size(); ++i) {
+			param_str += " " + msg.values[i].value;
+		}
+
         std::vector<rosplan_knowledge_msgs::KnowledgeItem>::iterator pit;
         for(pit=model_facts.begin(); pit!=model_facts.end(); ) {
             if(KnowledgeComparitor::containsKnowledge(msg, *pit)) {
-                ROS_INFO("KCL: (%s) Removing Fact (%s,%i)", ros::this_node::getName().c_str(), msg.attribute_name.c_str(), msg.is_negative);
+			ROS_INFO("KCL: (%s) Removing fact (%s%s)", ros::this_node::getName().c_str(), msg.attribute_name.c_str(), param_str.c_str());
                 pit = model_facts.erase(pit);
             } else {
                 pit++;
