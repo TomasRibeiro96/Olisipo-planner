@@ -93,11 +93,15 @@ namespace KCL_rosplan
 
 		void removeNextActionFromCompletedAndDispatched(std::string action_name);
 
+		void makeOnlyNextActionApplicable(std::string next_action_name);
+
 		void printVectorInts(std::vector<int> v, std::string msg);
 
 		void printMap(std::map<int,bool> m, std::string msg);
 
 		std::string getFullActionName(rosplan_dispatch_msgs::EsterelPlanNode node);
+
+		std::string getActionNameWithoutTime(rosplan_dispatch_msgs::EsterelPlanNode node);
 	};
 }
 

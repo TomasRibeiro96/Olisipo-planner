@@ -499,6 +499,17 @@ std::string CSPExecGenerator::getFullActionName(int a){
     return buildActionName(action_name, params, action_start);
 }
 
+std::string CSPExecGenerator::getActionNameWithoutTime(int a){
+    std::string action_name;
+    std::vector<std::string> params;
+    bool action_start;
+    int action_id;
+    if(!getAction(a, action_name, params, original_plan_, action_start, action_id)) {
+        ROS_ERROR("failed to get action properties (while getting name");
+    }
+    return buildActionNameWithoutTime(action_name, params);
+}
+
 std::string CSPExecGenerator::buildActionName(std::string action_name, std::vector<std::string> params, bool action_start){
     std::stringstream ss;
     ss << action_name;
@@ -508,6 +519,16 @@ std::string CSPExecGenerator::buildActionName(std::string action_name, std::vect
     else{
         ss << "_end";
     }
+    for(auto&& parameter: params) {
+        ss << "#";
+        ss << parameter;
+    }
+    return ss.str();
+}
+
+std::string CSPExecGenerator::buildActionNameWithoutTime(std::string action_name, std::vector<std::string> params){
+    std::stringstream ss;
+    ss << action_name;
     for(auto&& parameter: params) {
         ss << "#";
         ss << parameter;
@@ -1336,7 +1357,7 @@ bool CSPExecGenerator::srvCB(rosplan_dispatch_msgs::ExecAlternatives::Request& r
         // indicates that at least one valid execution was found
         res.replan_needed = false;
         res.exec_alternatives_generated = true;
-        res.next_action = getFullActionName(action_to_be_executed_);
+        res.next_action = getActionNameWithoutTime(action_to_be_executed_);
         // ROS_INFO("Found %ld valid execution(s)", exec_aternatives_msg_.esterel_plans.size());
 
         // plans could be printed here for debugging purposes

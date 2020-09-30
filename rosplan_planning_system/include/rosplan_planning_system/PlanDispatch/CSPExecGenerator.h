@@ -283,6 +283,10 @@ class CSPExecGenerator
 
         bool isNodeAnActionOcurring(int node);
 
+        std::string getActionNameWithoutTime(int a);
+
+        std::string buildActionNameWithoutTime(std::string action_name, std::vector<std::string> params);
+
     private:
         // ros related variables
         ros::NodeHandle nh_;
