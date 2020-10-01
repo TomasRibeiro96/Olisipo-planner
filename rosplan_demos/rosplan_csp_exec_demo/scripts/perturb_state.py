@@ -14,6 +14,8 @@ pred_probabilities_map_ = dict()
 
 predicates_list_ = list()
 
+current_state_ = list()
+
 
 def getProbabilities():
     global pred_probabilities_map_
@@ -76,53 +78,140 @@ def getPredicateKnowledgeItem(predicate):
     return ki
 
 
+def convertKnowledgeItemtoString(ki):
+    name = ki.attribute_name
+    for item in ki.values:
+        name = name + '#' + item.value
+    return name
+
+
+def fillCurrentState():
+    global current_state_
+    current_state_ = list()
+
+    get_state_srv = rospy.ServiceProxy('/rosplan_knowledge_base/state/propositions', GetAttributeService)
+    get_state_req = GetAttributeServiceRequest()
+    get_state_req.predicate_name = ''
+    state = get_state_srv(get_state_req).attributes
+
+    for ki in state:
+        current_state_.append(convertKnowledgeItemtoString(ki))
+
+
+def getListOfMachinesWorkingAndMaintained():
+    machines_maintained = list()
+    machines_working = list()
+    for predicate in current_state_:
+        if predicate.split('#')[0] == 'machine_is_maintained':
+            machines_maintained.append(predicate.split('#')[1])
+        else:
+            machines_working.append(predicate.split('#')[1])
+
+    return machines_working, machines_maintained
+
+
 def perturb(req):
 
     # rospy.loginfo('ISR: (%s) Starting to perturb', rospy.get_name())
     # rospy.loginfo('Predicates: ' + str(pred_probabilities_map_.keys()))
 
-    for predicate in pred_probabilities_map_.keys():
-        spont_false_true = pred_probabilities_map_[predicate][0]
-        spont_true_false = pred_probabilities_map_[predicate][1]
+    fillCurrentState()
 
-        # Service to add or remove fact to knowledge base
-        update_serv = rospy.ServiceProxy('/rosplan_knowledge_base/update_array', KnowledgeUpdateServiceArray)
-        update_req = KnowledgeUpdateServiceArrayRequest()
+    # Service to add or remove fact to knowledge base
+    update_serv = rospy.ServiceProxy('/rosplan_knowledge_base/update_array', KnowledgeUpdateServiceArray)
+    update_req = KnowledgeUpdateServiceArrayRequest()
 
-        # Service to check whether a fact is already in the knowledge base or not (whether it is in the current state)
-        queryKB = rospy.ServiceProxy('/rosplan_knowledge_base/query_state', KnowledgeQueryService)
-        query_KB_req = KnowledgeQueryServiceRequest()
+    machines_working, machines_maintained = getListOfMachinesWorkingAndMaintained()
 
-        ki = getPredicateKnowledgeItem(predicate)
-        query_KB_req.knowledge.append(ki)
+    for predicate in current_state_:
+        if predicate.split('#')[0] == 'machine_is_maintained':
+            machines_maintained.append(predicate.split('#')[1])
+        else:
+            machines_working.append(predicate.split('#')[1])
+    
+    # If machine is maintained then set it to false with respective probability
+    for machine in machines_maintained:
+        predicate_name = 'machine_is_maintained#'+machine
+        spont_true_false = pred_probabilities_map_[predicate_name][1]
 
-        query_KB_resp = queryKB(query_KB_req)
-        is_fact_in_KB = query_KB_resp.results[0]
-
-        number = random.random()
-
-        # If fact is not in KB (is False) then add it to
-        # the KB with a probability of spont_false_true
-        if not is_fact_in_KB and number < spont_false_true:
-            # rospy.loginfo('ISR: (%s) Adding ' + predicate + ' to KB', rospy.get_name())
-            ki.is_negative = False
-            update_req.knowledge.append(ki)
-            update_req.update_type = [0]
-            update_successful = update_serv(update_req)
-            # rospy.loginfo('ISR: (%s) Update successful: %s', rospy.get_name(), str(update_successful))
-
-
-        # If fact is in KB (is True) then remove it from
-        # the KB with a probability of spont_true_false
-        elif is_fact_in_KB and number < spont_true_false:
-            # rospy.loginfo('ISR: (%s) Removing ' + predicate + ' from KB', rospy.get_name())
+        if random.random() < spont_true_false:
+            # rospy.loginfo('ISR: (%s) Removing %s from KB', rospy.get_name(), predicate_name)
+            ki = getPredicateKnowledgeItem(predicate_name)
             update_req.update_type = [2]
             update_req.knowledge.append(ki)
             update_successful = update_serv(update_req)
-            # rospy.loginfo('ISR: (%s) Update successful: %s', rospy.get_name(), str(update_successful))
     
-        # state = getProp_srv(getProp_req)
-        # rospy.loginfo('ISR: (%s) State after perturbation:\n%s', rospy.get_name(), str(state.attribtues))
+
+    for machine in machines_working:
+        if machine not in machines_maintained:
+            predicate_name = 'machine_is_working#'+machine
+            spont_true_false_pred = pred_probabilities_map_[predicate_name][1]
+
+            maintain_predicate_name = 'machine_is_maintained#'+machine
+            maintain_spont_false_true = pred_probabilities_map_[maintain_predicate_name][0]
+
+            # If machine is not maintained and it's working, then set
+            # it to false with a probability of spont_true_false_pred
+            if random.random() < spont_true_false_pred:
+                # rospy.loginfo('ISR: (%s) Removing %s from KB', rospy.get_name(), predicate_name)
+                ki = getPredicateKnowledgeItem(predicate_name)
+                update_req.update_type = [2]
+                update_req.knowledge.append(ki)
+                update_successful = update_serv(update_req)
+            # If machine remains working then set it to maintained
+            # with a probability of maintain_spont_false_true
+            elif random.random() < maintain_spont_false_true:
+                # rospy.loginfo('ISR: (%s) Adding %s from KB', rospy.get_name(), maintain_predicate_name)
+                ki = getPredicateKnowledgeItem(maintain_predicate_name)
+                ki.is_negative = False
+                update_req.knowledge.append(ki)
+                update_req.update_type = [0]
+                update_successful = update_serv(update_req)
+
+
+
+    # for predicate in pred_probabilities_map_.keys():
+    #     spont_false_true = pred_probabilities_map_[predicate][0]
+    #     spont_true_false = pred_probabilities_map_[predicate][1]
+
+    #     # Service to add or remove fact to knowledge base
+    #     update_serv = rospy.ServiceProxy('/rosplan_knowledge_base/update_array', KnowledgeUpdateServiceArray)
+    #     update_req = KnowledgeUpdateServiceArrayRequest()
+
+    #     # Service to check whether a fact is already in the knowledge base or not (whether it is in the current state)
+    #     queryKB = rospy.ServiceProxy('/rosplan_knowledge_base/query_state', KnowledgeQueryService)
+    #     query_KB_req = KnowledgeQueryServiceRequest()
+
+    #     ki = getPredicateKnowledgeItem(predicate)
+    #     query_KB_req.knowledge.append(ki)
+
+    #     query_KB_resp = queryKB(query_KB_req)
+    #     is_fact_in_KB = query_KB_resp.results[0]
+
+    #     number = random.random()
+
+    #     # If fact is not in KB (is False) then add it to
+    #     # the KB with a probability of spont_false_true
+    #     if not is_fact_in_KB and number < spont_false_true:
+    #         # rospy.loginfo('ISR: (%s) Adding ' + predicate + ' to KB', rospy.get_name())
+    #         ki.is_negative = False
+    #         update_req.knowledge.append(ki)
+    #         update_req.update_type = [0]
+    #         update_successful = update_serv(update_req)
+    #         # rospy.loginfo('ISR: (%s) Update successful: %s', rospy.get_name(), str(update_successful))
+
+
+    #     # If fact is in KB (is True) then remove it from
+    #     # the KB with a probability of spont_true_false
+    #     elif is_fact_in_KB and number < spont_true_false:
+    #         # rospy.loginfo('ISR: (%s) Removing ' + predicate + ' from KB', rospy.get_name())
+    #         update_req.update_type = [2]
+    #         update_req.knowledge.append(ki)
+    #         update_successful = update_serv(update_req)
+    #         # rospy.loginfo('ISR: (%s) Update successful: %s', rospy.get_name(), str(update_successful))
+    
+    #     # state = getProp_srv(getProp_req)
+    #     # rospy.loginfo('ISR: (%s) State after perturbation:\n%s', rospy.get_name(), str(state.attribtues))
 
     return PerturbStateServiceResponse(True)
 

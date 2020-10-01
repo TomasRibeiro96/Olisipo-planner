@@ -7,11 +7,11 @@
 )
 
 (:predicates
-    (machine_is_fixed ?m - machine)
+    (machine_is_maintained ?m - machine)
 	(machine_is_working ?m - machine)
 )
 
-(:durative-action go_fix_machine
+(:durative-action go_maintain_machine
 	:parameters (?m - machine)
 	:duration ( = ?duration 1)
 	:condition (and
@@ -20,7 +20,7 @@
 				(at end (machine_is_working ?m))
 			   )
 	:effect (and
-				(at end (machine_is_fixed ?m))
+				(at end (machine_is_maintained ?m))
 		    )
 )
 

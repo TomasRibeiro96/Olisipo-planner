@@ -1,10 +1,10 @@
-machine_is_fixed#m1 0.01 0.01
-machine_is_fixed#m2 0.02 0.02
-machine_is_fixed#m3 0.03 0.03
+machine_is_maintained#m1 0.01 0.01
+machine_is_maintained#m2 0.02 0.02
+machine_is_maintained#m3 0.03 0.03
 machine_is_working#m1 0.01 0.09
 machine_is_working#m2 0.02 0.10
 machine_is_working#m3 0.03 0.11
 -
-go_fix_machine#m1 0.85 machine_is_fixed%0.95
-go_fix_machine#m2 0.85 machine_is_fixed%0.95
-go_fix_machine#m3 0.85 machine_is_fixed%0.95
+go_maintain_machine#m1 0.85 machine_is_maintained%0.95
+go_maintain_machine#m2 0.85 machine_is_maintained%0.95
+go_maintain_machine#m3 0.85 machine_is_maintained%0.95
