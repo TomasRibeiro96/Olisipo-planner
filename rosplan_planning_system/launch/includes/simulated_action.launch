@@ -9,6 +9,7 @@
 	<arg name="knowledge_base"		default="rosplan_knowledge_base" />
 	<arg name="action_dispatch_topic"	default="/rosplan_plan_dispatcher/action_dispatch" />
 	<arg name="action_feedback_topic"	default="/rosplan_plan_dispatcher/action_feedback" />
+	<arg name="probabilities_file" />
 
 	<!-- simulated action -->
 	<node name="rosplan_interface_$(arg pddl_action_name)" pkg="rosplan_planning_system" type="simulatedAction" respawn="false" output="screen">
@@ -19,8 +20,7 @@
 		<param name="action_probability"	 value="$(arg action_probability)" />
 		<param name="action_dispatch_topic"  value="$(arg action_dispatch_topic)" />
 		<param name="action_feedback_topic"  value="$(arg action_feedback_topic)" />
+		<!-- <param name="probabilities_file" value="$(arg probabilities_file)"/> -->
 	</node>
 
 </launch>
-
-

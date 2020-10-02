@@ -225,8 +225,6 @@ namespace KCL_rosplan {
 		// ROS_INFO("ISR: (%s) Full action name: %s", params.name.c_str(), full_action_name.c_str());
 		// printDispatchedActions();
 
-		// bool start_action_executed = false;
-
 		// If action with this name is not in actions_dispatched_
 		// then we are executing the start of that action
 		if(!start_action_executed){
@@ -287,19 +285,7 @@ namespace KCL_rosplan {
 			action_feedback_pub.publish(fb);
 
 		}
-
-		// call concrete implementation
-		// action_success = concreteCallback(msg);
-		// action_success = true;
-        // // ros::spinOnce();
-        // if(action_cancelled) {
-        //     action_success = false;
-		// 	ROS_INFO("KCL: (%s) an old action that was cancelled is stopping now", params.name.c_str());
-        //     return;
-        // }
-
 		else{
-		// if(action_success){
 
 			// ROS_INFO("ISR: (%s) Connecting action to at_end effects", params.name.c_str());
 			// ROS_INFO("KCL: (%s) action completed successfully", params.name.c_str());

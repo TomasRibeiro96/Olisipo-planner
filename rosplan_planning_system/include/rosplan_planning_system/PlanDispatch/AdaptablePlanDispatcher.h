@@ -70,6 +70,9 @@ namespace KCL_rosplan
 
 		std::map<std::string, int> map_node_id;
 
+		std::map<std::string, double> actions_prob_map;
+
+		int number_actions_dispatched;
 
 	public:
 
@@ -100,6 +103,10 @@ namespace KCL_rosplan
 		std::string getFullActionName(rosplan_dispatch_msgs::EsterelPlanNode node);
 
 		std::string getActionNameWithoutTime(rosplan_dispatch_msgs::EsterelPlanNode node);
+
+		void fillProbabilitiesMap(std::string probabilities_file);
+
+		void registerError();
 	};
 }
 

@@ -926,9 +926,12 @@ bool CSPExecGenerator::atStartAlreadyExecuted(int a){
 
     bool at_start_executed = false;
 
+    // ROS_INFO("ISR: (%s) Checking if at_start from %s has been executed", ros::this_node::getName().c_str(), getFullActionName(a).c_str());
     if(!isStartAction(a)){
-        for(auto&& action: actions_occurring_){
+        for(auto&& action: action_executing_){
+            // ROS_INFO("ISR: (%s) Comparing to action: %s", ros::this_node::getName().c_str(), getFullActionName(action).c_str());
             if(actionsHaveSameNameAndParams(a, action)){
+                // ROS_INFO("ISR: (%s) Actions have same name and parameters", ros::this_node::getName().c_str());
                 if(isStartAction(action)){
                     at_start_executed = true;
                     break;
@@ -936,8 +939,22 @@ bool CSPExecGenerator::atStartAlreadyExecuted(int a){
             }
         }
     }
-
     return at_start_executed;
+}
+
+int CSPExecGenerator::getAtStartFromExecuting(int a){
+    bool at_start_executed = false;
+
+    if(!isStartAction(a)){
+        for(auto&& action: action_executing_){
+            if(actionsHaveSameNameAndParams(a, action)){
+                if(isStartAction(action)){
+                    return action;
+                }
+            }
+        }
+    }
+    return -1;
 }
 
 int CSPExecGenerator::getActionEndLayer(int a){
@@ -959,6 +976,7 @@ int CSPExecGenerator::currentStateContainsExpectedFacts(){
     // printNodes(">>> Best plan", best_plan_);
     // printNodes(">>> Actions occurring", actions_occurring_);
 
+    // Go from last layer of DBN to first one
     for (int i = expected_facts_.size(); i-- > 0; ){
         std::vector<rosplan_knowledge_msgs::KnowledgeItem> expected_facts = expected_facts_[i];
         bool all_facts_are_present = true;
@@ -969,16 +987,15 @@ int CSPExecGenerator::currentStateContainsExpectedFacts(){
             }
         }
 
-        // Go from last layer to first one
-        // When a layer matches the state of the world, then good
-        // Check if there are any previous actions which have been started but not ended
-        // If there are, then dispatch the corresponding action end
-        // If there aren't, then dispatch action after the layer
+        // When a layer matches the state of the world, then check if
+        // there are any previous actions which have been started but not ended
         if(all_facts_are_present){
+            // If there are, then dispatch the corresponding action end
             if(actions_occurring_.size() > 0){
                 int action = actions_occurring_[0];
                 return getActionEndLayer(action);
             }
+            // If there aren't, then dispatch action after the layer
             else{
                 int action = best_plan_[i];
                 if(isStartAction(action) || atStartAlreadyExecuted(action)){
@@ -986,19 +1003,6 @@ int CSPExecGenerator::currentStateContainsExpectedFacts(){
                 }
             }
         }
-
-        // // If layer has all facts then check if action after layer is at_start
-        // // or if at_end but it's at_start has already been executed
-        // if(all_facts_are_present){
-        //     int action = best_plan_[i];
-        //     // ROS_INFO(">>> Action after layer: %s", getFullActionName(action).c_str());
-        //     // If action is at_start or at_start has already been executed
-        //     // ROS_INFO(isStartAction(action)? "Start action: YES":"Start action: NO");
-        //     // ROS_INFO(atStartAlreadyExecuted(action)? "At start executed: YES":"At start executed: NO");            
-        //     if(isStartAction(action) || atStartAlreadyExecuted(action)){
-        //         return i;
-        //     }
-        // }
     }
     
     return -1;
@@ -1038,6 +1042,7 @@ bool CSPExecGenerator::isNodeAnActionOcurring(int node){
 
 bool CSPExecGenerator::generatePlans()
 {
+    // ROS_INFO("ISR: (%s) Inside generatePlans()", ros::this_node::getName().c_str());
     // get current state (S) and store in memory
     action_simulator_.saveKBSnapshot();
 
@@ -1064,12 +1069,13 @@ bool CSPExecGenerator::generatePlans()
     // It starts from the end of expected facts because the state might
     // have unexpectedly changed and we may be able to skip actions
     // ROS_INFO("Checking expected facts");
+    // ROS_INFO("ISR: (%s) Checking previous plan", ros::this_node::getName().c_str());
     if(!expected_facts_.empty()){
-        // printNodes("Original Plan", best_plan_);
+        printNodes("Original Plan", best_plan_);
         int index_facts = currentStateContainsExpectedFacts();
-        // ROS_INFO(">>> Layer selected: %d", index_facts);
+        ROS_INFO(">>> Layer selected: %d", index_facts);
         if(index_facts >= 0){
-            // ROS_INFO("ISR: (%s) Reusing plan", ros::this_node::getName().c_str());
+            ROS_INFO("ISR: (%s) Reusing plan", ros::this_node::getName().c_str());
             reusePreviousPlan(index_facts);
             return true;
         }
@@ -1104,7 +1110,7 @@ bool CSPExecGenerator::generatePlans()
     std::vector<std::vector<rosplan_knowledge_msgs::KnowledgeItem>> explored_states;
     int number_expanded_nodes = 0;
 
-    // ROS_INFO("Total number of actions: %d", (int)open_list.size());
+    ROS_INFO("Total number of actions: %d", (int)open_list.size());
 
     if(first_time){
         rosplan_dispatch_msgs::SetupService srv;
@@ -1300,22 +1306,71 @@ bool CSPExecGenerator::isStartAction(int a){
     if(!getAction(a, action_name, params, original_plan_, action_start, action_id)) {
         ROS_ERROR("failed to get action properties (while getting name");
     }
+    // ROS_INFO("ISR: (%s) Finished checking isStartAction and returning '%s'", ros::this_node::getName().c_str(), action_start ? "True" : "False");
     return action_start;
 
 }
 
 void CSPExecGenerator::removeStartActionFromOccurringActions(int action1){
+    // ROS_INFO("ISR: (%s) Removing start action from occurring actions", ros::this_node::getName().c_str());
     if(!isStartAction(action1)){
         int i;
         for(i = 0; i<actions_occurring_.size(); i++){
             if(actionsHaveSameNameAndParams(action1, actions_occurring_[i])){
                 if(actions_occurring_[i]){
+                    // ROS_INFO("ISR: (%s) Removing action %d", ros::this_node::getName().c_str(), action1);
+                    // printVectorInts(actions_occurring_, "Actions occurring before removing");
+                    actions_occurring_.erase(actions_occurring_.begin()+i);
+                    // printVectorInts(actions_occurring_, "Actions occurring after removing");
                     break;
                 }
             }
         }
-        actions_occurring_.erase(actions_occurring_.begin()+i);
     }
+}
+
+void CSPExecGenerator::printVectorInts(std::vector<int> vec, std::string str){
+    std::stringstream ss;
+    ss << "[";
+    for(int item: vec){
+        if(item == *vec.begin())
+            ss << "'" << item << "'";
+        else{
+            ss << ", '" << item << "'";
+        }
+    }
+    ss << "]";
+    ROS_INFO("ISR: (%s) %s:%s", ros::this_node::getName().c_str(), str.c_str(), ss.str().c_str());
+}
+
+std::vector<int> CSPExecGenerator::getActionsStartedButNotFinished(std::vector<int> vec_actions){
+    std::vector<int> occurring_actions;
+
+    // Add each at_start action to occurring_actions
+    // If the at_end of that action is inside occurring_actions,
+    // then remove the at_start from occurring_actions
+    ROS_INFO("ISR: (%s) Inside getActionsStartedButNotFinished", ros::this_node::getName().c_str());
+    printVectorInts(vec_actions, "Actions executing from request");
+    for(int item: vec_actions){
+        ROS_INFO("ISR: (%s) Item %d", ros::this_node::getName().c_str(), item);
+        if(isStartAction(item)){
+            ROS_INFO("ISR: (%s) It's a start action, adding to occurring_actions", ros::this_node::getName().c_str());
+            occurring_actions.push_back(item);
+        }
+        else{
+            // If at_start action has already been executed
+            // then remove the at_start from occurring_actions
+            ROS_INFO("ISR: (%s) It's an end action", ros::this_node::getName().c_str());
+            if(atStartAlreadyExecuted(item)){
+                ROS_INFO("ISR: (%s) At start already executed so removing it from occurring actions", ros::this_node::getName().c_str());
+                occurring_actions.erase(std::find(occurring_actions.begin(), occurring_actions.end(), getAtStartFromExecuting(item)));
+            }
+        }
+    }
+
+    //// occurring_actions should only contain
+    //// actions that have been started but not finished
+    return occurring_actions;
 }
 
 bool CSPExecGenerator::srvCB(rosplan_dispatch_msgs::ExecAlternatives::Request& req,
@@ -1344,6 +1399,11 @@ bool CSPExecGenerator::srvCB(rosplan_dispatch_msgs::ExecAlternatives::Request& r
     // save nodes which are being/done executing in member variable to be removed from open list (skipped)
     action_executing_ = req.actions_executing;
 
+    // ROS_INFO("ISR: (%s) Getting actions started but not finished", ros::this_node::getName().c_str());
+    // actions_occurring_ = getActionsStartedButNotFinished(action_executing_);
+    // printVectorInts(action_executing_, "Actions occurring");
+    // actions_occurring_ = action_executing_;
+    // ROS_INFO("ISR: (%s) Size of action executing: %d", ros::this_node::getName().c_str(), (int) action_executing_.size());
     // delete old data if any
     exec_aternatives_msg_.esterel_plans.clear();
     exec_aternatives_msg_.plan_success_prob.clear();
@@ -1361,15 +1421,17 @@ bool CSPExecGenerator::srvCB(rosplan_dispatch_msgs::ExecAlternatives::Request& r
         // publish esterel array msg
         pub_valid_plans_.publish(exec_aternatives_msg_);
 
+        ROS_INFO("ISR: (%s) Action to be executed: '%s'", ros::this_node::getName().c_str(), getFullActionName(action_to_be_executed_).c_str());
 
-        // ROS_INFO("ISR: (%s) Action to be executed: '%s'", ros::this_node::getName().c_str(), getFullActionName(action_to_be_executed_).c_str());
-
-        if(isStartAction(action_to_be_executed_)){
-            actions_occurring_.push_back(action_to_be_executed_);
-        }
-        else if(atStartAlreadyExecuted(action_to_be_executed_)){
-            removeStartActionFromOccurringActions(action_to_be_executed_);
-        }
+        // printVectorInts(actions_occurring_, "Actions occurring before");
+        // if(isStartAction(action_to_be_executed_)){
+        //     actions_occurring_.push_back(action_to_be_executed_);
+        // }
+        // else if(atStartAlreadyExecuted(action_to_be_executed_)){
+        //     removeStartActionFromOccurringActions(action_to_be_executed_);
+        // }
+        // printVectorInts(actions_occurring_, "Actions occurring after");
+        
     }
     else
     {

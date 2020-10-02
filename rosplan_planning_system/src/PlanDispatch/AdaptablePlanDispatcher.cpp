@@ -1,5 +1,7 @@
 #include "rosplan_planning_system/PlanDispatch/AdaptablePlanDispatcher.h"
 #include <unistd.h>
+#include <fstream>
+
 
 namespace KCL_rosplan {
 
@@ -25,6 +27,13 @@ namespace KCL_rosplan {
 		nh.param("display_edge_type", display_edge_type_, false);
 
 		need_to_replan = false;
+
+		std::string probabilities_file;
+		nh.getParam("probabilities_file", probabilities_file);
+
+		fillProbabilitiesMap(probabilities_file);
+
+		number_actions_dispatched = 0;
 
 		reset();
 	}
@@ -243,6 +252,41 @@ namespace KCL_rosplan {
 		ROS_INFO("ISR: (%s) %s: %s", ros::this_node::getName().c_str(), msg.c_str(), ss.str().c_str());
 	}
 
+	void AdaptablePlanDispatcher::fillProbabilitiesMap(std::string probabilities_file){
+		std::ifstream file;
+
+		// ROS_INFO("ISR: (%s) Opening file", ros::this_node::getName().c_str());
+		file.open(probabilities_file);
+
+		bool entering_actions_part = false;
+		std::string line;
+
+		while(getline(file, line)){
+			// ROS_INFO("ISR: (%s) Line: %s", ros::this_node::getName().c_str(), line.c_str());
+			if(entering_actions_part){
+				int first_delimeter = line.find(" ");
+				std::string action_name = line.substr(0, first_delimeter);
+				double probability = atof(line.substr(first_delimeter+1, 5).c_str());
+				// ROS_INFO("ISR: (%s) Adding to actions_prob_map: %s %f", ros::this_node::getName().c_str(), action_name.c_str(), probability);
+				actions_prob_map.insert(std::pair<std::string, double>(action_name, probability));
+			}
+			else if(line == "-"){
+				entering_actions_part = true;
+			}
+		}
+
+		file.close();
+		// printMap(actions_prob_map, "actions probability");
+	}
+
+	void AdaptablePlanDispatcher::registerError(){
+		std::ofstream outfile;
+		ROS_INFO("ISR: (%s) Registering error", ros::this_node::getName().c_str());
+		outfile.open("/home/tomas/ros_ws/src/ROSPlan/src/rosplan/number_errors.txt", std::ios_base::app); // append instead of overwrite
+		outfile << "1";
+		outfile.close(); 
+	}
+
 	/*-----------------*/
 	/* action dispatch */
 	/*-----------------*/
@@ -294,6 +338,7 @@ namespace KCL_rosplan {
 			// ROS_INFO("ISR: (%s) Going inside for loop", ros::this_node::getName().c_str());
 			// for nodes check conditions, and dispatch
 			std::vector<rosplan_dispatch_msgs::EsterelPlanNode>::const_iterator ci;
+
 			for(ci = current_plan.nodes.begin(); ci != current_plan.nodes.end(); ci++) {
 
 				rosplan_dispatch_msgs::EsterelPlanNode node = *ci;
@@ -373,36 +418,50 @@ namespace KCL_rosplan {
 
 					if(condition_activate_action) {
 
-						// activate action
-						action_received[node.action.action_id] = false;
+						double random_number = (double) rand()/RAND_MAX;
+						std::string full_action_name = getFullActionName(node);
 
-						// dispatch action start
-						ROS_INFO("KCL: (%s) Dispatching action start [%s]", ros::this_node::getName().c_str(), getFullActionName(node).c_str());
-
-						action_dispatch_publisher.publish(node.action);
-                        actions_executing.push_back(node.node_id);
-						state_changed = true;
-
-						// deactivate incoming edges
-						std::vector<int>::const_iterator ci = node.edges_in.begin();
-						for(; ci != node.edges_in.end(); ci++) {
-							edge_active[*ci] = false;
+						// If action failed due to perturbations
+						if(random_number<actions_prob_map[full_action_name]){
+							ROS_INFO("ISR: (%s) Action dispatch failed due to perturbations [%s]",
+																	ros::this_node::getName().c_str(),
+																	full_action_name.c_str());
+							perturbWorldState();
+							state_changed = true;
+							break;
 						}
+						else{
+							// activate action
+							action_received[node.action.action_id] = false;
 
-						// activate new edges
-						ci = node.edges_out.begin();
-						for(; ci != node.edges_out.end(); ci++) {
-							edge_active[*ci] = true;
+							// dispatch action start
+							ROS_INFO("KCL: (%s) Dispatching action start [%s]", ros::this_node::getName().c_str(), full_action_name.c_str());
+
+							action_dispatch_publisher.publish(node.action);
+							actions_executing.push_back(node.node_id);
+							state_changed = true;
+
+							// deactivate incoming edges
+							std::vector<int>::const_iterator ci = node.edges_in.begin();
+							for(; ci != node.edges_in.end(); ci++) {
+								edge_active[*ci] = false;
+							}
+
+							// activate new edges
+							ci = node.edges_out.begin();
+							for(; ci != node.edges_out.end(); ci++) {
+								edge_active[*ci] = true;
+							}
+
+							// Waits for the set time in microseconds
+							// Wait so the print of rosplan_interface occurs
+							// before the print of the state's perturbation
+							usleep(10000);
+							perturbWorldState();
+							number_actions_dispatched++;
+
+							break;
 						}
-
-						// Waits for the set time in microseconds
-						// Wait so the print of rosplan_interface occurs
-						// before the print of the state's perturbation
-						usleep(10000);
-
-						perturbWorldState();
-
-						break;
 					}
 					else{
 						ROS_INFO("ISR: (%s) Action is no longer applicable [%i, %s]",
@@ -452,8 +511,8 @@ namespace KCL_rosplan {
 						// Wait so the print of rosplan_interface occurs
 						// before the print of the state's perturbation
 						usleep(10000);
-
 						perturbWorldState();
+						number_actions_dispatched++;
 
 						break;
 					}
@@ -476,9 +535,30 @@ namespace KCL_rosplan {
 			loop_rate.sleep();
 
 			if(goalAchieved()){
+			// if(goalAchieved() && (number_actions_dispatched%2 == 0)){
 				ROS_INFO("KCL: (%s) Goal is achieved", ros::this_node::getName().c_str());
 				finished_execution = true;
 			}
+			// else if(goalAchieved()){
+			// 	ROS_INFO("ISR: (%s) Goal is achieved but must finish actions", ros::this_node::getName().c_str());
+            //     ROS_INFO("KCL: (%s) Calling the alternatives generator.", ros::this_node::getName().c_str());
+            //     rosplan_dispatch_msgs::ExecAlternatives srv;
+            //     srv.request.actions_executing = actions_executing;
+            //     if(!gen_alternatives_client.call(srv)) {
+            //         ROS_ERROR("KCL: (%s) could not call the generate alternatives service.", ros::this_node::getName().c_str());
+            //         return false;
+            //     }
+            //     replan_requested = srv.response.replan_needed;
+			// 	// ROS_INFO("ISR: (%s) Next action: %s", ros::this_node::getName().c_str(), srv.response.next_action.c_str());
+			// 	makeOnlyNextActionApplicable(srv.response.next_action);
+    		// 	plan_received = false;
+		    //     while (ros::ok() && !plan_received && !replan_requested) {
+            //         ros::spinOnce();
+            //         loop_rate.sleep();
+            //     }
+                
+			// 	ROS_INFO("KCL: (%s) Restarting the dispatch loop.", ros::this_node::getName().c_str());
+			// }
 			else if(state_changed) {
 				ROS_INFO("KCL: (%s) Goal is not achieved", ros::this_node::getName().c_str());
                 ROS_INFO("KCL: (%s) Calling the alternatives generator.", ros::this_node::getName().c_str());
@@ -486,9 +566,11 @@ namespace KCL_rosplan {
                 srv.request.actions_executing = actions_executing;
                 if(!gen_alternatives_client.call(srv)) {
                     ROS_ERROR("KCL: (%s) could not call the generate alternatives service.", ros::this_node::getName().c_str());
+					registerError();
                     return false;
                 }
                 replan_requested = srv.response.replan_needed;
+				// ROS_INFO("ISR: (%s) Next action: %s", ros::this_node::getName().c_str(), srv.response.next_action.c_str());
 				makeOnlyNextActionApplicable(srv.response.next_action);
     			plan_received = false;
 		        while (ros::ok() && !plan_received && !replan_requested) {

@@ -47,10 +47,6 @@ namespace KCL_rosplan {
 
 		std::vector<std::string> actions_dispatched_;
 
-		// std::map<std::string, rosplan_knowledge_msgs::DomainOperator> actions_dispatched_;
-
-		void printDispatchedActions();
-
 	public:
 
 		bool startActionAlreadyExecuted(std::string action_name);
@@ -65,6 +61,10 @@ namespace KCL_rosplan {
 		virtual bool concreteCallback(const rosplan_dispatch_msgs::ActionDispatch::ConstPtr& msg) =0;
 
 		std::string getFullActionName(const rosplan_dispatch_msgs::ActionDispatch::ConstPtr& msg);
+
+		void printDispatchedActions();
+
+		void fillProbabilitiesMap(std::string probabilities_file);
 	};
 }
 #endif

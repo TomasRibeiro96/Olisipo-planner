@@ -287,6 +287,12 @@ class CSPExecGenerator
 
         std::string buildActionNameWithoutTime(std::string action_name, std::vector<std::string> params);
 
+        std::vector<int> getActionsStartedButNotFinished(std::vector<int> action_executing_);
+
+        int getAtStartFromExecuting(int a);
+
+        void printVectorInts(std::vector<int> vec, std::string str);
+
     private:
         // ros related variables
         ros::NodeHandle nh_;
