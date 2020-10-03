@@ -15,6 +15,7 @@
 #include "rosplan_dispatch_msgs/EsterelPlan.h"
 #include "rosplan_dispatch_msgs/EsterelPlanArray.h"
 #include "rosplan_dispatch_msgs/ExecAlternatives.h"
+#include <std_srvs/Trigger.h>
 #include "std_msgs/String.h"
 
 
@@ -73,6 +74,8 @@ namespace KCL_rosplan
 		std::map<std::string, double> actions_prob_map;
 
 		int number_actions_dispatched;
+
+		ros::ServiceClient action_counter_client_;
 
 	public:
 

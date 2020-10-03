@@ -30,8 +30,9 @@ namespace KCL_rosplan {
 
 		std::string probabilities_file;
 		nh.getParam("probabilities_file", probabilities_file);
-
 		fillProbabilitiesMap(probabilities_file);
+
+		action_counter_client_ = nh_.serviceClient<std_srvs::Trigger>("increment_action_count");
 
 		number_actions_dispatched = 0;
 
@@ -446,6 +447,16 @@ namespace KCL_rosplan {
 																	full_action_name.c_str());
 							perturbWorldState();
 							state_changed = true;
+
+							// Increment action count
+							std_srvs::Trigger srv2;
+							if(action_counter_client_.call(srv2)){
+								// ROS_INFO("ISR: (%s) Successfully increased action count", ros::this_node::getName().c_str());
+							}
+							else{
+								// ROS_INFO("ISR: (%s) Failed to increase action count", ros::this_node::getName().c_str());	
+							}
+
 							break;
 						}
 						else{
