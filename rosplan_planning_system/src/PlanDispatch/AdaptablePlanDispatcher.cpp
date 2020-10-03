@@ -232,7 +232,7 @@ namespace KCL_rosplan {
 		
 	}
 
-	void AdaptablePlanDispatcher::printMap(std::map<int,bool> m, std::string msg){
+	void AdaptablePlanDispatcher::printIntBoolMap(std::map<int,bool> m, std::string msg){
 		std::stringstream ss;
 		for (auto const& pair: m) {
 			std::string second = pair.second ? "True" : "False";
@@ -241,21 +241,24 @@ namespace KCL_rosplan {
 		ROS_INFO("ISR: (%s)\nMap of %s: %s", ros::this_node::getName().c_str(), msg.c_str(), ss.str().c_str());
 	}
 
-	void AdaptablePlanDispatcher::printVectorInts(std::vector<int> v, std::string msg){
+	void AdaptablePlanDispatcher::printVectorInts(std::vector<int> vec, std::string str){
 		std::stringstream ss;
-		for(std::vector<int>::iterator it = v.begin(); it != v.end(); it++){
-			if(it != v.begin()){
-				ss << ", ";
+		ss << "[";
+		for(int item: vec){
+			if(item == *vec.begin())
+				ss << "'" << item << "'";
+			else{
+				ss << ", '" << item << "'";
 			}
-			ss << *it;
 		}
-		ROS_INFO("ISR: (%s) %s: %s", ros::this_node::getName().c_str(), msg.c_str(), ss.str().c_str());
+		ss << "]";
+		ROS_INFO("ISR: (%s) %s:%s", ros::this_node::getName().c_str(), str.c_str(), ss.str().c_str());
 	}
 
 	void AdaptablePlanDispatcher::fillProbabilitiesMap(std::string probabilities_file){
 		std::ifstream file;
 
-		// ROS_INFO("ISR: (%s) Opening file", ros::this_node::getName().c_str());
+		// ROS_INFO("ISR: (%s) Opening file: %s", ros::this_node::getName().c_str(), probabilities_file.c_str());
 		file.open(probabilities_file);
 
 		bool entering_actions_part = false;
@@ -271,12 +274,21 @@ namespace KCL_rosplan {
 				actions_prob_map.insert(std::pair<std::string, double>(action_name, probability));
 			}
 			else if(line == "-"){
+				// ROS_INFO("ISR: (%s) Entered actions part of file", ros::this_node::getName().c_str());
 				entering_actions_part = true;
 			}
 		}
 
 		file.close();
-		// printMap(actions_prob_map, "actions probability");
+		// printStringDoubleMap(actions_prob_map, "Actions probability map");
+	}
+
+	void AdaptablePlanDispatcher::printStringDoubleMap(std::map<std::string,double> m, std::string msg){
+		std::stringstream ss;
+		for (auto const& pair: m) {
+			ss << "\n{" << pair.first.c_str() << ": " << pair.second << "}";
+		}
+		ROS_INFO("ISR: (%s)\n%s: %s", ros::this_node::getName().c_str(), msg.c_str(), ss.str().c_str());
 	}
 
 	void AdaptablePlanDispatcher::registerError(){
@@ -420,9 +432,15 @@ namespace KCL_rosplan {
 
 						double random_number = (double) rand()/RAND_MAX;
 						std::string full_action_name = getFullActionName(node);
+						std::string action_name_no_time = getActionNameWithoutTime(node);
+
+						// ROS_INFO("ISR: (%s) Random number: %f", ros::this_node::getName().c_str(), random_number);
+						// ROS_INFO("ISR: (%s) Action success probability [%s]: %f", ros::this_node::getName().c_str(),
+						// 														  action_name_no_time.c_str(),
+						// 														  actions_prob_map[action_name_no_time]);
 
 						// If action failed due to perturbations
-						if(random_number<actions_prob_map[full_action_name]){
+						if(random_number<actions_prob_map[action_name_no_time]){
 							ROS_INFO("ISR: (%s) Action dispatch failed due to perturbations [%s]",
 																	ros::this_node::getName().c_str(),
 																	full_action_name.c_str());
@@ -534,36 +552,39 @@ namespace KCL_rosplan {
 			ros::spinOnce();
 			loop_rate.sleep();
 
-			if(goalAchieved()){
-			// if(goalAchieved() && (number_actions_dispatched%2 == 0)){
+			// if(goalAchieved()){
+			// number_actions_dispatched%2 == 0 because the total number
+			// of action nodes must be pair, because each action has a start and end
+			if(goalAchieved() && (number_actions_dispatched%2 == 0)){
 				ROS_INFO("KCL: (%s) Goal is achieved", ros::this_node::getName().c_str());
 				finished_execution = true;
 			}
-			// else if(goalAchieved()){
-			// 	ROS_INFO("ISR: (%s) Goal is achieved but must finish actions", ros::this_node::getName().c_str());
-            //     ROS_INFO("KCL: (%s) Calling the alternatives generator.", ros::this_node::getName().c_str());
-            //     rosplan_dispatch_msgs::ExecAlternatives srv;
-            //     srv.request.actions_executing = actions_executing;
-            //     if(!gen_alternatives_client.call(srv)) {
-            //         ROS_ERROR("KCL: (%s) could not call the generate alternatives service.", ros::this_node::getName().c_str());
-            //         return false;
-            //     }
-            //     replan_requested = srv.response.replan_needed;
-			// 	// ROS_INFO("ISR: (%s) Next action: %s", ros::this_node::getName().c_str(), srv.response.next_action.c_str());
-			// 	makeOnlyNextActionApplicable(srv.response.next_action);
-    		// 	plan_received = false;
-		    //     while (ros::ok() && !plan_received && !replan_requested) {
-            //         ros::spinOnce();
-            //         loop_rate.sleep();
-            //     }
+			else if(goalAchieved()){
+				ROS_INFO("ISR: (%s) Goal is achieved but must finish actions first", ros::this_node::getName().c_str());
+                ROS_INFO("KCL: (%s) Calling the alternatives generator.", ros::this_node::getName().c_str());
+                rosplan_dispatch_msgs::ExecAlternatives srv;
+                srv.request.actions_executing = actions_executing;
+                if(!gen_alternatives_client.call(srv)) {
+                    ROS_ERROR("KCL: (%s) could not call the generate alternatives service.", ros::this_node::getName().c_str());
+                    return false;
+                }
+                replan_requested = srv.response.replan_needed;
+				ROS_INFO("ISR: (%s) Next action: %s", ros::this_node::getName().c_str(), srv.response.next_action.c_str());
+				makeOnlyNextActionApplicable(srv.response.next_action);
+    			plan_received = false;
+		        while (ros::ok() && !plan_received && !replan_requested) {
+                    ros::spinOnce();
+                    loop_rate.sleep();
+                }
                 
-			// 	ROS_INFO("KCL: (%s) Restarting the dispatch loop.", ros::this_node::getName().c_str());
-			// }
+				ROS_INFO("KCL: (%s) Restarting the dispatch loop.", ros::this_node::getName().c_str());
+			}
 			else if(state_changed) {
 				ROS_INFO("KCL: (%s) Goal is not achieved", ros::this_node::getName().c_str());
                 ROS_INFO("KCL: (%s) Calling the alternatives generator.", ros::this_node::getName().c_str());
                 rosplan_dispatch_msgs::ExecAlternatives srv;
                 srv.request.actions_executing = actions_executing;
+				// printVectorInts(actions_executing, "Sending actions executing");
                 if(!gen_alternatives_client.call(srv)) {
                     ROS_ERROR("KCL: (%s) could not call the generate alternatives service.", ros::this_node::getName().c_str());
 					registerError();

@@ -98,7 +98,7 @@ namespace KCL_rosplan
 
 		void printVectorInts(std::vector<int> v, std::string msg);
 
-		void printMap(std::map<int,bool> m, std::string msg);
+		void printIntBoolMap(std::map<int,bool> m, std::string msg);
 
 		std::string getFullActionName(rosplan_dispatch_msgs::EsterelPlanNode node);
 
@@ -107,6 +107,8 @@ namespace KCL_rosplan
 		void fillProbabilitiesMap(std::string probabilities_file);
 
 		void registerError();
+
+		void printStringDoubleMap(std::map<std::string,double> m, std::string msg);
 	};
 }
 

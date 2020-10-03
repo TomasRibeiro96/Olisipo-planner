@@ -105,6 +105,7 @@
             <param name="action_dispatch_topic" value="action_dispatch" />
             <param name="action_feedback_topic" value="action_feedback" />
             <param name="display_edge_type"     value="false" />
+            <param name="probabilities_file" type="str" value="$(arg probabilities_path)$(arg probabilities)"/>
         </node>
 
         <!-- coordinator that calls services, replans if failure and outputs the number of executed actions -->

@@ -293,6 +293,8 @@ class CSPExecGenerator
 
         void printVectorInts(std::vector<int> vec, std::string str);
 
+        bool atStartAlreadyInActionsExecuted(int a);
+
     private:
         // ros related variables
         ros::NodeHandle nh_;
