@@ -3,7 +3,7 @@
 
 
     <!-- select between normal or smart plan dispatcher -->
-    <arg name="adaptable_plan_dispatcher_required" default="false" />
+    <arg name="adaptable_plan_dispatcher_required" default="true" />
     
     <!-- FACTORY ROBOT -->
     <arg name="category" default="factory_robot_problems" />

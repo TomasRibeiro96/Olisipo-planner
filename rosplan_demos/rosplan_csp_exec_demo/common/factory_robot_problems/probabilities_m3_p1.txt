@@ -7,4 +7,4 @@ machine_is_working#m3 0.03 0.02
 -
 go_maintain_machine#m1 0.80 machine_is_maintained%0.90
 go_maintain_machine#m2 0.80 machine_is_maintained%0.90
-go_maintain_machine#m3 0.80 machine_is_maintained%0.30
+go_maintain_machine#m3 0.80 machine_is_maintained%0.90

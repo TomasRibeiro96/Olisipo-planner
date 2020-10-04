@@ -561,9 +561,8 @@ namespace KCL_rosplan {
 			ros::spinOnce();
 			loop_rate.sleep();
 
-			// if(goalAchieved()){
-			// number_actions_dispatched%2 == 0 because the total number
-			// of action nodes must be pair, because each action has a start and end
+			// The total number of actions dispatched must be
+			// pair, because each action has a start and end
 			if(goalAchieved() && (number_actions_dispatched%2 == 0)){
 				ROS_INFO("KCL: (%s) Goal is achieved", ros::this_node::getName().c_str());
 				finished_execution = true;
