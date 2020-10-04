@@ -1,4 +1,5 @@
 #include "rosplan_planning_system/PlanDispatch/EsterelPlanDispatcher.h"
+#include <fstream>
 
 
 namespace KCL_rosplan {
@@ -16,8 +17,10 @@ namespace KCL_rosplan {
 		perturb_client_ = nh_.serviceClient<rosplan_knowledge_msgs::PerturbStateService>("perturb_state");
 
         // robust experiment parameters
-        timeout_actions = true;
+        timeout_actions = false;
         action_timeout_fraction = 0;
+        // Tomas: Found out that this line below is not
+        // actually getting the parameter
         nh.getParam("timeout_actions", timeout_actions);
         nh.getParam("action_timeout_fraction", action_timeout_fraction);
         
@@ -30,6 +33,14 @@ namespace KCL_rosplan {
 
         // display edge type with colors (conditional edge, interference edge, etc)
         nh.param("display_edge_type", display_edge_type_, false);
+
+        std::string probabilities_file;
+		nh.getParam("probabilities_file", probabilities_file);
+		fillProbabilitiesMap(probabilities_file);
+
+		action_counter_client_ = nh_.serviceClient<std_srvs::Trigger>("increment_action_count");
+
+        get_action_count_client_ = nh_.serviceClient<std_srvs::Trigger>("action_count");
 
         reset();
     }
@@ -103,6 +114,73 @@ namespace KCL_rosplan {
         }
     }
 
+
+	std::string EsterelPlanDispatcher::getFullActionName(rosplan_dispatch_msgs::EsterelPlanNode node){
+		std::stringstream ss;
+
+		ss << node.action.name;
+
+		if(node.node_type == node.ACTION_START){
+			ss << "_start";
+		}
+		else{
+			ss << "_end";
+		}
+
+		std::vector<diagnostic_msgs::KeyValue, std::allocator<diagnostic_msgs::KeyValue>> parameters = node.action.parameters;
+		for(diagnostic_msgs::KeyValue param: parameters){
+			ss << "#";
+			ss << param.value;
+		}
+
+		return ss.str();
+	}
+
+
+	std::string EsterelPlanDispatcher::getActionNameWithoutTime(rosplan_dispatch_msgs::EsterelPlanNode node){
+		std::stringstream ss;
+
+		ss << node.action.name;
+
+		std::vector<diagnostic_msgs::KeyValue, std::allocator<diagnostic_msgs::KeyValue>> parameters = node.action.parameters;
+		for(diagnostic_msgs::KeyValue param: parameters){
+			ss << "#";
+			ss << param.value;
+		}
+
+		return ss.str();
+	}
+
+	void EsterelPlanDispatcher::fillProbabilitiesMap(std::string probabilities_file){
+		std::ifstream file;
+
+		// ROS_INFO("ISR: (%s) Opening file: %s", ros::this_node::getName().c_str(), probabilities_file.c_str());
+		file.open(probabilities_file);
+
+		bool entering_actions_part = false;
+		std::string line;
+
+		while(getline(file, line)){
+			// ROS_INFO("ISR: (%s) Line: %s", ros::this_node::getName().c_str(), line.c_str());
+			if(entering_actions_part){
+				int first_delimeter = line.find(" ");
+				std::string action_name = line.substr(0, first_delimeter);
+				double probability = atof(line.substr(first_delimeter+1, 5).c_str());
+				// ROS_INFO("ISR: (%s) Adding to actions_prob_map: %s %f", ros::this_node::getName().c_str(), action_name.c_str(), probability);
+				actions_prob_map.insert(std::pair<std::string, double>(action_name, probability));
+			}
+			else if(line == "-"){
+				// ROS_INFO("ISR: (%s) Entered actions part of file", ros::this_node::getName().c_str());
+				entering_actions_part = true;
+			}
+		}
+
+		file.close();
+		// printStringDoubleMap(actions_prob_map, "Actions probability map");
+	}
+
+
+
     /*
      * Loop through and publish planned actions
      */
@@ -142,6 +220,7 @@ namespace KCL_rosplan {
             for(std::vector<rosplan_dispatch_msgs::EsterelPlanNode>::const_iterator ci = current_plan.nodes.begin(); ci != current_plan.nodes.end(); ci++) {
                 //the main loop
                 rosplan_dispatch_msgs::EsterelPlanNode node = *ci;
+
                 // activate plan start edges
                 if(node.node_type == rosplan_dispatch_msgs::EsterelPlanNode::PLAN_START && !plan_started) {
 
@@ -169,7 +248,7 @@ namespace KCL_rosplan {
                 if (action_dispatched[node.action.action_id] && !action_completed[node.action.action_id]) {
                     finished_execution = false;
                 }
-                                
+
                 // check action edges
                 bool edges_activate_action = true;
                 std::vector<int>::iterator eit = node.edges_in.begin();
@@ -187,7 +266,7 @@ namespace KCL_rosplan {
                     // query KMS for condition edges
                     bool condition_activate_action = false;
                     if(edges_activate_action) {
-                        condition_activate_action = checkStartPreconditions(node.action);
+                        condition_activate_action = checkEndPreconditions(node.action);
                     }
 
                     // the state is unexpected
@@ -214,7 +293,6 @@ namespace KCL_rosplan {
                         state_changed = true;
                         action_dispatch_publisher.publish(node.action);
 
-
                         // deactivate incoming edges
                         std::vector<int>::const_iterator ci = node.edges_in.begin();
                         for(; ci != node.edges_in.end(); ci++) {
@@ -233,6 +311,14 @@ namespace KCL_rosplan {
                         usleep(10000);
 
                         perturbWorldState();
+                    }
+                    else{
+						ROS_INFO("ISR: (%s) Action is no longer applicable [%s]",
+								ros::this_node::getName().c_str(),
+								getFullActionName(node).c_str());
+						ROS_INFO("ISR: (%s) Must build a new plan", ros::this_node::getName().c_str());
+                        replan_requested = true;
+                        break;
                     }
                 }
 
@@ -295,54 +381,100 @@ namespace KCL_rosplan {
 
                     if(condition_activate_action) {
 
-                        // activate action
-                        action_dispatched[node.action.action_id] = true;
-                        action_received[node.action.action_id] = false;
-                        action_completed[node.action.action_id] = false;
+						double random_number = (double) rand()/RAND_MAX;
+						std::string full_action_name = getFullActionName(node);
+						std::string action_name_no_time = getActionNameWithoutTime(node);
 
-                        std::stringstream params_ss;
-                        std::vector<diagnostic_msgs::KeyValue, std::allocator<diagnostic_msgs::KeyValue>> action_params = node.action.parameters;
+						// ROS_INFO("ISR: (%s) Random number: %f", ros::this_node::getName().c_str(), random_number);
+						// ROS_INFO("ISR: (%s) Action success probability [%s]: %f", ros::this_node::getName().c_str(),
+						// 														  action_name_no_time.c_str(),
+						// 														  actions_prob_map[action_name_no_time]);
 
-                        for(diagnostic_msgs::KeyValue param: action_params){
-                            params_ss << param.value;
-                            params_ss << " ";
+						// If action failed due to perturbations
+						if(random_number>actions_prob_map[action_name_no_time]){
+							ROS_INFO("ISR: (%s) Dispatching action start failed due to perturbations [%s]",
+                                                                                    ros::this_node::getName().c_str(),
+                                                                                    full_action_name.c_str());
+							perturbWorldState();
+							state_changed = true;
+
+							// Increment action count
+							std_srvs::Trigger srv2;
+							if(action_counter_client_.call(srv2)){
+								// ROS_INFO("ISR: (%s) Successfully increased action count", ros::this_node::getName().c_str());
+							}
+							else{
+								// ROS_INFO("ISR: (%s) Failed to increase action count", ros::this_node::getName().c_str());	
+							}
+
+							break;
+						}
+                        else{
+                            // activate action
+                            action_dispatched[node.action.action_id] = true;
+                            action_received[node.action.action_id] = false;
+                            action_completed[node.action.action_id] = false;
+
+                            std::stringstream params_ss;
+                            std::vector<diagnostic_msgs::KeyValue, std::allocator<diagnostic_msgs::KeyValue>> action_params = node.action.parameters;
+
+                            for(diagnostic_msgs::KeyValue param: action_params){
+                                params_ss << param.value;
+                                params_ss << " ";
+                            }
+
+                            // dispatch action
+                            ROS_INFO("KCL: (%s) Dispatching action start [%s %s]",
+                                    ros::this_node::getName().c_str(),
+                                    node.action.name.c_str(),
+                                    params_ss.str().c_str());
+
+                            action_dispatch_publisher.publish(node.action);
+                            
+                            // record the dispatch time for action start node
+                            double NOW = ros::Time::now().toSec();    
+                            node_real_dispatch_time.insert (std::pair<int,double>(node.node_id, NOW));
+
+                            state_changed = true;
+
+                            // deactivate incoming edges
+                            std::vector<int>::const_iterator ci = node.edges_in.begin();
+                            for(; ci != node.edges_in.end(); ci++) {
+                                edge_active[*ci] = false;
+                            }
+
+                            // activate new edges
+                            ci = node.edges_out.begin();
+                            for(; ci != node.edges_out.end(); ci++) {
+                                edge_active[*ci] = true;
+                            }
+
+                            // Waits for the set time in microseconds
+                            // Wait so the print of rosplan_interface occurs
+                            // before the print of the state's perturbation
+                            usleep(10000);
                         }
-
-                        // dispatch action
-                        ROS_INFO("KCL: (%s) Dispatching action start [%s %s]",
-                                ros::this_node::getName().c_str(),
-                                node.action.name.c_str(),
-                                params_ss.str().c_str());
-
-                        action_dispatch_publisher.publish(node.action);
-                        
-                        // record the dispatch time for action start node
-                        double NOW = ros::Time::now().toSec();    
-                        node_real_dispatch_time.insert (std::pair<int,double>(node.node_id, NOW));
-
-                        state_changed = true;
-
-                        // deactivate incoming edges
-                        std::vector<int>::const_iterator ci = node.edges_in.begin();
-                        for(; ci != node.edges_in.end(); ci++) {
-                            edge_active[*ci] = false;
-                        }
-
-                        // activate new edges
-                        ci = node.edges_out.begin();
-                        for(; ci != node.edges_out.end(); ci++) {
-                            edge_active[*ci] = true;
-                        }
-
-                        // Waits for the set time in microseconds
-                        // Wait so the print of rosplan_interface occurs
-                        // before the print of the state's perturbation
-                        usleep(10000);
 
                         perturbWorldState();
                     }
+                    else{
+						ROS_INFO("ISR: (%s) Action is no longer applicable [%s]",
+								ros::this_node::getName().c_str(),
+								getFullActionName(node).c_str());
+						ROS_INFO("ISR: (%s) Must build a new plan", ros::this_node::getName().c_str());
+                        replan_requested = true;
+                        break;
+                    }
                 }
             
+                // Get action count
+                // std_srvs::Trigger srv3;
+                // if(get_action_count_client_.call(srv3)){
+                //     ROS_INFO("ISR: (%s) Current action count: %s", ros::this_node::getName().c_str(), srv3.response.message.c_str());
+                // }
+                // else{
+                //     ROS_INFO("ISR: (%s) Failed to get action count", ros::this_node::getName().c_str());	
+                // }
 
             } // end loop (action nodes)
 
@@ -363,7 +495,7 @@ namespace KCL_rosplan {
 
         ROS_INFO("KCL: (%s) Dispatch complete.", ros::this_node::getName().c_str());
 
-        reset();
+        // reset();
         return true;
     }
 

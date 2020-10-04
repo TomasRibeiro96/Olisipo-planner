@@ -47,6 +47,8 @@ namespace KCL_rosplan {
 
 		std::vector<std::string> actions_dispatched_;
 
+		std::map<std::string, std::map<std::string, double>> map_prob_effects_;
+
 	public:
 
 		bool startActionAlreadyExecuted(std::string action_name);
@@ -64,7 +66,12 @@ namespace KCL_rosplan {
 
 		void printDispatchedActions();
 
-		void fillProbabilitiesMap(std::string probabilities_file);
+		void fillEffectsProbabilitiesMap(std::string probabilities_file);
+
+		void addLineToEffectsProbabilityMap(std::string str);
+
+		void printEffectProbabilityMap();
+
 	};
 }
 #endif

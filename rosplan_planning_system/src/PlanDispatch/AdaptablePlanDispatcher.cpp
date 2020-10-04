@@ -441,10 +441,10 @@ namespace KCL_rosplan {
 						// 														  actions_prob_map[action_name_no_time]);
 
 						// If action failed due to perturbations
-						if(random_number<actions_prob_map[action_name_no_time]){
-							ROS_INFO("ISR: (%s) Action dispatch failed due to perturbations [%s]",
-																	ros::this_node::getName().c_str(),
-																	full_action_name.c_str());
+						if(random_number>actions_prob_map[action_name_no_time]){
+							ROS_INFO("ISR: (%s) Dispatching action start failed due to perturbations [%s]",
+                                                                                    ros::this_node::getName().c_str(),
+                                                                                    full_action_name.c_str());
 							perturbWorldState();
 							state_changed = true;
 
@@ -493,10 +493,9 @@ namespace KCL_rosplan {
 						}
 					}
 					else{
-						ROS_INFO("ISR: (%s) Action is no longer applicable [%i, %s]",
+						ROS_INFO("ISR: (%s) Action is no longer applicable [%s]",
 								ros::this_node::getName().c_str(),
-								node.action.action_id,
-								node.action.name.c_str());
+								getFullActionName(node).c_str());
 						ROS_INFO("ISR: (%s) Must build a new plan", ros::this_node::getName().c_str());
 						state_changed = true;
 						break;
@@ -546,10 +545,9 @@ namespace KCL_rosplan {
 						break;
 					}
 					else{
-						ROS_INFO("ISR: (%s) Action is no longer applicable [%i, %s]",
+						ROS_INFO("ISR: (%s) Action is no longer applicable [%s]",
 								ros::this_node::getName().c_str(),
-								node.action.action_id,
-								node.action.name.c_str());
+								getFullActionName(node).c_str());
 						ROS_INFO("ISR: (%s) Must build a new plan", ros::this_node::getName().c_str());
 						state_changed = true;
 						break;

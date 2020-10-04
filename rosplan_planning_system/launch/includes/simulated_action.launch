@@ -20,7 +20,7 @@
 		<param name="action_probability"	 value="$(arg action_probability)" />
 		<param name="action_dispatch_topic"  value="$(arg action_dispatch_topic)" />
 		<param name="action_feedback_topic"  value="$(arg action_feedback_topic)" />
-		<!-- <param name="probabilities_file" value="$(arg probabilities_file)"/> -->
+		<param name="probabilities_file" value="$(arg probabilities_file)"/>
 	</node>
 
 </launch>

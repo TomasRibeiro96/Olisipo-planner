@@ -1,5 +1,6 @@
 #include "rosplan_action_interface/RPActionInterface.h"
 #include <iostream>
+#include <fstream>
 #include <iterator>
 #include <map>
 
@@ -17,6 +18,10 @@ namespace KCL_rosplan {
 		// knowledge base services
 		std::string kb = "knowledge_base";
 		nh.getParam("knowledge_base", kb);
+
+		std::string probabilities_file;
+		nh.getParam("probabilities_file", probabilities_file);
+		fillEffectsProbabilitiesMap(probabilities_file);
 
 		// fetch action params
 		std::stringstream ss;
@@ -167,14 +172,75 @@ namespace KCL_rosplan {
 		return false;
 	}
 
+	void RPActionInterface::printEffectProbabilityMap(){
+		std::stringstream ss;
+		for (auto const& pair: map_prob_effects_) {
+			ss << "ACTION: " << pair.first << "\n";
+			for (auto const& pair_inside: pair.second) {
+				ss << "Effect: " << pair_inside.first << " | Probability: " << pair_inside.second << "\n";
+			}
+		}
+		ROS_INFO("ISR: (%s)\nEFFECTS PROBABILITY MAP: %s", ros::this_node::getName().c_str(), ss.str().c_str());
+	}
+
+	void RPActionInterface::addLineToEffectsProbabilityMap(std::string line){
+		// Example: go_maintain_machine#m1 0.50 machine_is_maintained%0.95
+		// First we get the action name 'go_maintain_machine'
+		int delimeter = line.find(" ");
+		std::string action_name = line.substr(0, delimeter);
+		// Then we discard the action probability part (' 0.50 ')
+		line = line.substr(delimeter+1);
+		delimeter = line.find(" ");
+		line = line.substr(delimeter+1);
+		
+		// Loop over line and add each effect to effect_prob_map
+		// In the example, we add {'machine_is_maintained': 0.95} to map
+		std::map<std::string, double> effect_prob_map;
+		bool continue_loop = true;
+		while(continue_loop){
+			delimeter = line.find(" ");
+			if(delimeter == -1){
+				continue_loop = false;
+			}
+			std::string name_prob = line.substr(0, delimeter);
+			line = line.substr(delimeter+1);
+			int delimeter_name = name_prob.find("%");
+			std::string name = name_prob.substr(0, delimeter_name);
+			double prob = atof(name_prob.substr(delimeter_name+1).c_str());
+			effect_prob_map.insert(std::pair<std::string, double>(name, prob));
+		}
+
+		map_prob_effects_.insert(std::pair<std::string, std::map<std::string, double>>(action_name, effect_prob_map));
+	}
+
+	void RPActionInterface::fillEffectsProbabilitiesMap(std::string probabilities_file){
+		std::ifstream file;
+
+		// ROS_INFO("ISR: (%s) Opening file: %s", ros::this_node::getName().c_str(), probabilities_file.c_str());
+		file.open(probabilities_file);
+
+		bool entering_actions_part = false;
+		std::string line;
+		while(getline(file, line)){
+			// ROS_INFO("ISR: (%s) Line: %s", ros::this_node::getName().c_str(), line.c_str());
+			if(entering_actions_part){
+				addLineToEffectsProbabilityMap(line);
+			}
+			else if(line == "-"){
+				// ROS_INFO("ISR: (%s) Entered actions part of file", ros::this_node::getName().c_str());
+				entering_actions_part = true;
+			}
+		}
+		file.close();
+		// printEffectProbabilityMap();
+	}
+
 	std::string RPActionInterface::getFullActionName(const rosplan_dispatch_msgs::ActionDispatch::ConstPtr& msg){
 		std::stringstream full_action_name_ss;
 		full_action_name_ss << msg->name;
 
-		std::vector<diagnostic_msgs::KeyValue, std::allocator<diagnostic_msgs::KeyValue>> action_params = msg->parameters;
-
-		for(diagnostic_msgs::KeyValue param: action_params){
-			full_action_name_ss << " ";
+		for(diagnostic_msgs::KeyValue param: msg->parameters){
+			full_action_name_ss << "#";
 			full_action_name_ss << param.value;
 		}
 
@@ -242,16 +308,31 @@ namespace KCL_rosplan {
 
 				rosplan_knowledge_msgs::KnowledgeItem item;
 				item.knowledge_type = rosplan_knowledge_msgs::KnowledgeItem::FACT;
-				item.attribute_name = op.at_start_del_effects[i].name;
-				item.values.clear();
-				diagnostic_msgs::KeyValue pair;
-				for(size_t j=0; j<op.at_start_del_effects[i].typed_parameters.size(); j++) {
-					pair.key = predicates[op.at_start_del_effects[i].name].typed_parameters[j].key;
-					pair.value = boundParameters[op.at_start_del_effects[i].typed_parameters[j].key];
-					item.values.push_back(pair);
+				std::string attribute_name = op.at_start_del_effects[i].name;
+				item.attribute_name = attribute_name;
+
+				double number = (double) rand()/RAND_MAX;
+				// ROS_INFO("ISR: (%s) Random number: %f | Effect probability: %f",
+				// 										ros::this_node::getName().c_str(),
+				// 										number, map_prob_effects_[full_action_name][attribute_name]);
+
+				if(number < map_prob_effects_[full_action_name][attribute_name]){
+					item.values.clear();
+					diagnostic_msgs::KeyValue pair;
+					for(size_t j=0; j<op.at_start_del_effects[i].typed_parameters.size(); j++) {
+						pair.key = predicates[op.at_start_del_effects[i].name].typed_parameters[j].key;
+						pair.value = boundParameters[op.at_start_del_effects[i].typed_parameters[j].key];
+						item.values.push_back(pair);
+					}
+					updatePredSrv.request.knowledge.push_back(item);
+					updatePredSrv.request.update_type.push_back(rosplan_knowledge_msgs::KnowledgeUpdateService::Request::REMOVE_KNOWLEDGE);
 				}
-				updatePredSrv.request.knowledge.push_back(item);
-				updatePredSrv.request.update_type.push_back(rosplan_knowledge_msgs::KnowledgeUpdateService::Request::REMOVE_KNOWLEDGE);
+				else{
+					ROS_INFO("ISR: (%s) Did NOT apply start_del_effect %s of action %s due to perturbations",
+																		ros::this_node::getName().c_str(),
+																		attribute_name.c_str(),
+																		full_action_name.c_str());
+				}
 			}
 
 			// simple START add effects
@@ -262,16 +343,32 @@ namespace KCL_rosplan {
 
 				rosplan_knowledge_msgs::KnowledgeItem item;
 				item.knowledge_type = rosplan_knowledge_msgs::KnowledgeItem::FACT;
-				item.attribute_name = op.at_start_add_effects[i].name;
-				item.values.clear();
-				diagnostic_msgs::KeyValue pair;
-				for(size_t j=0; j<op.at_start_add_effects[i].typed_parameters.size(); j++) {
-					pair.key = predicates[op.at_start_add_effects[i].name].typed_parameters[j].key;
-					pair.value = boundParameters[op.at_start_add_effects[i].typed_parameters[j].key];
-					item.values.push_back(pair);
+				std::string attribute_name = op.at_start_add_effects[i].name;
+				item.attribute_name = attribute_name;
+
+				double number = (double) rand()/RAND_MAX;
+
+				// ROS_INFO("ISR: (%s) Random number: %f | Effect probability: %f",
+				// 										ros::this_node::getName().c_str(),
+				// 										number, map_prob_effects_[full_action_name][attribute_name]);
+
+				if(number < map_prob_effects_[full_action_name][attribute_name]){
+					item.values.clear();
+					diagnostic_msgs::KeyValue pair;
+					for(size_t j=0; j<op.at_start_add_effects[i].typed_parameters.size(); j++) {
+						pair.key = predicates[op.at_start_add_effects[i].name].typed_parameters[j].key;
+						pair.value = boundParameters[op.at_start_add_effects[i].typed_parameters[j].key];
+						item.values.push_back(pair);
+					}
+					updatePredSrv.request.knowledge.push_back(item);
+					updatePredSrv.request.update_type.push_back(rosplan_knowledge_msgs::KnowledgeUpdateService::Request::ADD_KNOWLEDGE);
 				}
-				updatePredSrv.request.knowledge.push_back(item);
-				updatePredSrv.request.update_type.push_back(rosplan_knowledge_msgs::KnowledgeUpdateService::Request::ADD_KNOWLEDGE);
+				else{
+					ROS_INFO("ISR: (%s) Did NOT apply start_add_effect %s of action %s due to perturbations",
+																		ros::this_node::getName().c_str(),
+																		attribute_name.c_str(),
+																		full_action_name.c_str());
+				}
 			}
 
 			if(updatePredSrv.request.knowledge.size()>0 && !update_knowledge_client.call(updatePredSrv))
@@ -288,7 +385,6 @@ namespace KCL_rosplan {
 		else{
 
 			// ROS_INFO("ISR: (%s) Connecting action to at_end effects", params.name.c_str());
-			// ROS_INFO("KCL: (%s) action completed successfully", params.name.c_str());
 
 			// update knowledge base
 			rosplan_knowledge_msgs::KnowledgeUpdateServiceArray updatePredSrv;
@@ -303,16 +399,33 @@ namespace KCL_rosplan {
 
 				rosplan_knowledge_msgs::KnowledgeItem item;
 				item.knowledge_type = rosplan_knowledge_msgs::KnowledgeItem::FACT;
-				item.attribute_name = op.at_end_del_effects[i].name;
-				item.values.clear();
-				diagnostic_msgs::KeyValue pair;
-				for(size_t j=0; j<op.at_end_del_effects[i].typed_parameters.size(); j++) {
-					pair.key = predicates[op.at_end_del_effects[i].name].typed_parameters[j].key;
-					pair.value = boundParameters[op.at_end_del_effects[i].typed_parameters[j].key];
-					item.values.push_back(pair);
+				std::string attribute_name = op.at_end_del_effects[i].name;
+				item.attribute_name = attribute_name;
+
+				double number = (double) rand()/RAND_MAX;
+
+				// ROS_INFO("ISR: (%s) Random number: %f | Effect probability: %f",
+				// 										ros::this_node::getName().c_str(),
+				// 										number, map_prob_effects_[full_action_name][attribute_name]);
+														
+				if(number < map_prob_effects_[full_action_name][attribute_name]){
+					item.values.clear();
+					diagnostic_msgs::KeyValue pair;
+					for(size_t j=0; j<op.at_end_del_effects[i].typed_parameters.size(); j++) {
+						pair.key = predicates[op.at_end_del_effects[i].name].typed_parameters[j].key;
+						pair.value = boundParameters[op.at_end_del_effects[i].typed_parameters[j].key];
+						item.values.push_back(pair);
+					}
+					updatePredSrv.request.knowledge.push_back(item);
+					updatePredSrv.request.update_type.push_back(rosplan_knowledge_msgs::KnowledgeUpdateService::Request::REMOVE_KNOWLEDGE);
 				}
-				updatePredSrv.request.knowledge.push_back(item);
-				updatePredSrv.request.update_type.push_back(rosplan_knowledge_msgs::KnowledgeUpdateService::Request::REMOVE_KNOWLEDGE);
+				else{
+					ROS_INFO("ISR: (%s) Did NOT apply end_del_effect %s of action %s due to perturbations",
+																		ros::this_node::getName().c_str(),
+																		attribute_name.c_str(),
+																		full_action_name.c_str());
+				}
+
 			}
 
 			// simple END add effects
@@ -323,16 +436,32 @@ namespace KCL_rosplan {
 
 				rosplan_knowledge_msgs::KnowledgeItem item;
 				item.knowledge_type = rosplan_knowledge_msgs::KnowledgeItem::FACT;
-				item.attribute_name = op.at_end_add_effects[i].name;
-				item.values.clear();
-				diagnostic_msgs::KeyValue pair;
-				for(size_t j=0; j<op.at_end_add_effects[i].typed_parameters.size(); j++) {
-					pair.key = predicates[op.at_end_add_effects[i].name].typed_parameters[j].key;
-					pair.value = boundParameters[op.at_end_add_effects[i].typed_parameters[j].key];
-					item.values.push_back(pair);
+				std::string attribute_name = op.at_end_add_effects[i].name;
+				item.attribute_name = attribute_name;
+
+				double number = (double) rand()/RAND_MAX;
+
+				// ROS_INFO("ISR: (%s) Random number: %f | Effect probability: %f",
+				// 										ros::this_node::getName().c_str(),
+				// 										number, map_prob_effects_[full_action_name][attribute_name]);
+														
+				if(number < map_prob_effects_[full_action_name][attribute_name]){
+					item.values.clear();
+					diagnostic_msgs::KeyValue pair;
+					for(size_t j=0; j<op.at_end_add_effects[i].typed_parameters.size(); j++) {
+						pair.key = predicates[op.at_end_add_effects[i].name].typed_parameters[j].key;
+						pair.value = boundParameters[op.at_end_add_effects[i].typed_parameters[j].key];
+						item.values.push_back(pair);
+					}
+					updatePredSrv.request.knowledge.push_back(item);
+					updatePredSrv.request.update_type.push_back(rosplan_knowledge_msgs::KnowledgeUpdateService::Request::ADD_KNOWLEDGE);
 				}
-				updatePredSrv.request.knowledge.push_back(item);
-				updatePredSrv.request.update_type.push_back(rosplan_knowledge_msgs::KnowledgeUpdateService::Request::ADD_KNOWLEDGE);
+				else{
+					ROS_INFO("ISR: (%s) Did NOT apply end_add_effect %s of action %s due to perturbations",
+																		ros::this_node::getName().c_str(),
+																		attribute_name.c_str(),
+																		full_action_name.c_str());
+				}
 			}
 
 			if(updatePredSrv.request.knowledge.size()>0 && !update_knowledge_client.call(updatePredSrv))

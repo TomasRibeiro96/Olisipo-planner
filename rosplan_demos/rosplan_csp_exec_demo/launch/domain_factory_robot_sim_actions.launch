@@ -7,7 +7,7 @@
     <include file="$(find rosplan_planning_system)/launch/includes/simulated_action.launch" >
         <arg name="pddl_action_name" value="go_maintain_machine" />
         <arg name="action_duration" value="1" />
-        <!-- <arg name="probabilities_file" value="$(arg probabilities_file)"/> -->
+        <arg name="probabilities_file" value="$(arg probabilities_file)"/>
     </include>
 
 </launch>

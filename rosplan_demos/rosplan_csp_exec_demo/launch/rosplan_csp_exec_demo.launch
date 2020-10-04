@@ -3,7 +3,7 @@
 
 
     <!-- select between normal or smart plan dispatcher -->
-    <arg name="adaptable_plan_dispatcher_required" default="true" />
+    <arg name="adaptable_plan_dispatcher_required" default="false" />
     
     <!-- FACTORY ROBOT -->
     <arg name="category" default="factory_robot_problems" />
@@ -142,7 +142,7 @@
 
     <!-- simulated actions -->
     <include file="$(find rosplan_csp_exec_demo)/launch/$(arg domain)_sim_actions.launch" >
-        <!-- <arg name="probabilities_file" value="$(arg probabilities_path)$(arg probabilities)"/> -->
+        <arg name="probabilities_file" value="$(arg probabilities_path)$(arg probabilities)"/>
     </include>
 
     <!-- Perturb world state -->

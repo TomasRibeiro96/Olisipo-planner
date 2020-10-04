@@ -13,6 +13,7 @@
 #include "rosplan_knowledge_msgs/KnowledgeItem.h"
 #include "rosplan_dispatch_msgs/EsterelPlan.h"
 #include "rosplan_knowledge_msgs/PerturbStateService.h"
+#include <std_srvs/Trigger.h>
 
 #include "std_msgs/String.h"
 
@@ -71,6 +72,12 @@ namespace KCL_rosplan
 
 		ros::ServiceClient perturb_client_;
 
+		ros::ServiceClient action_counter_client_;
+
+		std::map<std::string, double> actions_prob_map;
+
+		ros::ServiceClient get_action_count_client_;
+
 	public:
 
 		/* constructor */
@@ -88,6 +95,12 @@ namespace KCL_rosplan
 		void feedbackCallback(const rosplan_dispatch_msgs::ActionFeedback::ConstPtr& msg) override;
 
 		void perturbWorldState();
+
+		std::string getActionNameWithoutTime(rosplan_dispatch_msgs::EsterelPlanNode node);
+
+		std::string getFullActionName(rosplan_dispatch_msgs::EsterelPlanNode node);
+
+		void fillProbabilitiesMap(std::string probabilities_file);
 	};
 }
 
