@@ -26,7 +26,6 @@ function call_exec_experiment_with_wait(){
             PORT=11${i}11
             export ROS_MASTER_URI=http://localhost:$PORT # roscore -p $PORT not needed!
             # ./procs[${i}] &
-            echo "rosnode kill -a"
             echo "roslaunch rosplan_csp_exec_demo rosplan_csp_exec_demo.launch adaptable_plan_dispatcher_required:=$1 category:=$2 problem:=$3 domain:=$4 probabilities:=$5"
             timeout 600 roslaunch rosplan_csp_exec_demo rosplan_csp_exec_demo.launch adaptable_plan_dispatcher_required:=$1 category:=$2 problem:=$3 domain:=$4 probabilities:=$5&
             # run processes and store pids in array

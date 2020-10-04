@@ -101,6 +101,8 @@ namespace KCL_rosplan
 		std::string getFullActionName(rosplan_dispatch_msgs::EsterelPlanNode node);
 
 		void fillProbabilitiesMap(std::string probabilities_file);
+
+		void printStringDoubleMap(std::map<std::string,double> m, std::string msg);
 	};
 }
 

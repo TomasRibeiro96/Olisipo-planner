@@ -114,7 +114,6 @@ namespace KCL_rosplan {
         }
     }
 
-
 	std::string EsterelPlanDispatcher::getFullActionName(rosplan_dispatch_msgs::EsterelPlanNode node){
 		std::stringstream ss;
 
@@ -135,7 +134,6 @@ namespace KCL_rosplan {
 
 		return ss.str();
 	}
-
 
 	std::string EsterelPlanDispatcher::getActionNameWithoutTime(rosplan_dispatch_msgs::EsterelPlanNode node){
 		std::stringstream ss;
@@ -177,6 +175,14 @@ namespace KCL_rosplan {
 
 		file.close();
 		// printStringDoubleMap(actions_prob_map, "Actions probability map");
+	}
+
+	void EsterelPlanDispatcher::printStringDoubleMap(std::map<std::string,double> m, std::string msg){
+		std::stringstream ss;
+		for (auto const& pair: m) {
+			ss << "\n{" << pair.first.c_str() << ": " << pair.second << "}";
+		}
+		ROS_INFO("ISR: (%s)\n%s: %s", ros::this_node::getName().c_str(), msg.c_str(), ss.str().c_str());
 	}
 
 
