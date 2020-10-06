@@ -292,14 +292,6 @@ namespace KCL_rosplan {
 		ROS_INFO("ISR: (%s)\n%s: %s", ros::this_node::getName().c_str(), msg.c_str(), ss.str().c_str());
 	}
 
-	void AdaptablePlanDispatcher::registerError(){
-		std::ofstream outfile;
-		ROS_INFO("ISR: (%s) Registering error", ros::this_node::getName().c_str());
-		outfile.open("/home/tomas/ros_ws/src/ROSPlan/src/rosplan/number_errors.txt", std::ios_base::app); // append instead of overwrite
-		outfile << "1";
-		outfile.close(); 
-	}
-
 	/*-----------------*/
 	/* action dispatch */
 	/*-----------------*/
@@ -595,7 +587,6 @@ namespace KCL_rosplan {
 				// printVectorInts(actions_executing, "Sending actions executing");
                 if(!gen_alternatives_client.call(srv)) {
                     ROS_ERROR("KCL: (%s) could not call the generate alternatives service.", ros::this_node::getName().c_str());
-					registerError();
                     return false;
                 }
                 replan_requested = srv.response.replan_needed;

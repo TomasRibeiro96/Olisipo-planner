@@ -109,8 +109,6 @@ namespace KCL_rosplan
 
 		void fillProbabilitiesMap(std::string probabilities_file);
 
-		void registerError();
-
 		void printStringDoubleMap(std::map<std::string,double> m, std::string msg);
 	};
 }

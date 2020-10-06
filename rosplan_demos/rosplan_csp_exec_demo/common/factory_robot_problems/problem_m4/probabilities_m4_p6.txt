@@ -1,0 +1,13 @@
+machine_is_maintained#m1 0.02 0.05
+machine_is_maintained#m2 0.02 0.05
+machine_is_maintained#m3 0.02 0.05
+machine_is_maintained#m4 0.02 0.05
+machine_is_working#m1 0.02 0.06
+machine_is_working#m2 0.02 0.12
+machine_is_working#m3 0.02 0.18
+machine_is_working#m4 0.02 0.24
+-
+go_maintain_machine#m1 0.70 machine_is_maintained%0.80
+go_maintain_machine#m2 0.70 machine_is_maintained%0.80
+go_maintain_machine#m3 0.70 machine_is_maintained%0.80
+go_maintain_machine#m4 0.70 machine_is_maintained%0.80

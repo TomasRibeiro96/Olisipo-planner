@@ -23,31 +23,19 @@ def run():
         print 'NOT using adaptable plan dispatcher'
 
     # get execution type from param server
-    execution_type = rospy.get_param('~execution_type', 'exec_type_not_set_')
-
-    free_or_non_free = None
-    if execution_type == 'iros_problems_free':
-        free_or_non_free = 'free_'
-    elif execution_type == 'iros_problems_deadlines':
-        free_or_non_free = 'non_free_'
-
-    # get execution type from param server
     problem_name = rospy.get_param('~problem_name', 'problem_name_not_set_')
 
-    # Convert 'probabilities_m3_p1.txt' to 'm3_p1
-    probability_file = rospy.get_param('~probabilities_file').split('ties_')[1].split('.')[0]
+    # Convert 'probabilities_m3_p1.txt' to 'p1'
+    probability_file = rospy.get_param('~probabilities_file').split('.')[0][-2:]
 
     # rospy.loginfo('ISR: Probability file: ' + probability_file)
 
     # for logging purposes, write results of the experiment to a file
     # ros_tcp_port = os.environ['ROS_MASTER_URI'].replace('http://localhost:', '')
+    log_file_path = '/home/tomas/ros_ws/src/ROSPlan/src/rosplan/factory_robot-results/simple_factory_robot/' + problem_name + '/'
     if adaptable_plan_dispatcher_required:
-        # log_file = open('exp_adaptable_' + free_or_non_free + problem_name + '_' + ros_tcp_port + '_n' + '.csv','w')
-        log_file_path = '/home/tomas/ros_ws/src/ROSPlan/src/rosplan/factory_robot-results/'
         log_file = open(log_file_path + 'exp_adaptable-' + problem_name + '-' + probability_file + '.csv','a')
     else:
-        # log_file = open('exp_non_adaptable_' + free_or_non_free + problem_name + '_' + ros_tcp_port + '_n' + '.csv','w')
-        log_file_path = '/home/tomas/ros_ws/src/ROSPlan/src/rosplan/factory_robot-results/'
         log_file = open(log_file_path + 'exp_esterel-' + problem_name + '-' + probability_file + '.csv','a')
 
 
