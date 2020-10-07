@@ -33,7 +33,7 @@ declare -a number_machines=${number_machines_vec[0]}
 
 declare -a number_runs=$((1))
 declare -a exp_count=$((0))
-declare -a total_count=$((2*7*1))
+declare -a total_count=$((2*7*$number_runs))
 
 
 #### With esterel dispatcher ####
