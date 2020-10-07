@@ -125,9 +125,9 @@ namespace KCL_rosplan {
 			problem_name = problem_path;
 		}
 
-		ROS_INFO("KCL: (%s) (%s) Generating problem file.", ros::this_node::getName().c_str(), problem_name.c_str());
+		// ROS_INFO("KCL: (%s) (%s) Generating problem file.", ros::this_node::getName().c_str(), problem_name.c_str());
 		problem_generator->generateProblemFile(problem_path);
-		ROS_INFO("KCL: (%s) (%s) The problem was generated.", ros::this_node::getName().c_str(), problem_name.c_str());
+		// ROS_INFO("KCL: (%s) (%s) The problem was generated.", ros::this_node::getName().c_str(), problem_name.c_str());
 
 		// publish problem
 		std::ifstream problemIn(problem_path.c_str());
@@ -158,7 +158,7 @@ namespace KCL_rosplan {
 		ros::ServiceServer service1 = nh.advertiseService("problem_generation_server", &KCL_rosplan::ProblemInterface::runProblemServerDefault, &ProblemInterface);
 		ros::ServiceServer service2 = nh.advertiseService("problem_generation_server_params", &KCL_rosplan::ProblemInterface::runProblemServerParams, &ProblemInterface);
 
-		ROS_INFO("KCL: (%s) Ready to receive", ros::this_node::getName().c_str());
+		// ROS_INFO("KCL: (%s) Ready to receive", ros::this_node::getName().c_str());
 		ros::spin();
 
 		return 0;

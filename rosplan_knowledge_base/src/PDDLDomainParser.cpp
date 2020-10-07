@@ -24,7 +24,7 @@ namespace KCL_rosplan {
 		domain_parsed = true;
 
 		std::string domainFileName = (domainPath);
-		ROS_INFO("KCL: (%s) Parsing domain: %s.", ros::this_node::getName().c_str(), domainFileName.c_str());
+		// ROS_INFO("KCL: (%s) Parsing domain: %s.", ros::this_node::getName().c_str(), domainFileName.c_str());
 
 		// save filename for VAL
 		std::vector<char> writable(domainFileName.begin(), domainFileName.end());

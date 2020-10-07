@@ -176,8 +176,8 @@ namespace KCL_rosplan {
         ros::Duration(0.5).sleep();
         ippcserver.end_session();
 
-        ROS_INFO("KCL: (%s) Dispatch complete.", ros::this_node::getName().c_str());
-        ROS_INFO("KCL: (%s) Total planning time: %f seconds", ros::this_node::getName().c_str(), total_planning_time.toSec());
+        // ROS_INFO("KCL: (%s) Dispatch complete.", ros::this_node::getName().c_str());
+        // ROS_INFO("KCL: (%s) Total planning time: %f seconds", ros::this_node::getName().c_str(), total_planning_time.toSec());
         return true;
     }
 
@@ -192,7 +192,7 @@ namespace KCL_rosplan {
     void OnlinePlanDispatcher::feedbackCallback(const rosplan_dispatch_msgs::ActionFeedback::ConstPtr& msg) {
 
         // create error if the action is unrecognised
-        ROS_INFO("KCL: (%s) Feedback received [%i, %s]", ros::this_node::getName().c_str(), msg->action_id, msg->status.c_str());
+        // ROS_INFO("KCL: (%s) Feedback received [%i, %s]", ros::this_node::getName().c_str(), msg->action_id, msg->status.c_str());
         if(current_action != (unsigned int)msg->action_id)
             ROS_ERROR("KCL: (%s) Unexpected action ID: %d; current action: %d", ros::this_node::getName().c_str(), msg->action_id, current_action);
 
@@ -234,12 +234,12 @@ namespace KCL_rosplan {
         } else {
 
             // dispatch action
-            ROS_INFO("KCL: (%s) Dispatching action [%i, %s, %f, %f]",
-                     ros::this_node::getName().c_str(),
-                     current_action_msg.action_id,
-                     current_action_msg.name.c_str(),
-                     (current_action_msg.dispatch_time + planStartTime - missionStartTime),
-                     current_action_msg.duration);
+            // ROS_INFO("KCL: (%s) Dispatching action [%i, %s, %f, %f]",
+            //          ros::this_node::getName().c_str(),
+            //          current_action_msg.action_id,
+            //          current_action_msg.name.c_str(),
+            //          (current_action_msg.dispatch_time + planStartTime - missionStartTime),
+            //          current_action_msg.duration);
 
             action_dispatch_publisher.publish(current_action_msg);
             // publish feedback (action dispatched)
@@ -323,7 +323,7 @@ int main(int argc, char **argv) {
     nh.getParam("action_feedback_topic", feedbackTopic);
     ros::Subscriber feedback_sub = nh.subscribe(feedbackTopic, 1, &KCL_rosplan::OnlinePlanDispatcher::feedbackCallback, &opd);
 
-    ROS_INFO("KCL: (%s) Ready to receive", ros::this_node::getName().c_str());
+    // ROS_INFO("KCL: (%s) Ready to receive", ros::this_node::getName().c_str());
     ros::spin();
 
     return 0;

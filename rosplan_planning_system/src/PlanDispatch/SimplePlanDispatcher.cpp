@@ -37,7 +37,7 @@ namespace KCL_rosplan {
 	/*-------------------*/
 
 	void SimplePlanDispatcher::planCallback(const rosplan_dispatch_msgs::CompletePlan plan) {
-		ROS_INFO("KCL: (%s) Plan received.", ros::this_node::getName().c_str());
+		// ROS_INFO("KCL: (%s) Plan received.", ros::this_node::getName().c_str());
 		plan_received = true;
 		mission_start_time = ros::WallTime::now().toSec();
 		current_plan = plan;
@@ -131,7 +131,7 @@ namespace KCL_rosplan {
 			if(replan_requested) return false;
 		}
 
-		ROS_INFO("KCL: (%s) Dispatch complete.", ros::this_node::getName().c_str());
+		// ROS_INFO("KCL: (%s) Dispatch complete.", ros::this_node::getName().c_str());
 		return true;
 	}
 

@@ -111,7 +111,7 @@ namespace KCL_rosplan {
 	void AdaptablePlanDispatcher::perturbWorldState(){
 		//// Perturb state
 		rosplan_knowledge_msgs::PerturbStateService srv;
-		ROS_INFO("ISR: (%s) Perturbing world state", ros::this_node::getName().c_str());
+		// ROS_INFO("ISR: (%s) Perturbing world state", ros::this_node::getName().c_str());
 		if(perturb_client_.call(srv)){
 			if(srv.response.success){
 				// ROS_INFO("ISR: (%s) Successfully perturbed state", ros::this_node::getName().c_str());
@@ -301,7 +301,7 @@ namespace KCL_rosplan {
 	 */
 	bool AdaptablePlanDispatcher::dispatchPlan(double missionStartTime, double planStartTime) {
 
-		ROS_INFO("KCL: (%s) Dispatching plan.", ros::this_node::getName().c_str());
+		// ROS_INFO("KCL: (%s) Dispatching plan.", ros::this_node::getName().c_str());
 
 		mission_start_time = ros::WallTime::now().toSec();
 
@@ -434,9 +434,9 @@ namespace KCL_rosplan {
 
 						// If action failed due to perturbations
 						if(random_number>actions_prob_map[action_name_no_time]){
-							ROS_INFO("ISR: (%s) Dispatching action start failed due to perturbations [%s]",
-                                                                                    ros::this_node::getName().c_str(),
-                                                                                    full_action_name.c_str());
+							// ROS_INFO("ISR: (%s) Dispatching action start failed due to perturbations [%s]",
+                            //                                                         ros::this_node::getName().c_str(),
+                            //                                                         full_action_name.c_str());
 							perturbWorldState();
 							state_changed = true;
 
@@ -456,7 +456,7 @@ namespace KCL_rosplan {
 							action_received[node.action.action_id] = false;
 
 							// dispatch action start
-							ROS_INFO("KCL: (%s) Dispatching action start [%s]", ros::this_node::getName().c_str(), full_action_name.c_str());
+							// ROS_INFO("KCL: (%s) Dispatching action start [%s]", ros::this_node::getName().c_str(), full_action_name.c_str());
 
 							action_dispatch_publisher.publish(node.action);
 							actions_executing.push_back(node.node_id);
@@ -485,10 +485,10 @@ namespace KCL_rosplan {
 						}
 					}
 					else{
-						ROS_INFO("ISR: (%s) Action is no longer applicable [%s]",
-								ros::this_node::getName().c_str(),
-								getFullActionName(node).c_str());
-						ROS_INFO("ISR: (%s) Must build a new plan", ros::this_node::getName().c_str());
+						// ROS_INFO("ISR: (%s) Action is no longer applicable [%s]",
+						// 		ros::this_node::getName().c_str(),
+						// 		getFullActionName(node).c_str());
+						// ROS_INFO("ISR: (%s) Must build a new plan", ros::this_node::getName().c_str());
 						state_changed = true;
 						break;
 						// continue;
@@ -508,7 +508,7 @@ namespace KCL_rosplan {
 					if(condition_activate_action) {
 
 						// dispatch action end
-						ROS_INFO("KCL: (%s) Dispatching action end [%s]", ros::this_node::getName().c_str(), getFullActionName(node).c_str());
+						// ROS_INFO("KCL: (%s) Dispatching action end [%s]", ros::this_node::getName().c_str(), getFullActionName(node).c_str());
 
 						finished_execution = false;
 						state_changed = true;
@@ -537,10 +537,10 @@ namespace KCL_rosplan {
 						break;
 					}
 					else{
-						ROS_INFO("ISR: (%s) Action is no longer applicable [%s]",
-								ros::this_node::getName().c_str(),
-								getFullActionName(node).c_str());
-						ROS_INFO("ISR: (%s) Must build a new plan", ros::this_node::getName().c_str());
+						// ROS_INFO("ISR: (%s) Action is no longer applicable [%s]",
+						// 		ros::this_node::getName().c_str(),
+						// 		getFullActionName(node).c_str());
+						// ROS_INFO("ISR: (%s) Must build a new plan", ros::this_node::getName().c_str());
 						state_changed = true;
 						break;
 						// continue;
@@ -556,12 +556,12 @@ namespace KCL_rosplan {
 			// The total number of actions dispatched must be
 			// pair, because each action has a start and end
 			if(goalAchieved() && (number_actions_dispatched%2 == 0)){
-				ROS_INFO("KCL: (%s) Goal is achieved", ros::this_node::getName().c_str());
+				// ROS_INFO("KCL: (%s) Goal is achieved", ros::this_node::getName().c_str());
 				finished_execution = true;
 			}
 			else if(goalAchieved()){
-				ROS_INFO("ISR: (%s) Goal is achieved but must finish actions first", ros::this_node::getName().c_str());
-                ROS_INFO("KCL: (%s) Calling the alternatives generator.", ros::this_node::getName().c_str());
+				// ROS_INFO("ISR: (%s) Goal is achieved but must finish actions first", ros::this_node::getName().c_str());
+                // ROS_INFO("KCL: (%s) Calling the alternatives generator.", ros::this_node::getName().c_str());
                 rosplan_dispatch_msgs::ExecAlternatives srv;
                 srv.request.actions_executing = actions_executing;
                 if(!gen_alternatives_client.call(srv)) {
@@ -569,7 +569,7 @@ namespace KCL_rosplan {
                     return false;
                 }
                 replan_requested = srv.response.replan_needed;
-				ROS_INFO("ISR: (%s) Next action: %s", ros::this_node::getName().c_str(), srv.response.next_action.c_str());
+				// ROS_INFO("ISR: (%s) Next action: %s", ros::this_node::getName().c_str(), srv.response.next_action.c_str());
 				makeOnlyNextActionApplicable(srv.response.next_action);
     			plan_received = false;
 		        while (ros::ok() && !plan_received && !replan_requested) {
@@ -577,11 +577,11 @@ namespace KCL_rosplan {
                     loop_rate.sleep();
                 }
                 
-				ROS_INFO("KCL: (%s) Restarting the dispatch loop.", ros::this_node::getName().c_str());
+				// ROS_INFO("KCL: (%s) Restarting the dispatch loop.", ros::this_node::getName().c_str());
 			}
 			else if(state_changed) {
-				ROS_INFO("KCL: (%s) Goal is not achieved", ros::this_node::getName().c_str());
-                ROS_INFO("KCL: (%s) Calling the alternatives generator.", ros::this_node::getName().c_str());
+				// ROS_INFO("KCL: (%s) Goal is not achieved", ros::this_node::getName().c_str());
+                // ROS_INFO("KCL: (%s) Calling the alternatives generator.", ros::this_node::getName().c_str());
                 rosplan_dispatch_msgs::ExecAlternatives srv;
                 srv.request.actions_executing = actions_executing;
 				// printVectorInts(actions_executing, "Sending actions executing");
@@ -598,18 +598,18 @@ namespace KCL_rosplan {
                     loop_rate.sleep();
                 }
                 
-				ROS_INFO("KCL: (%s) Restarting the dispatch loop.", ros::this_node::getName().c_str());
+				// ROS_INFO("KCL: (%s) Restarting the dispatch loop.", ros::this_node::getName().c_str());
             }
 
 			// cancel dispatch on replan
 			if(replan_requested) {
-				ROS_INFO("KCL: (%s) Replan requested.", ros::this_node::getName().c_str());
+				// ROS_INFO("KCL: (%s) Replan requested.", ros::this_node::getName().c_str());
 				reset();
 				return false;
 			}
 		}
 
-		ROS_INFO("KCL: (%s) Dispatch complete.", ros::this_node::getName().c_str());
+		// ROS_INFO("KCL: (%s) Dispatch complete.", ros::this_node::getName().c_str());
 
 		reset();
 		return true;
@@ -637,7 +637,7 @@ namespace KCL_rosplan {
 	 */
 	void AdaptablePlanDispatcher::feedbackCallback(const rosplan_dispatch_msgs::ActionFeedback::ConstPtr& msg) {
 
-		ROS_INFO("KCL: (%s) Feedback received [%i, %s]", ros::this_node::getName().c_str(), msg->action_id, msg->status.c_str());
+		// ROS_INFO("KCL: (%s) Feedback received [%i, %s]", ros::this_node::getName().c_str(), msg->action_id, msg->status.c_str());
 
 		// action enabled
 		if(!action_received[msg->action_id] && (0 == msg->status.compare("action enabled"))) {
@@ -791,7 +791,7 @@ namespace KCL_rosplan {
 		nh.getParam("action_feedback_topic", feedbackTopic);
 		ros::Subscriber feedback_sub = nh.subscribe(feedbackTopic, 1000, &KCL_rosplan::AdaptablePlanDispatcher::feedbackCallback, &epd);
 
-		ROS_INFO("KCL: (%s) Ready to receive", ros::this_node::getName().c_str());
+		// ROS_INFO("KCL: (%s) Ready to receive", ros::this_node::getName().c_str());
 		ros::spin();
 
 		return 0;

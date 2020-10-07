@@ -60,10 +60,10 @@ namespace KCL_rosplan {
             if(node.node_type == rosplan_dispatch_msgs::EsterelPlanNode::ACTION_START && action_dispatched[node.action.action_id] && !action_completed[node.action.action_id]) {
 
                 // try to preempt action
-                ROS_INFO("KCL: (%s) Preempting action [%i, %s]",
-                        ros::this_node::getName().c_str(),
-                        node.action.action_id,
-                        node.action.name.c_str());
+                // ROS_INFO("KCL: (%s) Preempting action [%i, %s]",
+                //         ros::this_node::getName().c_str(),
+                //         node.action.action_id,
+                //         node.action.name.c_str());
 
                 node.action.name = "cancel_action";
                 action_dispatch_publisher.publish(node.action);
@@ -83,7 +83,7 @@ namespace KCL_rosplan {
         void EsterelPlanDispatcher::planCallback(const rosplan_dispatch_msgs::EsterelPlan plan) {
        
                 if(finished_execution) {
-                        ROS_INFO("KCL: (%s) Plan received.", ros::this_node::getName().c_str());
+                        // ROS_INFO("KCL: (%s) Plan received.", ros::this_node::getName().c_str());
                         plan_received = true;
                         mission_start_time = ros::Time::now().toSec();
                         current_plan = plan;
@@ -100,7 +100,7 @@ namespace KCL_rosplan {
     void EsterelPlanDispatcher::perturbWorldState(){
         //// Perturb state
         rosplan_knowledge_msgs::PerturbStateService srv;
-        ROS_INFO("ISR: (%s) Perturbing world state", ros::this_node::getName().c_str());
+        // ROS_INFO("ISR: (%s) Perturbing world state", ros::this_node::getName().c_str());
         if(perturb_client_.call(srv)){
             if(srv.response.success){
                 // ROS_INFO("ISR: (%s) Successfully perturbed state", ros::this_node::getName().c_str());
@@ -192,7 +192,7 @@ namespace KCL_rosplan {
      */
     bool EsterelPlanDispatcher::dispatchPlan(double missionStartTime, double planStartTime) {
 
-        ROS_INFO("KCL: (%s) Dispatching plan.", ros::this_node::getName().c_str());
+        // ROS_INFO("KCL: (%s) Dispatching plan.", ros::this_node::getName().c_str());
 
         ros::Rate loop_rate(10);
         replan_requested = false;
@@ -290,10 +290,10 @@ namespace KCL_rosplan {
                         }
 
                         // dispatch action end
-                        ROS_INFO("KCL: (%s) Dispatching action end [%s %s]",
-                                ros::this_node::getName().c_str(),
-                                node.action.name.c_str(),
-                                params_ss.str().c_str());
+                        // ROS_INFO("KCL: (%s) Dispatching action end [%s %s]",
+                        //         ros::this_node::getName().c_str(),
+                        //         node.action.name.c_str(),
+                        //         params_ss.str().c_str());
 
                         finished_execution = false;
                         state_changed = true;
@@ -319,10 +319,10 @@ namespace KCL_rosplan {
                         perturbWorldState();
                     }
                     else{
-						ROS_INFO("ISR: (%s) Action is no longer applicable [%s]",
-								ros::this_node::getName().c_str(),
-								getFullActionName(node).c_str());
-						ROS_INFO("ISR: (%s) Must build a new plan", ros::this_node::getName().c_str());
+						// ROS_INFO("ISR: (%s) Action is no longer applicable [%s]",
+						// 		ros::this_node::getName().c_str(),
+						// 		getFullActionName(node).c_str());
+						// ROS_INFO("ISR: (%s) Must build a new plan", ros::this_node::getName().c_str());
                         replan_requested = true;
                         break;
                     }
@@ -398,9 +398,9 @@ namespace KCL_rosplan {
 
 						// If action failed due to perturbations
 						if(random_number>actions_prob_map[action_name_no_time]){
-							ROS_INFO("ISR: (%s) Dispatching action start failed due to perturbations [%s]",
-                                                                                    ros::this_node::getName().c_str(),
-                                                                                    full_action_name.c_str());
+							// ROS_INFO("ISR: (%s) Dispatching action start failed due to perturbations [%s]",
+                            //                                                         ros::this_node::getName().c_str(),
+                            //                                                         full_action_name.c_str());
 							perturbWorldState();
 							state_changed = true;
 
@@ -430,10 +430,10 @@ namespace KCL_rosplan {
                             }
 
                             // dispatch action
-                            ROS_INFO("KCL: (%s) Dispatching action start [%s %s]",
-                                    ros::this_node::getName().c_str(),
-                                    node.action.name.c_str(),
-                                    params_ss.str().c_str());
+                            // ROS_INFO("KCL: (%s) Dispatching action start [%s %s]",
+                            //         ros::this_node::getName().c_str(),
+                            //         node.action.name.c_str(),
+                            //         params_ss.str().c_str());
 
                             action_dispatch_publisher.publish(node.action);
                             
@@ -464,10 +464,10 @@ namespace KCL_rosplan {
                         perturbWorldState();
                     }
                     else{
-						ROS_INFO("ISR: (%s) Action is no longer applicable [%s]",
-								ros::this_node::getName().c_str(),
-								getFullActionName(node).c_str());
-						ROS_INFO("ISR: (%s) Must build a new plan", ros::this_node::getName().c_str());
+						// ROS_INFO("ISR: (%s) Action is no longer applicable [%s]",
+						// 		ros::this_node::getName().c_str(),
+						// 		getFullActionName(node).c_str());
+						// ROS_INFO("ISR: (%s) Must build a new plan", ros::this_node::getName().c_str());
                         replan_requested = true;
                         break;
                     }
@@ -493,13 +493,13 @@ namespace KCL_rosplan {
 
             // cancel dispatch on replan
             if(replan_requested) {
-                ROS_INFO("KCL: (%s) Replan requested.", ros::this_node::getName().c_str());
+                // ROS_INFO("KCL: (%s) Replan requested.", ros::this_node::getName().c_str());
                 reset();
                 return false;
             }
         }
 
-        ROS_INFO("KCL: (%s) Dispatch complete.", ros::this_node::getName().c_str());
+        // ROS_INFO("KCL: (%s) Dispatch complete.", ros::this_node::getName().c_str());
 
         // reset();
         return true;
@@ -529,7 +529,7 @@ namespace KCL_rosplan {
      */
     void EsterelPlanDispatcher::feedbackCallback(const rosplan_dispatch_msgs::ActionFeedback::ConstPtr& msg) {
 
-        ROS_INFO("KCL: (%s) Feedback received [%i, %s]", ros::this_node::getName().c_str(), msg->action_id, msg->status.c_str());
+        // ROS_INFO("KCL: (%s) Feedback received [%i, %s]", ros::this_node::getName().c_str(), msg->action_id, msg->status.c_str());
 
         // action enabled
         if(!action_received[msg->action_id] && (0 == msg->status.compare("action enabled"))) {
@@ -703,7 +703,7 @@ namespace KCL_rosplan {
         nh.getParam("action_feedback_topic", feedbackTopic);
         ros::Subscriber feedback_sub = nh.subscribe(feedbackTopic, 1000, &KCL_rosplan::EsterelPlanDispatcher::feedbackCallback, &epd);
 
-        ROS_INFO("KCL: (%s) Ready to receive", ros::this_node::getName().c_str());
+        // ROS_INFO("KCL: (%s) Ready to receive", ros::this_node::getName().c_str());
         ros::spin();
 
         return 0;

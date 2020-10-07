@@ -51,7 +51,7 @@ namespace KCL_rosplan {
 
 		// save problem to file for POPF
 		if(use_problem_topic && problem_instance_received) {
-			ROS_INFO("KCL: (%s) (%s) Writing problem to file.", ros::this_node::getName().c_str(), problem_name.c_str());
+			// ROS_INFO("KCL: (%s) (%s) Writing problem to file.", ros::this_node::getName().c_str(), problem_name.c_str());
 			std::ofstream dest;
 			dest.open((problem_path).c_str());
 			dest << problem_instance;
@@ -67,9 +67,9 @@ namespace KCL_rosplan {
 		std::string commandString = str + " > " + data_path + "plan.pddl";
 
 		// call the planer
-		ROS_INFO("KCL: (%s) (%s) Running: %s", ros::this_node::getName().c_str(), problem_name.c_str(),  commandString.c_str());
+		// ROS_INFO("KCL: (%s) (%s) Running: %s", ros::this_node::getName().c_str(), problem_name.c_str(),  commandString.c_str());
 		std::string plan = runCommand(commandString.c_str());
-		ROS_INFO("KCL: (%s) (%s) Planning complete", ros::this_node::getName().c_str(), problem_name.c_str());
+		// ROS_INFO("KCL: (%s) (%s) Planning complete", ros::this_node::getName().c_str(), problem_name.c_str());
 
 		// check the planner solved the problem
 		std::ifstream planfile;
@@ -101,8 +101,8 @@ namespace KCL_rosplan {
 		}
 		planfile.close();
 
-		if(!solved) ROS_INFO("KCL: (%s) (%s) Plan was unsolvable.", ros::this_node::getName().c_str(), problem_name.c_str());
-		else ROS_INFO("KCL: (%s) (%s) Plan was solved.", ros::this_node::getName().c_str(), problem_name.c_str());
+		// if(!solved) ROS_INFO("KCL: (%s) (%s) Plan was unsolvable.", ros::this_node::getName().c_str(), problem_name.c_str());
+		// else ROS_INFO("KCL: (%s) (%s) Plan was solved.", ros::this_node::getName().c_str(), problem_name.c_str());
 
 		return solved;
 	}
@@ -131,7 +131,7 @@ namespace KCL_rosplan {
 		ros::ServiceServer service1 = nh.advertiseService("planning_server", &KCL_rosplan::PlannerInterface::runPlanningServerDefault, dynamic_cast<KCL_rosplan::PlannerInterface*>(&pi));
 		ros::ServiceServer service2 = nh.advertiseService("planning_server_params", &KCL_rosplan::PlannerInterface::runPlanningServerParams, dynamic_cast<KCL_rosplan::PlannerInterface*>(&pi));
 
-		ROS_INFO("KCL: (%s) Ready to receive", ros::this_node::getName().c_str());
+		// ROS_INFO("KCL: (%s) Ready to receive", ros::this_node::getName().c_str());
 		ros::spin();
 
 		return 0;

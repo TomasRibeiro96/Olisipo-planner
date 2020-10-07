@@ -184,7 +184,7 @@ namespace KCL_rosplan {
         problem_parser.val_analysis = an_analysis;
 
         // parse domain
-        ROS_INFO("KCL: (%s) Parsing domain", ros::this_node::getName().c_str());
+        // ROS_INFO("KCL: (%s) Parsing domain", ros::this_node::getName().c_str());
         domain_parser.domain_parsed = false;
         VAL1_2::domain* domain;
         file_check.open(domain_file_path.c_str());
@@ -205,7 +205,7 @@ namespace KCL_rosplan {
 
         // parse problem and add initial state
         if(problem_file_path != "") {
-            ROS_INFO("KCL: (%s) Parsing initial state", ros::this_node::getName().c_str());
+            // ROS_INFO("KCL: (%s) Parsing initial state", ros::this_node::getName().c_str());
             problem_parser.problem_parsed = false;
             file_check.open(problem_file_path.c_str());
             if(!file_check.good()) {

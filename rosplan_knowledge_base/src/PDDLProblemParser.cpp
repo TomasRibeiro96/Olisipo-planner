@@ -26,7 +26,7 @@ namespace KCL_rosplan {
         problem_parsed = true;
 
         std::string ProblemFileName = (ProblemPath);
-        ROS_INFO("KCL: (%s) Parsing Problem File: %s.", ros::this_node::getName().c_str(), ProblemFileName.c_str());
+        // ROS_INFO("KCL: (%s) Parsing Problem File: %s.", ros::this_node::getName().c_str(), ProblemFileName.c_str());
 
         // save filename for VAL
         std::vector<char> writable(ProblemFileName.begin(), ProblemFileName.end());

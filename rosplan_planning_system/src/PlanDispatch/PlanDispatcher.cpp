@@ -225,8 +225,9 @@ namespace KCL_rosplan {
 
             if(!positiveQuerySrv.response.all_true) {
                 std::vector<rosplan_knowledge_msgs::KnowledgeItem>::iterator kit;
-                for(kit=positiveQuerySrv.response.false_knowledge.begin(); kit != positiveQuerySrv.response.false_knowledge.end(); kit++)
-                    ROS_INFO("KCL: (%s) At_start precondition not achieved: %s", ros::this_node::getName().c_str(), kit->attribute_name.c_str());
+                for(kit=positiveQuerySrv.response.false_knowledge.begin(); kit != positiveQuerySrv.response.false_knowledge.end(); kit++){
+                    // ROS_INFO("KCL: (%s) At_start precondition not achieved: %s", ros::this_node::getName().c_str(), kit->attribute_name.c_str());
+                }
             }
             return positiveQuerySrv.response.all_true && !neg_preconditions;
 
@@ -335,8 +336,9 @@ namespace KCL_rosplan {
 
             if(!positiveQuerySrv.response.all_true) {
                 std::vector<rosplan_knowledge_msgs::KnowledgeItem>::iterator kit;
-                for(kit=positiveQuerySrv.response.false_knowledge.begin(); kit != positiveQuerySrv.response.false_knowledge.end(); kit++)
-                    ROS_INFO("KCL: (%s) At_end precondition not achieved: %s", ros::this_node::getName().c_str(), kit->attribute_name.c_str());
+                for(kit=positiveQuerySrv.response.false_knowledge.begin(); kit != positiveQuerySrv.response.false_knowledge.end(); kit++){
+                    // ROS_INFO("KCL: (%s) At_end precondition not achieved: %s", ros::this_node::getName().c_str(), kit->attribute_name.c_str());
+                }
             }
             return positiveQuerySrv.response.all_true && !neg_preconditions;
 

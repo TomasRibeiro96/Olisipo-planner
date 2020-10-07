@@ -341,7 +341,7 @@ namespace KCL_rosplan {
         std::vector<rosplan_knowledge_msgs::KnowledgeItem>::iterator pit;
         for(pit=model_facts.begin(); pit!=model_facts.end(); ) {
             if(KnowledgeComparitor::containsKnowledge(msg, *pit)) {
-			ROS_INFO("KCL: (%s) Removing fact (%s%s)", ros::this_node::getName().c_str(), msg.attribute_name.c_str(), param_str.c_str());
+			// ROS_INFO("KCL: (%s) Removing fact (%s%s)", ros::this_node::getName().c_str(), msg.attribute_name.c_str(), param_str.c_str());
                 pit = model_facts.erase(pit);
             } else {
                 pit++;
@@ -445,12 +445,12 @@ namespace KCL_rosplan {
 			std::vector<rosplan_knowledge_msgs::KnowledgeItem>::iterator pit;
 			for(pit=model_facts.begin(); pit!=model_facts.end(); pit++) {
 				if(KnowledgeComparitor::containsKnowledge(msg, *pit)) {
-					ROS_WARN("KCL: (%s) fact (%s%s) already exists", ros::this_node::getName().c_str(), msg.attribute_name.c_str(), param_str.c_str());
+					// ROS_WARN("KCL: (%s) fact (%s%s) already exists", ros::this_node::getName().c_str(), msg.attribute_name.c_str(), param_str.c_str());
 					return;
 				}
 				msg.is_negative = 1 - msg.is_negative;
 				if(KnowledgeComparitor::containsKnowledge(msg, *pit)) {
-					ROS_INFO("KCL: (%s) Setting fact (%s%s) is_negative=%i", ros::this_node::getName().c_str(), msg.attribute_name.c_str(), param_str.c_str(), (1-msg.is_negative));
+					// ROS_INFO("KCL: (%s) Setting fact (%s%s) is_negative=%i", ros::this_node::getName().c_str(), msg.attribute_name.c_str(), param_str.c_str(), (1-msg.is_negative));
 					pit->is_negative = 1 - pit->is_negative;
 					return;
 				}
@@ -458,7 +458,7 @@ namespace KCL_rosplan {
 			}
 
 			// add fact
-			ROS_INFO("KCL: (%s) Adding fact (%s%s, %i)", ros::this_node::getName().c_str(), msg.attribute_name.c_str(), param_str.c_str(), msg.is_negative);
+			// ROS_INFO("KCL: (%s) Adding fact (%s%s, %i)", ros::this_node::getName().c_str(), msg.attribute_name.c_str(), param_str.c_str(), msg.is_negative);
 			model_facts.push_back(msg);
 
 		}
@@ -702,7 +702,7 @@ int main(int argc, char **argv) {
         kb->parseDomain(domainPath, problemPath);
         kb->use_unknowns = useUnknowns;
 
-	ROS_INFO("KCL: (%s) Ready to receive", ros::this_node::getName().c_str());
+	// ROS_INFO("KCL: (%s) Ready to receive", ros::this_node::getName().c_str());
 	kb->runKnowledgeBase();
 
 	return 0;

@@ -53,8 +53,8 @@ namespace KCL_rosplan {
 
         // save problem to file for planner
         if (use_problem_topic && problem_instance_received) {
-            ROS_INFO("KCL: (%s) (%s) Writing problem to file.", ros::this_node::getName().c_str(),
-                     problem_name.c_str());
+            // ROS_INFO("KCL: (%s) (%s) Writing problem to file.", ros::this_node::getName().c_str(),
+                    //  problem_name.c_str());
             std::ofstream dest;
             dest.open((problem_path).c_str());
             dest << problem_instance;
@@ -70,8 +70,8 @@ namespace KCL_rosplan {
         std::string commandString = str + " > " + data_path + "plan.pddl";
 
         // call the planer
-        ROS_INFO("KCL: (%s) (%s) Running: %s in a new thread", ros::this_node::getName().c_str(), problem_name.c_str(),
-                 commandString.c_str());
+        // ROS_INFO("KCL: (%s) (%s) Running: %s in a new thread", ros::this_node::getName().c_str(), problem_name.c_str(),
+                //  commandString.c_str());
 
         // Launch thread and return, as the dispatcher will take care of the planning
         planner = std::thread(&OnlinePlannerInterface::runCommand, this, commandString);
@@ -110,7 +110,7 @@ int main(int argc, char **argv) {
     ros::ServiceServer service1 = nh.advertiseService("planning_server", &KCL_rosplan::PlannerInterface::runPlanningServerDefault, dynamic_cast<KCL_rosplan::PlannerInterface*>(&pi));
     ros::ServiceServer service2 = nh.advertiseService("planning_server_params", &KCL_rosplan::PlannerInterface::runPlanningServerParams, dynamic_cast<KCL_rosplan::PlannerInterface*>(&pi));
 
-    ROS_INFO("KCL: (%s) Ready to receive", ros::this_node::getName().c_str());
+    // ROS_INFO("KCL: (%s) Ready to receive", ros::this_node::getName().c_str());
     ros::spin();
 
     return 0;

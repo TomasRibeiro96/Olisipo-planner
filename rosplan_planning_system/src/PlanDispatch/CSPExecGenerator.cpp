@@ -81,7 +81,7 @@ void CSPExecGenerator::printNodes(std::string msg, std::vector<int> &nodes)
 
 void CSPExecGenerator::esterelPlanCB(const rosplan_dispatch_msgs::EsterelPlan::ConstPtr& msg)
 {
-    ROS_INFO("esterel plan received");
+    // ROS_INFO("esterel plan received");
     original_plan_ = *msg;
 
     // raise flag to indicate a msg has been received in callback
@@ -1021,7 +1021,7 @@ void CSPExecGenerator::reusePreviousPlan(int index_facts){
 
     action_to_be_executed_ = plan.front();
 
-    printNodes("Reused plan", plan);
+    // printNodes("Reused plan", plan);
     // ROS_INFO("//// Total number of nodes expanded: %d ////", total_number_nodes_expanded);
 
     // ROS_INFO(">>> Action to be executed 1: %s", getFullActionName(action_to_be_executed_).c_str());
@@ -1139,7 +1139,7 @@ bool CSPExecGenerator::generatePlans()
     // ROS_INFO("#### Number of nodes expanded: %d ####", number_expanded_nodes);
     total_number_nodes_expanded += number_expanded_nodes;
 
-    printNodes("New plan", best_plan_);
+    // printNodes("New plan", best_plan_);
 
     // ROS_INFO("//// Total number of nodes expanded: %d ////", total_number_nodes_expanded);
     // ROS_INFO("|||| Average service call time: %f", average_service_time);
@@ -1403,8 +1403,8 @@ std::vector<int> CSPExecGenerator::getActionsStartedButNotFinished(std::vector<i
 bool CSPExecGenerator::srvCB(rosplan_dispatch_msgs::ExecAlternatives::Request& req,
                                 rosplan_dispatch_msgs::ExecAlternatives::Response& res)
 {
-    ROS_INFO("\n");
-    ROS_INFO("generating execution alternatives service is computing now");
+    // ROS_INFO("\n");
+    // ROS_INFO("generating execution alternatives service is computing now");
 
     if(!is_esterel_plan_received_) {
         // esterel plan not received yet!
@@ -1449,14 +1449,14 @@ bool CSPExecGenerator::srvCB(rosplan_dispatch_msgs::ExecAlternatives::Request& r
         // publish esterel array msg
         pub_valid_plans_.publish(exec_aternatives_msg_);
 
-        ROS_INFO("ISR: (%s) Action to be executed: '%s'", ros::this_node::getName().c_str(), getFullActionName(action_to_be_executed_).c_str());
+        // ROS_INFO("ISR: (%s) Action to be executed: '%s'", ros::this_node::getName().c_str(), getFullActionName(action_to_be_executed_).c_str());
     }
     else
     {
         // indicates that no valid execution was found, means replanning is needed
         res.replan_needed = true;
         res.exec_alternatives_generated = false;
-        ROS_INFO("No valid execution was found, replanning is needed");
+        // ROS_INFO("No valid execution was found, replanning is needed");
     }
 
     // ROS_INFO("Generating execution alternatives service has finished");

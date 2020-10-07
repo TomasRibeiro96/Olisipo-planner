@@ -137,7 +137,7 @@ namespace KCL_rosplan {
 		ros::AsyncSpinner spinner(4);
         spinner.start();
 
-		ROS_INFO("KCL: (%s) Ready to receive", params.name.c_str());
+		// ROS_INFO("KCL: (%s) Ready to receive", params.name.c_str());
 
 		while(ros::ok()) {
 			pddl_action_parameters_pub.publish(params);
@@ -257,7 +257,7 @@ namespace KCL_rosplan {
             return;
         }
 		if(0!=msg->name.compare(params.name)) return;
-		ROS_INFO("KCL: (%s) action received", params.name.c_str());
+		// ROS_INFO("KCL: (%s) action received", params.name.c_str());
 
         action_cancelled = false;
 
@@ -328,10 +328,10 @@ namespace KCL_rosplan {
 					updatePredSrv.request.update_type.push_back(rosplan_knowledge_msgs::KnowledgeUpdateService::Request::REMOVE_KNOWLEDGE);
 				}
 				else{
-					ROS_INFO("ISR: (%s) Did NOT apply start_del_effect %s of action %s due to perturbations",
-																		ros::this_node::getName().c_str(),
-																		attribute_name.c_str(),
-																		full_action_name.c_str());
+					// ROS_INFO("ISR: (%s) Did NOT apply start_del_effect %s of action %s due to perturbations",
+					// 													ros::this_node::getName().c_str(),
+					// 													attribute_name.c_str(),
+					// 													full_action_name.c_str());
 				}
 			}
 
@@ -364,10 +364,10 @@ namespace KCL_rosplan {
 					updatePredSrv.request.update_type.push_back(rosplan_knowledge_msgs::KnowledgeUpdateService::Request::ADD_KNOWLEDGE);
 				}
 				else{
-					ROS_INFO("ISR: (%s) Did NOT apply start_add_effect %s of action %s due to perturbations",
-																		ros::this_node::getName().c_str(),
-																		attribute_name.c_str(),
-																		full_action_name.c_str());
+					// ROS_INFO("ISR: (%s) Did NOT apply start_add_effect %s of action %s due to perturbations",
+					// 													ros::this_node::getName().c_str(),
+					// 													attribute_name.c_str(),
+					// 													full_action_name.c_str());
 				}
 			}
 
@@ -420,10 +420,10 @@ namespace KCL_rosplan {
 					updatePredSrv.request.update_type.push_back(rosplan_knowledge_msgs::KnowledgeUpdateService::Request::REMOVE_KNOWLEDGE);
 				}
 				else{
-					ROS_INFO("ISR: (%s) Did NOT apply end_del_effect %s of action %s due to perturbations",
-																		ros::this_node::getName().c_str(),
-																		attribute_name.c_str(),
-																		full_action_name.c_str());
+					// ROS_INFO("ISR: (%s) Did NOT apply end_del_effect %s of action %s due to perturbations",
+					// 													ros::this_node::getName().c_str(),
+					// 													attribute_name.c_str(),
+					// 													full_action_name.c_str());
 				}
 
 			}
@@ -457,10 +457,10 @@ namespace KCL_rosplan {
 					updatePredSrv.request.update_type.push_back(rosplan_knowledge_msgs::KnowledgeUpdateService::Request::ADD_KNOWLEDGE);
 				}
 				else{
-					ROS_INFO("ISR: (%s) Did NOT apply end_add_effect %s of action %s due to perturbations",
-																		ros::this_node::getName().c_str(),
-																		attribute_name.c_str(),
-																		full_action_name.c_str());
+					// ROS_INFO("ISR: (%s) Did NOT apply end_add_effect %s of action %s due to perturbations",
+					// 													ros::this_node::getName().c_str(),
+					// 													attribute_name.c_str(),
+					// 													full_action_name.c_str());
 				}
 			}
 

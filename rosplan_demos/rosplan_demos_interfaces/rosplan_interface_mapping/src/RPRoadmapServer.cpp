@@ -112,7 +112,7 @@ namespace KCL_rosplan {
         // check if wps are available in param server, if so, load them in symbolic KB and visualise them
         loadParams();
         odom_received_ = false;
-        ROS_INFO("KCL: (%s) Ready to receive.", ros::this_node::getName().c_str());
+        // ROS_INFO("KCL: (%s) Ready to receive.", ros::this_node::getName().c_str());
     }
 
     // update the costmap with received information coming from callback (topic subscription)
