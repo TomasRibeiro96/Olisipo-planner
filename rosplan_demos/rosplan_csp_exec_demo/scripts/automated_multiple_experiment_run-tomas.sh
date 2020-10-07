@@ -31,7 +31,8 @@ function call_exec_experiment_with_wait(){
 declare -a number_machines_vec=("3" "4")
 declare -a number_machines=${number_machines_vec[0]}
 
-declare -a number_runs=$((1))
+declare -a number_runs=$((100))
+
 declare -a exp_count=$((0))
 declare -a total_count=$((2*7*$number_runs))
 
@@ -41,7 +42,7 @@ declare -a total_count=$((2*7*$number_runs))
 for problem in {1..7}
 do
     # Number of runs for each pair of problems and probabilities
-    for k in {1..$number_runs}
+    for k in $( eval echo {1..$number_runs} )
     do
         call_exec_experiment_with_wait false factory_robot_problems domain_simple_factory_robot $number_machines $problem
         exp_count=$(($exp_count + 1))
@@ -56,7 +57,7 @@ done
 for problem in {1..7}
 do
     # Number of runs for each pair of problems and probabilities
-    for k in {1..$number_runs}
+    for k in $( eval echo {1..$number_runs} )
     do
         call_exec_experiment_with_wait true factory_robot_problems domain_simple_factory_robot $number_machines $problem
         exp_count=$(($exp_count + 1))
