@@ -1,9 +1,10 @@
 import csv
 
-number_machines_list = [4]
+number_machines_list = [3]
 dispatcher_list = ['esterel', 'adaptable']
-problem_list = [i for i in range(1,8)]
-common_path = '/home/tomas/ros_ws/src/ROSPlan/src/rosplan/factory_robot-results/simple_factory_robot/'
+problem_list = [i for i in range(1,6)]
+
+common_path = '/home/tomas/ros_ws/src/ROSPlan/src/rosplan/factory_robot-results/adv_factory_robot/'
 
 for number_machines in number_machines_list:
     problem_common_path = common_path + 'problem_m' + str(number_machines) + '/'
