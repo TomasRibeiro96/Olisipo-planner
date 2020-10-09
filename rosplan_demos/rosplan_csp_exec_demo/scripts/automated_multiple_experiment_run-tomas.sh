@@ -1,11 +1,5 @@
 #!/bin/bash
 
-# Calls multiple experiments in parallel exploiting the ROS capability for
-# using multiple PORTS, 
-
-# NOTE: domain is same for all experiments: domain_robot_delivery.pddl
-
-
 # arg 1: adaptable_plan_dispatcher_required options: (true, false)
 # arg 2: category, temporal or non temporal? options: (iros_problems_free, iros_problems_deadlines)
 # arg 3: problem instance name, options: (too large, check below for details)
@@ -32,19 +26,25 @@ declare -a number_machines_vec=("3" "4")
 declare -a number_machines=${number_machines_vec[0]}
 
 declare -a number_runs=$((100))
+declare -a number_problems=$((5))
 
 declare -a exp_count=$((0))
-declare -a total_count=$((2*7*$number_runs))
+declare -a total_count=$((2*$number_problems*$number_runs))
 
+# declare -a category="factory_robot_problems"
+# declare -a domain="domain_simple_factory_robot"
+
+declare -a category="adv_factory_robot_problems"
+declare -a domain="domain_adv_factory_robot"
 
 #### With esterel dispatcher ####
 # Iterate over probabilities problem
-for problem in {1..7}
+for problem in $( eval echo {1..$number_problems} )
 do
     # Number of runs for each pair of problems and probabilities
     for k in $( eval echo {1..$number_runs} )
     do
-        call_exec_experiment_with_wait false factory_robot_problems domain_simple_factory_robot $number_machines $problem
+        call_exec_experiment_with_wait false $category $domain $number_machines $problem
         exp_count=$(($exp_count + 1))
         echo ""
         echo "|||||||||||||||||||||||||||||||||| EXECUTED $exp_count OF $total_count ||||||||||||||||||||||||||||||||||"
@@ -54,12 +54,12 @@ done
 
 #### With adaptable dispatcher ####
 # Iterate over probabilities problem
-for problem in {1..7}
+for problem in $( eval echo {1..$number_problems} )
 do
     # Number of runs for each pair of problems and probabilities
     for k in $( eval echo {1..$number_runs} )
     do
-        call_exec_experiment_with_wait true factory_robot_problems domain_simple_factory_robot $number_machines $problem
+        call_exec_experiment_with_wait true $category $domain $number_machines $problem
         exp_count=$(($exp_count + 1))
         echo ""
         echo "|||||||||||||||||||||||||||||||||| EXECUTED $exp_count OF $total_count ||||||||||||||||||||||||||||||||||"

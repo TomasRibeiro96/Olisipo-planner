@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+<launch>
+
+    <arg name="probabilities_file" />
+
+    <!-- sim actions for adv_factory_robot domain (domain_factory_robot.pddl) -->
+
+    <include file="$(find rosplan_planning_system)/launch/includes/simulated_action.launch" >
+        <arg name="pddl_action_name" value="maintain_machine" />
+        <arg name="action_duration" value="1" />
+        <arg name="probabilities_file" value="$(arg probabilities_file)"/>
+    </include>
+
+    <include file="$(find rosplan_planning_system)/launch/includes/simulated_action.launch" >
+        <arg name="pddl_action_name" value="go_to_machine" />
+        <arg name="action_duration" value="1" />
+        <arg name="probabilities_file" value="$(arg probabilities_file)"/>
+    </include>
+
+</launch>

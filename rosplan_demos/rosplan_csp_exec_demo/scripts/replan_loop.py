@@ -24,6 +24,7 @@ def run():
 
     # get execution type from param server
     problem_name = rospy.get_param('~problem_name', 'problem_name_not_set_')
+    category = rospy.get_param('~category').split('_problems')[0]
 
     # Convert 'probabilities_m3_p1.txt' to 'p1'
     probability_file = rospy.get_param('~probabilities_file').split('.')[0][-2:]
@@ -32,7 +33,7 @@ def run():
 
     # for logging purposes, write results of the experiment to a file
     # ros_tcp_port = os.environ['ROS_MASTER_URI'].replace('http://localhost:', '')
-    log_file_path = '/home/tomas/ros_ws/src/ROSPlan/src/rosplan/factory_robot-results/simple_factory_robot/' + problem_name + '/'
+    log_file_path = '/home/tomas/ros_ws/src/ROSPlan/src/rosplan/factory_robot-results/' + category + '/' + problem_name + '/'
     if adaptable_plan_dispatcher_required:
         log_file = open(log_file_path + 'exp_adaptable-' + problem_name + '-' + probability_file + '.csv','a')
     else:

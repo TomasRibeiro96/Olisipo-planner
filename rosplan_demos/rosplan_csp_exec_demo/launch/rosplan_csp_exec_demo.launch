@@ -3,17 +3,17 @@
 
 
     <!-- select between normal or smart plan dispatcher -->
-    <arg name="adaptable_plan_dispatcher_required" default="false" />
+    <arg name="adaptable_plan_dispatcher_required" default="true" />
     
     <!-- FACTORY ROBOT -->
-    <arg name="category" default="factory_robot_problems" />
-    <arg name="domain" default="domain_simple_factory_robot" />
+    <arg name="category" default="adv_factory_robot_problems" />
+    <arg name="domain" default="domain_adv_factory_robot" />
 
     <arg name="number_machines" default="3" />
     <arg name="probabilities_problem" default="1" />
 
     <arg name="problem" default="problem_m$(arg number_machines)" />
-    <arg name="probabilities_path" default="/home/tomas/ros_ws/src/ROSPlan/src/rosplan/rosplan_demos/rosplan_csp_exec_demo/common/factory_robot_problems/$(arg problem)/"/>
+    <arg name="probabilities_path" default="/home/tomas/ros_ws/src/ROSPlan/src/rosplan/rosplan_demos/rosplan_csp_exec_demo/common/$(arg category)/$(arg problem)/"/>
     <arg name="probabilities" default="probabilities_m$(arg number_machines)_p$(arg probabilities_problem).txt"/>
 
     <!-- do not touch this params, but rather update args above -->
@@ -77,6 +77,7 @@
             <param name="execution_type" type="str" value="$(arg category)" /> <!-- iros_problems_free or iros_problems_deadlines, debug purposes -->
             <param name="problem_name" type="str" value="$(arg problem)" /> <!-- problem name given for debugging purposes -->
             <param name="probabilities_file" type="str" value="$(arg probabilities_path)$(arg probabilities)"/>
+            <param name="category" type="str" value="$(arg category)" />
         </node>
     </group>
 
@@ -98,6 +99,7 @@
             <param name="execution_type" type="str" value="$(arg category)" /> <!-- iros_problems_free or iros_problems_deadlines -->
             <param name="problem_name" type="str" value="$(arg problem)" /> <!-- problem name given for debugging purposes -->
             <param name="probabilities_file" type="str" value="$(arg probabilities_path)$(arg probabilities)"/>
+            <param name="category" type="str" value="$(arg category)" />
         </node>
     </group>
 
