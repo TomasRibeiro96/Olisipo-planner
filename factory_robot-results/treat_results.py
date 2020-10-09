@@ -13,9 +13,14 @@ for number_machines in number_machines_list:
         suc_results_file = open(problem_common_path+'results_suc-m'+str(number_machines)+'.csv', 'a')
         fail_results_file = open(problem_common_path+'results_fail-m'+str(number_machines)+'.csv', 'a')
 
+        results_file.write('Problem, Success, Replans, Number Actions, Count\n')
         results_file.write(dispatcher+'\n')
-        suc_results_file.write(dispatcher+'\n')
-        fail_results_file.write(dispatcher+'\n')
+
+        suc_results_file.write(dispatcher+', \n')
+        suc_results_file.write('Problem, Replans, Number Actions, Count')
+
+        fail_results_file.write(dispatcher+', \n')
+        fail_results_file.write('Problem, Number Actions, Count')
 
         for problem in problem_list:
             avg_success = 0.0
@@ -54,15 +59,15 @@ for number_machines in number_machines_list:
                 exp_count += 1
             
             start = 'm' + str(number_machines) + '_p' + str(problem) + ', '
-            line_all = start+str(avg_success/exp_count)+', '+str(avg_replans/exp_count)+', '+str(avg_actions/exp_count)+'\n'
+            line_all = start+str(avg_success/exp_count)+', '+str(avg_replans/exp_count)+', '+str(avg_actions/exp_count)+', '+str(exp_count)+'\n'
             results_file.write(line_all)
 
             if not suc_count == 0:
-                line_suc = start+str(avg_replans_suc/suc_count)+', '+str(avg_actions_suc/suc_count)+'\n'
+                line_suc = start+str(avg_replans_suc/suc_count)+', '+str(avg_actions_suc/suc_count)+', '+str(suc_count)+'\n'
                 suc_results_file.write(line_suc)
 
             if not fail_count == 0:
-                line_fail = start+str(avg_replans_fail/fail_count)+', '+str(avg_actions_fail/fail_count)+'\n'
+                line_fail = start+str(avg_replans_fail/fail_count)+', '+str(avg_actions_fail/fail_count)+', '+str(fail_count)+'\n'
                 fail_results_file.write(line_fail)
 
         results_file.close()
