@@ -26,7 +26,9 @@ declare -a number_machines_vec=("3" "4")
 declare -a number_machines=${number_machines_vec[0]}
 
 declare -a number_runs=$((100))
-declare -a number_problems=$((5))
+declare -a start_number_problems=$((6))
+declare -a end_number_problems=$((10))
+declare -a number_problems=$(($end_number_problems-$start_number_problems+1))
 
 declare -a exp_count=$((0))
 declare -a total_count=$((2*$number_problems*$number_runs))
@@ -39,7 +41,8 @@ declare -a domain="domain_adv_factory_robot"
 
 #### With esterel dispatcher ####
 # Iterate over probabilities problem
-for problem in $( eval echo {1..$number_problems} )
+# for problem in $( eval echo {1..$number_problems} )
+for problem in {6..10}
 do
     # Number of runs for each pair of problems and probabilities
     for k in $( eval echo {1..$number_runs} )
@@ -54,7 +57,8 @@ done
 
 #### With adaptable dispatcher ####
 # Iterate over probabilities problem
-for problem in $( eval echo {1..$number_problems} )
+# for problem in $( eval echo {1..$number_problems} )
+for problem in {6..10}
 do
     # Number of runs for each pair of problems and probabilities
     for k in $( eval echo {1..$number_runs} )

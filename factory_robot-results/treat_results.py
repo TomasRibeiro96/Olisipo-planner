@@ -2,7 +2,7 @@ import csv
 
 number_machines_list = [3]
 dispatcher_list = ['esterel', 'adaptable']
-problem_list = [i for i in range(1,6)]
+problem_list = [i for i in range(6,11)]
 
 common_path = '/home/tomas/ros_ws/src/ROSPlan/src/rosplan/factory_robot-results/adv_factory_robot/'
 
@@ -14,14 +14,14 @@ for number_machines in number_machines_list:
         suc_results_file = open(problem_common_path+'results_suc-m'+str(number_machines)+'.csv', 'a')
         fail_results_file = open(problem_common_path+'results_fail-m'+str(number_machines)+'.csv', 'a')
 
-        results_file.write('Problem, Success, Replans, Number Actions, Count\n')
+        results_file.write('Problem, Success, Replans, Number Actions, Count, \n')
         results_file.write(dispatcher+'\n')
 
-        suc_results_file.write(dispatcher+', \n')
-        suc_results_file.write('Problem, Replans, Number Actions, Count')
+        suc_results_file.write(dispatcher+'\n')
+        suc_results_file.write('Problem, Replans, Number Actions, Count, \n')
 
         fail_results_file.write(dispatcher+', \n')
-        fail_results_file.write('Problem, Number Actions, Count')
+        fail_results_file.write('Problem, Number Actions, Count, \n')
 
         for problem in problem_list:
             avg_success = 0.0

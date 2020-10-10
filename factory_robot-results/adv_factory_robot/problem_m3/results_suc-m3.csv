@@ -1,12 +1,28 @@
 esterel, 
-Problem, Replans, Number Actions, Countm3_p1, 2.01, 22.07, 100
+Problem, Replans, Number Actions, Count
+m3_p1, 2.01, 22.07, 100
 m3_p2, 2.23, 22.83, 100
 m3_p3, 2.14, 22.43, 100
 m3_p4, 2.14, 22.53, 100
 m3_p5, 2.23, 22.75, 100
 adaptable, 
-Problem, Replans, Number Actions, Countm3_p1, 0.0, 16.37, 100
+Problem, Replans, Number Actions, Countm
+3_p1, 0.0, 16.37, 100
 m3_p2, 0.0, 15.4, 100
 m3_p3, 0.0, 15.44, 100
 m3_p4, 0.0, 15.27, 100
 m3_p5, 0.03, 14.28, 100
+esterel
+Problem, Replans, Number Actions, Count
+m3_p6, 3.06666666667, 26.619047619, 105
+m3_p7, 3.45, 28.82, 100
+m3_p8, 3.35714285714, 28.2551020408, 98
+m3_p9, 3.60606060606, 29.6767676768, 99
+m3_p10, 4.12371134021, 30.9690721649, 97
+adaptable
+Problem, Replans, Number Actions, Count
+m3_p6, 0.0, 20.57, 100
+m3_p7, 0.0, 20.74, 100
+m3_p8, 0.0, 23.41, 100
+m3_p9, 0.0, 25.29, 100
+m3_p10, 0.0, 28.67, 100
