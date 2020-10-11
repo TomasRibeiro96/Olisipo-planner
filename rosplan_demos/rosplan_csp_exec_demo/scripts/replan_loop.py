@@ -27,7 +27,7 @@ def run():
     category = rospy.get_param('~category').split('_problems')[0]
 
     # Convert 'probabilities_m3_p1.txt' to 'p1'
-    probability_file = rospy.get_param('~probabilities_file').split('.')[0][-2:]
+    probability_file = rospy.get_param('~probabilities_file').split('.')[0].split('_p')[1]
 
     # rospy.loginfo('ISR: Probability file: ' + probability_file)
 
