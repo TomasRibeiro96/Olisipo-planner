@@ -2,9 +2,19 @@ import csv
 
 number_machines_list = [3]
 dispatcher_list = ['esterel', 'adaptable']
-problem_list = [i for i in range(6,11)]
+problem_list = [i for i in range(1,11)]
+domain = 'adv_factory_robot'
+# domain = 'simple_factory_robot'
 
-common_path = '/home/tomas/ros_ws/src/ROSPlan/src/rosplan/factory_robot-results/adv_factory_robot/'
+common_path = '/home/tomas/ros_ws/src/ROSPlan/src/rosplan/factory_robot-results/'+domain+'/'
+
+def calculateStandardDeviation(lst, avg, total_number):
+    sum_dev = 0.0
+    for item in lst:
+        sum_dev += (item - avg)**2
+
+    return (sum_dev/total_number)**0.5
+
 
 for number_machines in number_machines_list:
     problem_common_path = common_path + 'problem_m' + str(number_machines) + '/'
@@ -14,29 +24,36 @@ for number_machines in number_machines_list:
         suc_results_file = open(problem_common_path+'results_suc-m'+str(number_machines)+'.csv', 'a')
         fail_results_file = open(problem_common_path+'results_fail-m'+str(number_machines)+'.csv', 'a')
 
-        results_file.write('Problem, Success, Replans, Number Actions, Count, \n')
         results_file.write(dispatcher+'\n')
+        results_file.write('Problem, Success, Replans, Replans_std_dev, Actions, Actions_std_dev,\n')
 
         suc_results_file.write(dispatcher+'\n')
-        suc_results_file.write('Problem, Replans, Number Actions, Count, \n')
+        suc_results_file.write('Problem, Replans, Replans_std_dev, Actions, Actions_std_dev, \n')
 
         fail_results_file.write(dispatcher+', \n')
-        fail_results_file.write('Problem, Number Actions, Count, \n')
+        fail_results_file.write('Problem, Replans, Replans_std_dev, Actions, Actions_std_dev, \n')
+
+        replans_list = list()
+        suc_replans_list = list()
+        fail_replans_list = list()
+        actions_list = list()
+        suc_actions_list = list()
+        fail_actions_list = list()
 
         for problem in problem_list:
             avg_success = 0.0
             avg_replans = 0.0
-            avg_replans_suc = 0.0
-            avg_replans_fail = 0.0
+            suc_avg_replans = 0.0
+            fail_avg_replans = 0.0
             avg_actions = 0.0
-            avg_actions_suc = 0.0
-            avg_actions_fail = 0.0
+            suc_avg_actions = 0.0
+            fail_avg_actions = 0.0
             number_exp = 0
             suc_count = 0
             fail_count = 0
             exp_count = 0
 
-            file_name = problem_common_path + 'exp_'+dispatcher+'-problem_m'+str(number_machines)+'-p'+str(problem)+'.csv'
+            file_name = problem_common_path + 'exp_'+dispatcher+'-problem_m'+str(number_machines)+'-'+str(problem)+'.csv'
             file_csv = open(file_name, 'r')
 
             for line in file_csv:
@@ -49,26 +66,54 @@ for number_machines in number_machines_list:
                 avg_success += success
                 avg_replans += replans
                 avg_actions += actions
+
+                replans_list.append(replans)
+                actions_list.append(actions)
+
                 if success == 1.0:
-                    avg_replans_suc += replans
-                    avg_actions_suc += actions
+                    suc_avg_replans += replans
+                    suc_avg_actions += actions
+                    suc_actions_list.append(actions)
+                    suc_replans_list.append(replans)
                     suc_count += 1
                 else:
-                    avg_replans_fail += replans
-                    avg_actions_fail += actions
+                    fail_avg_replans += replans
+                    fail_avg_actions += actions
+                    fail_actions_list.append(actions)
+                    fail_replans_list.append(replans)
                     fail_count += 1
                 exp_count += 1
             
+            avg_success = avg_success/exp_count
+
+            avg_replans = avg_replans/exp_count
+            std_dev_replans = calculateStandardDeviation(replans_list, avg_replans, exp_count)
+
+            avg_actions = avg_actions/exp_count
+            std_dev_actions = calculateStandardDeviation(actions_list, avg_actions, exp_count)
+
             start = 'm' + str(number_machines) + '_p' + str(problem) + ', '
-            line_all = start+str(avg_success/exp_count)+', '+str(avg_replans/exp_count)+', '+str(avg_actions/exp_count)+', '+str(exp_count)+'\n'
+            line_all = start+str(avg_success)+', '+str(avg_replans)+', '+str(std_dev_replans)+', '+str(avg_actions)+', '+str(std_dev_actions)+', ''\n'
             results_file.write(line_all)
 
             if not suc_count == 0:
-                line_suc = start+str(avg_replans_suc/suc_count)+', '+str(avg_actions_suc/suc_count)+', '+str(suc_count)+'\n'
+                suc_avg_replans = suc_avg_replans/suc_count
+                suc_std_dev_replans = calculateStandardDeviation(suc_replans_list, suc_avg_replans, suc_count)
+
+                suc_avg_actions = suc_avg_actions/suc_count
+                suc_std_dev_actions = calculateStandardDeviation(suc_actions_list, suc_avg_actions, suc_count)
+
+                line_suc = start+str(suc_avg_replans)+', '+str(suc_std_dev_replans)+', '+str(suc_avg_actions)+', '+str(suc_std_dev_actions)+', '+'\n'
                 suc_results_file.write(line_suc)
 
             if not fail_count == 0:
-                line_fail = start+str(avg_replans_fail/fail_count)+', '+str(avg_actions_fail/fail_count)+', '+str(fail_count)+'\n'
+                fail_avg_replans = fail_avg_replans/fail_count
+                fail_std_dev_replans = calculateStandardDeviation(fail_replans_list, fail_avg_replans, fail_count)
+
+                fail_avg_actions = fail_avg_actions/fail_count
+                fail_std_dev_actions = calculateStandardDeviation(fail_actions_list, fail_avg_actions, fail_count)
+
+                line_fail = start+str(fail_avg_replans)+', '+str(fail_std_dev_replans)+', '+str(fail_avg_actions)+', '+str(fail_std_dev_actions)+', '+'\n'
                 fail_results_file.write(line_fail)
 
         results_file.close()
