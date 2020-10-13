@@ -26,8 +26,10 @@ def run():
     problem_name = rospy.get_param('~problem_name', 'problem_name_not_set_')
     category = rospy.get_param('~category').split('_problems')[0]
 
+    number_machines = problem_name.split('_m')[1]
+
     # Convert 'probabilities_m3_p1.txt' to 'p1'
-    probability_file = rospy.get_param('~probabilities_file').split('.')[0].split('_p')[1]
+    probability_file = rospy.get_param('~probabilities_file').split('.')[0].split(number_machines+'_p')[1]
 
     # rospy.loginfo('ISR: Probability file: ' + probability_file)
 
