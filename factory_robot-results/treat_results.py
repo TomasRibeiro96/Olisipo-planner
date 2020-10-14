@@ -13,7 +13,10 @@ def calculateStandardDeviation(lst, avg, total_number):
     for item in lst:
         sum_dev += (item - avg)**2
 
-    return (sum_dev/total_number)**0.5
+    # print '\tAverage: ', avg
+    # print '\tTotal number: ', total_number
+    # print '\tStandard Deviation: ', (sum_dev/(total_number-1))**0.5
+    return (sum_dev/(total_number-1))**0.5
 
 
 for number_machines in number_machines_list:
@@ -87,30 +90,36 @@ for number_machines in number_machines_list:
             avg_success = avg_success/exp_count
 
             avg_replans = avg_replans/exp_count
+            # print 'Calculating std_dev for Replans: ', problem, ' | ', dispatcher
             std_dev_replans = calculateStandardDeviation(replans_list, avg_replans, exp_count)
 
             avg_actions = avg_actions/exp_count
+            # print 'Calculating std_dev for Actions: ', problem, ' | ', dispatcher
             std_dev_actions = calculateStandardDeviation(actions_list, avg_actions, exp_count)
 
             start = 'm' + str(number_machines) + '_p' + str(problem) + ', '
             line_all = start+str(avg_success)+', '+str(avg_replans)+', '+str(std_dev_replans)+', '+str(avg_actions)+', '+str(std_dev_actions)+', ''\n'
             results_file.write(line_all)
 
-            if not suc_count == 0:
+            if suc_count > 1:
                 suc_avg_replans = suc_avg_replans/suc_count
+                # print 'Calculating std_dev for Replans of Successes: ', problem, ' | ', dispatcher
                 suc_std_dev_replans = calculateStandardDeviation(suc_replans_list, suc_avg_replans, suc_count)
 
                 suc_avg_actions = suc_avg_actions/suc_count
+                # print 'Calculating std_dev for Actions of Successes: ', problem, ' | ', dispatcher
                 suc_std_dev_actions = calculateStandardDeviation(suc_actions_list, suc_avg_actions, suc_count)
 
                 line_suc = start+str(suc_avg_replans)+', '+str(suc_std_dev_replans)+', '+str(suc_avg_actions)+', '+str(suc_std_dev_actions)+', '+'\n'
                 suc_results_file.write(line_suc)
 
-            if not fail_count == 0:
+            if fail_count > 1:
                 fail_avg_replans = fail_avg_replans/fail_count
+                # print 'Calculating std_dev for Replans of Failures: ', problem, ' | ', dispatcher
                 fail_std_dev_replans = calculateStandardDeviation(fail_replans_list, fail_avg_replans, fail_count)
 
                 fail_avg_actions = fail_avg_actions/fail_count
+                # print 'Calculating std_dev for Actions of Failures: ', problem, ' | ', dispatcher
                 fail_std_dev_actions = calculateStandardDeviation(fail_actions_list, fail_avg_actions, fail_count)
 
                 line_fail = start+str(fail_avg_replans)+', '+str(fail_std_dev_replans)+', '+str(fail_avg_actions)+', '+str(fail_std_dev_actions)+', '+'\n'
