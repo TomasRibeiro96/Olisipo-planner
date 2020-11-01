@@ -1,0 +1,19 @@
+machine_is_maintained#m1 0.02 0.20
+machine_is_maintained#m2 0.20 0.17
+machine_is_maintained#m3 0.02 0.02
+machine_is_working#m1 0.00 0.01
+machine_is_working#m2 0.00 0.01
+machine_is_working#m3 0.00 0.01
+robot_at#m1 0.00 0.00
+robot_at#m2 0.00 0.00
+robot_at#m3 0.00 0.00
+-
+maintain_machine#m1 0.70 machine_is_maintained%0.75
+maintain_machine#m2 0.70 machine_is_maintained%0.75
+maintain_machine#m3 0.70 machine_is_maintained%0.75
+go_to_machine#m1#m2 0.70 robot_at%0.75
+go_to_machine#m1#m3 0.70 robot_at%0.75
+go_to_machine#m2#m1 0.70 robot_at%0.75
+go_to_machine#m2#m3 0.70 robot_at%0.75
+go_to_machine#m3#m1 0.70 robot_at%0.75
+go_to_machine#m3#m2 0.70 robot_at%0.75
