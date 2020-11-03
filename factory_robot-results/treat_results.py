@@ -2,9 +2,9 @@ import csv
 
 number_machines_list = [3]
 dispatcher_list = ['esterel', 'adaptable']
-problem_list = [i for i in range(1,19)]
-domain = 'adv_factory_robot'
-# domain = 'simple_factory_robot'
+problem_list = [i for i in range(1,11)]
+# domain = 'adv_factory_robot'
+domain = 'factory_robot'
 
 common_path = '/home/tomas/ros_ws/src/ROSPlan/src/rosplan/factory_robot-results/'+domain+'/'
 
