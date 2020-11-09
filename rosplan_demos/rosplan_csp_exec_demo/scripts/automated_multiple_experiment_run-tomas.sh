@@ -22,12 +22,11 @@ function call_exec_experiment_with_wait(){
 }
 
 
-declare -a number_machines_vec=("3" "4")
-declare -a number_machines=${number_machines_vec[0]}
+declare -a number_machines=$((3))
+declare -a number_runs=$((300))
 
-declare -a number_runs=$((400))
-declare -a start_number_problems=$((15))
-declare -a end_number_problems=$((18))
+declare -a start_number_problems=$((1))
+declare -a end_number_problems=$((8))
 declare -a number_problems=$(($end_number_problems-$start_number_problems+1))
 
 declare -a exp_count=$((0))
@@ -41,8 +40,7 @@ declare -a domain="domain_adv_factory_robot"
 
 #### With esterel dispatcher ####
 # Iterate over probabilities problem
-# for problem in $( eval echo {1..$number_problems} )
-for problem in {15..18}
+for problem in {1..8}
 do
     # Number of runs for each pair of problems and probabilities
     for k in $( eval echo {1..$number_runs} )
@@ -57,8 +55,7 @@ done
 
 #### With adaptable dispatcher ####
 # Iterate over probabilities problem
-# for problem in $( eval echo {1..$number_problems} )
-for problem in {15..18}
+for problem in {1..8}
 do
     # Number of runs for each pair of problems and probabilities
     for k in $( eval echo {1..$number_runs} )

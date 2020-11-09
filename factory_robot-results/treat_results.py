@@ -38,17 +38,17 @@ if __name__ == "__main__":
         fail_results_file.write(dispatcher+', \n')
         fail_results_file.write('Problem, Actions, Actions_std_dev, \n')
 
-        replans_list = list()
-        suc_replans_list = list()
-        actions_list = list()
-        suc_actions_list = list()
-        fail_actions_list = list()
-
         for problem in problem_list:
             
             number_suc = 0
             number_fails = 0
             number_total = 0
+
+            replans_list = list()
+            suc_replans_list = list()
+            actions_list = list()
+            suc_actions_list = list()
+            fail_actions_list = list()
 
             # There is no fail_avg_replans because it would always be the maximum number of replans (10)
             sum_replans = 0
@@ -108,10 +108,7 @@ if __name__ == "__main__":
 
             # If there are successes
             if number_suc > 1:
-                print('Inside successes')
-                print('Suc_sum_replans: ' + str(suc_sum_replans))
                 suc_avg_replans = float(suc_sum_replans)/float(number_suc)
-                print('Suc_avg_replans 1: ' + str(suc_avg_replans))
                 # print 'Calculating std_dev for Replans of Successes: ', problem, ' | ', dispatcher
                 suc_std_dev_replans = calculateStandardDeviation(suc_replans_list, suc_avg_replans, number_suc)
 
@@ -119,7 +116,6 @@ if __name__ == "__main__":
                 # print 'Calculating std_dev for Actions of Successes: ', problem, ' | ', dispatcher
                 suc_std_dev_actions = calculateStandardDeviation(suc_actions_list, suc_avg_actions, number_suc)
 
-                print('Suc_avg_replans 2: ' + str(suc_avg_replans))
                 line_suc = problem_name + ', ' + str(suc_avg_replans) + ', ' + str(suc_std_dev_replans) \
                             + ', ' + str(suc_avg_actions) + ', ' + str(suc_std_dev_actions) + ', ' + '\n'
                 suc_results_file.write(line_suc)
