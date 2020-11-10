@@ -1,9 +1,9 @@
-machine_is_maintained#m1 0.02 0.20
-machine_is_maintained#m2 0.20 0.17
+machine_is_maintained#m1 0.02 0.08
+machine_is_maintained#m2 0.08 0.02
 machine_is_maintained#m3 0.02 0.02
-machine_is_working#m1 0.00 0.01
-machine_is_working#m2 0.00 0.01
-machine_is_working#m3 0.00 0.01
+machine_is_working#m1 0.00 0.02
+machine_is_working#m2 0.00 0.07
+machine_is_working#m3 0.00 0.12
 robot_at#m1 0.00 0.00
 robot_at#m2 0.00 0.00
 robot_at#m3 0.00 0.00
