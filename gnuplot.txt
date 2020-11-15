@@ -1,0 +1,253 @@
+-----------------------------------------------
+------------ADVANCED FACTORY DOMAIN------------
+-----------------------------------------------
+
+////////// AF3 - ACTIONS (SUCCESS) //////////
+set style fill solid 0.25 border -1
+set style boxplot nooutliers pointtype 7
+set style data boxplot
+set xtics ("Est-1" 1, "Oli-1" 2, "Est-2" 3, "Oli-2" 4, "Est-3" 5, "Oli-3" 6, "Est-4" 7,"Oli-4" 8, "Est-5" 9, "Oli-5" 10, "Est-6" 11, "Oli-6" 12, "Est-7" 13, "Oli-7" 14, "Est-8" 15, "Oli-8" 16) font ",12"
+set ytics font ",12"
+set yrange [0:70]
+set xrange [0:17]
+unset key
+set xlabel "Dispatcher-Problem" font ",14" offset 0,-1
+set ylabel "Number of Actions" font ",14" offset -2
+set title "AF3 - Number of Actions (successful cases)" font ",18"
+
+plot 'suc-esterel-m3_p1.csv' using (1.0):3 lt rgb "blue"
+replot 'suc-adaptable-m3_p1.csv' using (2.0):3 lt rgb "orange"
+
+replot 'suc-esterel-m3_p2.csv' using (3.0):3 lt rgb "blue"
+replot 'suc-adaptable-m3_p2.csv' using (4.0):3 lt rgb "orange"
+
+replot 'suc-esterel-m3_p3.csv' using (5.0):3 lt rgb "blue"
+replot 'suc-adaptable-m3_p3.csv' using (6.0):3 lt rgb "orange"
+
+replot 'suc-esterel-m3_p4.csv' using (7.0):3 lt rgb "blue"
+replot 'suc-adaptable-m3_p4.csv' using (8.0):3 lt rgb "orange"
+
+replot 'suc-esterel-m3_p5.csv' using (9.0):3 lt rgb "blue"
+replot 'suc-adaptable-m3_p5.csv' using (10.0):3 lt rgb "orange"
+
+replot 'suc-esterel-m3_p6.csv' using (11.0):3 lt rgb "blue"
+replot 'suc-adaptable-m3_p6.csv' using (12.0):3 lt rgb "orange"
+
+replot 'suc-esterel-m3_p7.csv' using (13.0):3 lt rgb "blue"
+replot 'suc-adaptable-m3_p7.csv' using (14.0):3 lt rgb "orange"
+
+replot 'suc-esterel-m3_p8.csv' using (15.0):3 lt rgb "blue"
+replot 'suc-adaptable-m3_p8.csv' using (16.0):3 lt rgb "orange"
+
+
+////////// AF3 - REPLANS (SUCCESS) //////////
+set style fill solid 0.25 border -1
+set style boxplot nooutliers pointtype 7
+set style data boxplot
+set xtics ("Est-1" 1, "Oli-1" 2, "Est-2" 3, "Oli-2" 4, "Est-3" 5, "Oli-3" 6, "Est-4" 7,"Oli-4" 8, "Est-5" 9, "Oli-5" 10, "Est-6" 11, "Oli-6" 12, "Est-7" 13, "Oli-7" 14, "Est-8" 15, "Oli-8" 16) font ",12"
+set ytics font ",12"
+set yrange [0:9]
+set xrange [0:17]
+unset key
+set xlabel "Dispatcher-Problem" font ",14" offset 0,-1
+set ylabel "Number of Replans" font ",14" offset -2
+set title "AF3 - Number of Replans (successful cases)" font ",18"
+
+plot 'suc-esterel-m3_p1.csv' using (1.0):2 lt rgb "blue"
+replot 'suc-adaptable-m3_p1.csv' using (2.0):2 lt rgb "orange"
+
+replot 'suc-esterel-m3_p2.csv' using (3.0):2 lt rgb "blue"
+replot 'suc-adaptable-m3_p2.csv' using (4.0):2 lt rgb "orange"
+
+replot 'suc-esterel-m3_p3.csv' using (5.0):2 lt rgb "blue"
+replot 'suc-adaptable-m3_p3.csv' using (6.0):2 lt rgb "orange"
+
+replot 'suc-esterel-m3_p4.csv' using (7.0):2 lt rgb "blue"
+replot 'suc-adaptable-m3_p4.csv' using (8.0):2 lt rgb "orange"
+
+replot 'suc-esterel-m3_p5.csv' using (9.0):2 lt rgb "blue"
+replot 'suc-adaptable-m3_p5.csv' using (10.0):2 lt rgb "orange"
+
+replot 'suc-esterel-m3_p6.csv' using (11.0):2 lt rgb "blue"
+replot 'suc-adaptable-m3_p6.csv' using (12.0):2 lt rgb "orange"
+
+replot 'suc-esterel-m3_p7.csv' using (13.0):2 lt rgb "blue"
+replot 'suc-adaptable-m3_p7.csv' using (14.0):2 lt rgb "orange"
+
+replot 'suc-esterel-m3_p8.csv' using (15.0):2 lt rgb "blue"
+replot 'suc-adaptable-m3_p8.csv' using (16.0):2 lt rgb "orange"
+
+
+////////// AF3 - ACTIONS (FAILURES) //////////
+set style fill solid 0.25 border -1
+set style boxplot nooutliers pointtype 7
+set style data boxplot
+set xtics ("Est-1" 1, "Oli-1" 2, "Est-2" 3, "Oli-2" 4, "Est-3" 5, "Oli-3" 6, "Est-4" 7,"Oli-4" 8, "Est-5" 9, "Oli-5" 10, "Est-6" 11, "Oli-6" 12, "Est-7" 13, "Oli-7" 14, "Est-8" 15, "Oli-8" 16) font ",12"
+set ytics font ",12"
+set yrange [0:36]
+set xrange [0:17]
+unset key
+set xlabel "Dispatcher-Problem" font ",14" offset 0,-1
+set ylabel "Number of Actions" font ",14" offset -2
+set title "AF3 - Number of Actions (failure cases)" font ",18"
+
+plot 'fail-esterel-m3_p1.csv' using (1.0):3 lt rgb "blue"
+replot 'fail-adaptable-m3_p1.csv' using (2.0):3 lt rgb "orange"
+
+replot 'fail-esterel-m3_p2.csv' using (3.0):3 lt rgb "blue"
+replot 'fail-adaptable-m3_p2.csv' using (4.0):3 lt rgb "orange"
+
+replot 'fail-esterel-m3_p3.csv' using (5.0):3 lt rgb "blue"
+replot 'fail-adaptable-m3_p3.csv' using (6.0):3 lt rgb "orange"
+
+replot 'fail-esterel-m3_p4.csv' using (7.0):3 lt rgb "blue"
+replot 'fail-adaptable-m3_p4.csv' using (8.0):3 lt rgb "orange"
+
+replot 'fail-esterel-m3_p5.csv' using (9.0):3 lt rgb "blue"
+replot 'fail-adaptable-m3_p5.csv' using (10.0):3 lt rgb "orange"
+
+replot 'fail-esterel-m3_p6.csv' using (11.0):3 lt rgb "blue"
+replot 'fail-adaptable-m3_p6.csv' using (12.0):3 lt rgb "orange"
+
+replot 'fail-esterel-m3_p7.csv' using (13.0):3 lt rgb "blue"
+replot 'fail-adaptable-m3_p7.csv' using (14.0):3 lt rgb "orange"
+
+replot 'fail-esterel-m3_p8.csv' using (15.0):3 lt rgb "blue"
+replot 'fail-adaptable-m3_p8.csv' using (16.0):3 lt rgb "orange"
+
+
+
+---------------------------------------------
+------------SIMPLE FACTORY DOMAIN------------
+---------------------------------------------
+
+////////// SF3 - ACTIONS (SUCCESS) //////////
+set style fill solid 0.25 border -1
+set style boxplot nooutliers pointtype 7
+set style data boxplot
+set xtics ("Est-1" 1, "Oli-1" 2, "Est-2" 3, "Oli-2" 4, "Est-3" 5, "Oli-3" 6, "Est-4" 7,"Oli-4" 8, "Est-5" 9, "Oli-5" 10, "Est-6" 11, "Oli-6" 12, "Est-7" 13, "Oli-7" 14, "Est-8" 15, "Oli-8" 16, "Est-9" 17, "Oli-9" 18, "Est-10" 19, "Oli-10" 20) font ",12"
+set ytics font ",12"
+set yrange [0:30]
+set xrange [0:21]
+unset key
+set xlabel "Dispatcher-Problem" font ",14" offset 0,-1
+set ylabel "Number of Actions" font ",14" offset -2
+set title "SF3 - Number of Actions (successful cases)" font ",18"
+
+plot 'suc-esterel-m3_p1.csv' using (1.0):3 lt rgb "blue"
+replot 'suc-adaptable-m3_p1.csv' using (2.0):3 lt rgb "orange"
+
+replot 'suc-esterel-m3_p2.csv' using (3.0):3 lt rgb "blue"
+replot 'suc-adaptable-m3_p2.csv' using (4.0):3 lt rgb "orange"
+
+replot 'suc-esterel-m3_p3.csv' using (5.0):3 lt rgb "blue"
+replot 'suc-adaptable-m3_p3.csv' using (6.0):3 lt rgb "orange"
+
+replot 'suc-esterel-m3_p4.csv' using (7.0):3 lt rgb "blue"
+replot 'suc-adaptable-m3_p4.csv' using (8.0):3 lt rgb "orange"
+
+replot 'suc-esterel-m3_p5.csv' using (9.0):3 lt rgb "blue"
+replot 'suc-adaptable-m3_p5.csv' using (10.0):3 lt rgb "orange"
+
+replot 'suc-esterel-m3_p6.csv' using (11.0):3 lt rgb "blue"
+replot 'suc-adaptable-m3_p6.csv' using (12.0):3 lt rgb "orange"
+
+replot 'suc-esterel-m3_p7.csv' using (13.0):3 lt rgb "blue"
+replot 'suc-adaptable-m3_p7.csv' using (14.0):3 lt rgb "orange"
+
+replot 'suc-esterel-m3_p8.csv' using (15.0):3 lt rgb "blue"
+replot 'suc-adaptable-m3_p8.csv' using (16.0):3 lt rgb "orange"
+
+replot 'suc-esterel-m3_p9.csv' using (17.0):3 lt rgb "blue"
+replot 'suc-adaptable-m3_p9.csv' using (18.0):3 lt rgb "orange"
+
+replot 'suc-esterel-m3_p10.csv' using (19.0):3 lt rgb "blue"
+replot 'suc-adaptable-m3_p10.csv' using (20.0):3 lt rgb "orange"
+
+
+////////// AF3 - REPLANS (SUCCESS) //////////
+set style fill solid 0.25 border -1
+set style boxplot nooutliers pointtype 7
+set style data boxplot
+set xtics ("Est-1" 1, "Oli-1" 2, "Est-2" 3, "Oli-2" 4, "Est-3" 5, "Oli-3" 6, "Est-4" 7,"Oli-4" 8, "Est-5" 9, "Oli-5" 10, "Est-6" 11, "Oli-6" 12, "Est-7" 13, "Oli-7" 14, "Est-8" 15, "Oli-8" 16, "Est-9" 17, "Oli-9" 18, "Est-10" 19, "Oli-10" 20) font ",12"
+set ytics font ",12"
+set yrange [0:7]
+set xrange [0:21]
+unset key
+set xlabel "Dispatcher-Problem" font ",14" offset 0,-1
+set ylabel "Number of Replans" font ",14" offset -2
+set title "SF3 - Number of Replans (successful cases)" font ",18"
+
+plot 'suc-esterel-m3_p1.csv' using (1.0):2 lt rgb "blue"
+replot 'suc-adaptable-m3_p1.csv' using (2.0):2 lt rgb "orange"
+
+replot 'suc-esterel-m3_p2.csv' using (3.0):2 lt rgb "blue"
+replot 'suc-adaptable-m3_p2.csv' using (4.0):2 lt rgb "orange"
+
+replot 'suc-esterel-m3_p3.csv' using (5.0):2 lt rgb "blue"
+replot 'suc-adaptable-m3_p3.csv' using (6.0):2 lt rgb "orange"
+
+replot 'suc-esterel-m3_p4.csv' using (7.0):2 lt rgb "blue"
+replot 'suc-adaptable-m3_p4.csv' using (8.0):2 lt rgb "orange"
+
+replot 'suc-esterel-m3_p5.csv' using (9.0):2 lt rgb "blue"
+replot 'suc-adaptable-m3_p5.csv' using (10.0):2 lt rgb "orange"
+
+replot 'suc-esterel-m3_p6.csv' using (11.0):2 lt rgb "blue"
+replot 'suc-adaptable-m3_p6.csv' using (12.0):2 lt rgb "orange"
+
+replot 'suc-esterel-m3_p7.csv' using (13.0):2 lt rgb "blue"
+replot 'suc-adaptable-m3_p7.csv' using (14.0):2 lt rgb "orange"
+
+replot 'suc-esterel-m3_p8.csv' using (15.0):2 lt rgb "blue"
+replot 'suc-adaptable-m3_p8.csv' using (16.0):2 lt rgb "orange"
+
+replot 'suc-esterel-m3_p9.csv' using (17.0):2 lt rgb "blue"
+replot 'suc-adaptable-m3_p9.csv' using (18.0):2 lt rgb "orange"
+
+replot 'suc-esterel-m3_p10.csv' using (19.0):2 lt rgb "blue"
+replot 'suc-adaptable-m3_p10.csv' using (20.0):2 lt rgb "orange"
+
+
+////////// AF3 - ACTIONS (FAILURES) //////////
+set style fill solid 0.25 border -1
+set style boxplot nooutliers pointtype 7
+set style data boxplot
+set xtics ("Est-1" 1, "Oli-1" 2, "Est-2" 3, "Oli-2" 4, "Est-3" 5, "Oli-3" 6, "Est-4" 7,"Oli-4" 8, "Est-5" 9, "Oli-5" 10, "Est-6" 11, "Oli-6" 12, "Est-7" 13, "Oli-7" 14, "Est-8" 15, "Oli-8" 16, "Est-9" 17, "Oli-9" 18, "Est-10" 19, "Oli-10" 20) font ",12"
+set ytics font ",12"
+set yrange [0:19]
+set xrange [0:21]
+unset key
+set xlabel "Dispatcher-Problem" font ",14" offset 0,-1
+set ylabel "Number of Actions" font ",14" offset -2
+set title "SF3 - Number of Actions (failed cases)" font ",18"
+
+plot 'fail-esterel-m3_p1.csv' using (1.0):3 lt rgb "blue"
+replot 'fail-adaptable-m3_p1.csv' using (2.0):3 lt rgb "orange"
+
+replot 'fail-esterel-m3_p2.csv' using (3.0):3 lt rgb "blue"
+replot 'fail-adaptable-m3_p2.csv' using (4.0):3 lt rgb "orange"
+
+replot 'fail-esterel-m3_p3.csv' using (5.0):3 lt rgb "blue"
+replot 'fail-adaptable-m3_p3.csv' using (6.0):3 lt rgb "orange"
+
+replot 'fail-esterel-m3_p4.csv' using (7.0):3 lt rgb "blue"
+replot 'fail-adaptable-m3_p4.csv' using (8.0):3 lt rgb "orange"
+
+replot 'fail-esterel-m3_p5.csv' using (9.0):3 lt rgb "blue"
+replot 'fail-adaptable-m3_p5.csv' using (10.0):3 lt rgb "orange"
+
+replot 'fail-esterel-m3_p6.csv' using (11.0):3 lt rgb "blue"
+replot 'fail-adaptable-m3_p6.csv' using (12.0):3 lt rgb "orange"
+
+replot 'fail-esterel-m3_p7.csv' using (13.0):3 lt rgb "blue"
+replot 'fail-adaptable-m3_p7.csv' using (14.0):3 lt rgb "orange"
+
+replot 'fail-esterel-m3_p8.csv' using (15.0):3 lt rgb "blue"
+replot 'fail-adaptable-m3_p8.csv' using (16.0):3 lt rgb "orange"
+
+replot 'fail-esterel-m3_p9.csv' using (17.0):3 lt rgb "blue"
+replot 'fail-adaptable-m3_p9.csv' using (18.0):3 lt rgb "orange"
+
+replot 'fail-esterel-m3_p10.csv' using (19.0):3 lt rgb "blue"
+replot 'fail-adaptable-m3_p10.csv' using (20.0):3 lt rgb "orange"
