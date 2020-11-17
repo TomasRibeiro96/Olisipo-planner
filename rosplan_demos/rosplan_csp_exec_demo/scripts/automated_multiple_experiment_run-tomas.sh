@@ -22,44 +22,67 @@ function call_exec_experiment_with_wait(){
 }
 
 
-declare -a number_machines=$((3))
-declare -a number_runs=$((300))
+declare -a category="factory_robot_problems"
+declare -a domain="domain_simple_factory_robot"
+declare -a start_number_problems=$((13))
+declare -a end_number_problems=$((16))
 
-declare -a start_number_problems=$((1))
-declare -a end_number_problems=$((8))
-declare -a number_problems=$(($end_number_problems-$start_number_problems+1))
+# declare -a category="adv_factory_robot_problems"
+# declare -a domain="domain_adv_factory_robot"
+# declare -a start_number_problems=$((2))
+# declare -a end_number_problems=$((8))
+
+
+declare -a number_machines=$((3))
+declare -a number_runs=$((1000))
 
 declare -a exp_count=$((0))
+declare -a number_problems=$(($end_number_problems-$start_number_problems+1))
 declare -a total_count=$((2*$number_problems*$number_runs))
-
-# declare -a category="factory_robot_problems"
-# declare -a domain="domain_simple_factory_robot"
-
-declare -a category="adv_factory_robot_problems"
-declare -a domain="domain_adv_factory_robot"
 
 #### With esterel dispatcher ####
 # Iterate over probabilities problem
-for problem in {1..8}
+# for problem in {11..16}
+# do
+#     # Number of runs for each pair of problems and probabilities
+#     for k in $( eval echo {1..$number_runs} )
+#     do
+#         call_exec_experiment_with_wait false $category $domain $number_machines $problem
+#         exp_count=$(($exp_count + 1))
+#         echo ""
+#         echo "|||||||||||||||||||||||||||||||||| EXECUTED $exp_count OF $total_count ||||||||||||||||||||||||||||||||||"
+#         echo ""
+#     done
+# done
+
+#### With adaptable dispatcher ####
+# Iterate over probabilities problem
+# for problem in {11..16}
+# do
+#     # Number of runs for each pair of problems and probabilities
+#     for k in $( eval echo {1..$number_runs} )
+#     do
+#         call_exec_experiment_with_wait true $category $domain $number_machines $problem
+#         exp_count=$(($exp_count + 1))
+#         echo ""
+#         echo "|||||||||||||||||||||||||||||||||| EXECUTED $exp_count OF $total_count ||||||||||||||||||||||||||||||||||"
+#         echo ""
+#     done
+# done
+
+for problem in {13..16}
 do
     # Number of runs for each pair of problems and probabilities
     for k in $( eval echo {1..$number_runs} )
     do
+        #### With esterel dispatcher ####
         call_exec_experiment_with_wait false $category $domain $number_machines $problem
         exp_count=$(($exp_count + 1))
         echo ""
         echo "|||||||||||||||||||||||||||||||||| EXECUTED $exp_count OF $total_count ||||||||||||||||||||||||||||||||||"
         echo ""
-    done
-done
 
-#### With adaptable dispatcher ####
-# Iterate over probabilities problem
-for problem in {1..8}
-do
-    # Number of runs for each pair of problems and probabilities
-    for k in $( eval echo {1..$number_runs} )
-    do
+        #### With adaptable dispatcher ####
         call_exec_experiment_with_wait true $category $domain $number_machines $problem
         exp_count=$(($exp_count + 1))
         echo ""

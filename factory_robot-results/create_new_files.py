@@ -3,13 +3,14 @@ import csv
 number_machines = 3
 dispatcher_list = ['esterel', 'adaptable']
 
-domain = 'factory_robot'
-problem_list = [i for i in range(1,11)]
+# domain = 'factory_robot'
+# problem_list = [i for i in range(1,11)]
 
-# domain = 'adv_factory_robot'
-# problem_list = [i for i in range(1,9)]
+domain = 'adv_factory_robot'
+problem_list = [i for i in range(1,9)]
 
-common_path = '/home/tomas/ros_ws/src/ROSPlan/src/rosplan/factory_robot-results/'+domain+'/'+'problem_m'+str(number_machines)+'/'
+data_path = '/home/tomas/ros_ws/src/ROSPlan/src/rosplan/factory_robot-results/'+domain+'/'+'problem_m'+str(number_machines)+'/'
+common_path = '/home/tomas/ros_ws/src/ROSPlan/src/rosplan/factory_robot-results/'+domain+'/'+'problem_m'+str(number_machines)+'/treated_results/'
 
 
 if __name__ == "__main__":
@@ -18,7 +19,7 @@ if __name__ == "__main__":
     for dispatcher in dispatcher_list:
         for problem in problem_list:
 
-            file_name = common_path + 'exp_'+dispatcher+'-problem_m'+str(number_machines)+'-'+str(problem)+'.csv'
+            file_name = data_path + 'exp_'+dispatcher+'-problem_m'+str(number_machines)+'-'+str(problem)+'.csv'
             file_csv = open(file_name, 'r')
 
             suc_results_file = open(common_path+'suc-'+dispatcher+'-m'+str(number_machines)+'_p'+str(problem)+'.csv', 'w')
