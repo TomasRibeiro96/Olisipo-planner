@@ -3,14 +3,17 @@
 
 
     <!-- select between normal or smart plan dispatcher -->
-    <arg name="adaptable_plan_dispatcher_required" default="true" />
+    <arg name="adaptable_plan_dispatcher_required" default="false" />
     
     <!-- FACTORY ROBOT -->
-    <arg name="category" default="adv_factory_robot_problems" />
-    <arg name="domain" default="domain_adv_factory_robot" />
+    <!-- <arg name="category" default="adv_factory_robot_problems" />
+    <arg name="domain" default="domain_adv_factory_robot" /> -->
+
+    <arg name="category" default="factory_robot_problems" />
+    <arg name="domain" default="domain_simple_factory_robot" />
 
     <arg name="number_machines" default="3" />
-    <arg name="probabilities_problem" default="1" />
+    <arg name="probabilities_problem" default="16" />
 
     <arg name="problem" default="problem_m$(arg number_machines)" />
     <arg name="probabilities_path" default="/home/tomas/ros_ws/src/ROSPlan/src/rosplan/rosplan_demos/rosplan_csp_exec_demo/common/$(arg category)/$(arg problem)/"/>
