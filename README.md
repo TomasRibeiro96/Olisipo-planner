@@ -1,11 +1,11 @@
 # Olisipo Algorithm
 
 Forked from the ROSPlan repository.
-The algorithm is inside rosplan_planning_system/src/PlanDispatch/CSPExecGenerator.cpp.
+The algorithm is inside _rosplan_planning_system/src/PlanDispatch/CSPExecGenerator.cpp_.
 
-The batch file to run the experiments is in rosplan_demos/rosplan_csp_exec_demo/scripts/automated_multiple_experiment_run-tomas.sh.
+The batch file to run the experiments is in _rosplan_demos/rosplan_csp_exec_demo/scripts/automated_multiple_experiment_run-tomas.sh_.
 
-The script to build the DBN is inside rosplan_demos/rosplan_csp_exec_demo/scripts/calculate_plan_prob.py.
+The script to build the DBN is inside _rosplan_demos/rosplan_csp_exec_demo/scripts/calculate_plan_prob.py_.
 
 
 # Rosplan
